@@ -58,10 +58,11 @@ Legend: `[x]` done · `[ ]` not done yet
 - [x] Warning when task weights don't add up to 100%
 
 ## Phase 5 — Resources
-- [ ] Company resource library (materials, equipment, workers, suppliers)
-- [ ] Assign resources to a project / task (quantity, rate)
-- [ ] Planned vs used quantities
-- [ ] Project resources page
+Workers are names with a rate (they don't log in). No availability / double-booking checks.
+- [x] Company resource library (materials, equipment, workers, suppliers) — Resources page in the sidebar
+- [x] Assign resources to a project / task (quantity, price), or create one inline
+- [x] Planned vs used quantities and costs, over-plan warning
+- [x] Project Resources tab (+ resources listed in the task panel)
 
 ## Phase 6 — Expenses & budget
 - [ ] Record expenses (amount, date, category, task, resource / supplier)

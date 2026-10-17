@@ -7,6 +7,7 @@ import { CornerLeftUp, Loader2, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createTask, deleteTask, restoreTask, updateTask, type TaskPatch } from "@/lib/actions/tasks";
 import type { BoardStatus, TaskDetail, WorkspaceMember } from "@/lib/data/projects";
+import type { ProjectResource } from "@/lib/data/resources";
 import { PRIORITIES, type Priority } from "@/lib/constants";
 import { cn, formatMoney } from "@/lib/utils";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -29,6 +30,8 @@ type SheetProps = {
   statuses: BoardStatus[];
   members: WorkspaceMember[];
   otherWeight: number;
+  resources: ProjectResource[];
+  resourcesHref: string;
 };
 
 /** Builds "?view=…&task=…" keeping the current view. */
@@ -77,6 +80,8 @@ function TaskEditor({
   statuses,
   members,
   otherWeight,
+  resources,
+  resourcesHref,
   onClose,
 }: SheetProps & { task: TaskDetail; onClose: () => void }) {
   const [pending, startTransition] = useTransition();
@@ -388,6 +393,37 @@ function TaskEditor({
             taskHref={taskHref}
           />
         )}
+
+        <section aria-labelledby="task-resources-heading" className="grid gap-2">
+          <div className="flex items-center justify-between">
+            <h3 id="task-resources-heading" className="text-sm font-medium">
+              Resources
+            </h3>
+            <Link href={resourcesHref} className="text-xs text-primary underline-offset-4 hover:underline">
+              Manage in Resources tab
+            </Link>
+          </div>
+          {resources.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No resources assigned to this task.</p>
+          ) : (
+            <ul className="grid divide-y rounded-lg border text-sm">
+              {resources.map((r) => (
+                <li key={r.id} className="flex items-center gap-3 px-3 py-2">
+                  <span className="min-w-0 flex-1 truncate">
+                    {r.name}
+                    {r.role && <span className="text-muted-foreground"> · {r.role}</span>}
+                  </span>
+                  <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                    {Number(r.usedQty).toLocaleString()} / {Number(r.plannedQty).toLocaleString()} {r.unit}
+                  </span>
+                  <span className="w-24 text-right whitespace-nowrap tabular-nums">
+                    {formatMoney(Number(r.plannedQty) * Number(r.unitCost), currency)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <Separator />
 

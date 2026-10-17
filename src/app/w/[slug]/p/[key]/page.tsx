@@ -4,6 +4,7 @@ import { Columns3, List, Table2 } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { computeAccomplishment } from "@/lib/accomplishment";
 import { getBoard, getProjectByKey, getTaskDetail, listMembers } from "@/lib/data/projects";
+import { getProjectResources } from "@/lib/data/resources";
 import { cn } from "@/lib/utils";
 import { Board } from "@/components/tasks/board";
 import { TaskList } from "@/components/tasks/task-list";
@@ -25,10 +26,11 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const taskParam = typeof query.task === "string" ? query.task : null;
   const taskNumber = taskParam?.match(/^[A-Z0-9]+-(\d+)$/i)?.[1];
 
-  const [board, members, selectedTask] = await Promise.all([
+  const [board, members, selectedTask, projectResources] = await Promise.all([
     getBoard(project.id),
     listMembers(workspace.id),
     taskNumber ? getTaskDetail(project.id, Number(taskNumber)) : null,
+    taskNumber ? getProjectResources(project.id) : [],
   ]);
 
   const basePath = `/w/${workspace.slug}/p/${project.key}`;
@@ -95,6 +97,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           currency={project.currency}
           statuses={board.statuses}
           members={members}
+          resources={projectResources.filter((r) => selectedTask && r.taskId === selectedTask.id)}
+          resourcesHref={`${basePath}/resources`}
           // Weight already given to the other main tasks, to show what's left of 100%.
           otherWeight={board.tasks
             .filter((t) => t.id !== selectedTask?.id)

@@ -12,6 +12,7 @@ import {
   Menu,
   Monitor,
   Moon,
+  Package,
   Plus,
   Sun,
 } from "lucide-react";
@@ -93,6 +94,10 @@ function SidebarContent({
         <NavLink href={base} active={pathname === base} onNavigate={onNavigate}>
           <FolderKanban className="size-4" />
           Projects
+        </NavLink>
+        <NavLink href={`${base}/resources`} active={pathname.startsWith(`${base}/resources`)} onNavigate={onNavigate}>
+          <Package className="size-4" />
+          Resources
         </NavLink>
 
         <div className="mt-5 mb-1 flex items-center justify-between pl-2.5 pr-1">

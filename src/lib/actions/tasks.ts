@@ -7,6 +7,7 @@ import { requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { activities, member, projects, taskStatuses, tasks } from "@/lib/db/schema";
 import { POSITION_STEP, PRIORITIES } from "@/lib/constants";
+import { MAX_MONEY, optionalDecimal } from "@/lib/validation";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 
@@ -163,20 +164,6 @@ const isoDate = z
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .nullable();
 
-const decimal = (max: number, message: string) =>
-  z
-    .union([z.string(), z.number()])
-    .nullable()
-    .transform((v, ctx) => {
-      if (v === null || v === "") return null;
-      const n = Number(String(v).replace(/,/g, ""));
-      if (!Number.isFinite(n) || n < 0 || n > max) {
-        ctx.addIssue({ code: "custom", message });
-        return z.NEVER;
-      }
-      return n.toFixed(2);
-    });
-
 const updateSchema = z
   .object({
     title: z.string().trim().min(1, "Title is required").max(300),
@@ -186,9 +173,9 @@ const updateSchema = z
     assigneeId: z.string().min(1).nullable(),
     startDate: isoDate,
     dueDate: isoDate,
-    weight: decimal(100, "Weight must be between 0 and 100%"),
+    weight: optionalDecimal(100, "Weight must be between 0 and 100%"),
     progress: z.number().int().min(0, "Progress must be 0–100%").max(100, "Progress must be 0–100%"),
-    budget: decimal(999_999_999_999, "Enter a valid amount"),
+    budget: optionalDecimal(MAX_MONEY, "Enter a valid amount"),
   })
   .partial();
 

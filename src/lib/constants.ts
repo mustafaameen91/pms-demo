@@ -53,3 +53,42 @@ export const CURRENCIES = [
   "EGP",
   "TRY",
 ] as const;
+
+export const RESOURCE_TYPES = [
+  {
+    value: "material",
+    label: "Material",
+    plural: "Materials",
+    units: ["piece", "bag", "kg", "ton", "m", "m²", "m³", "litre", "box"],
+    defaultUnit: "piece",
+    roleLabel: null,
+  },
+  {
+    value: "equipment",
+    label: "Equipment",
+    plural: "Equipment",
+    units: ["day", "hour", "week", "month", "piece"],
+    defaultUnit: "day",
+    roleLabel: null,
+  },
+  {
+    value: "labor",
+    label: "Worker",
+    plural: "Workers",
+    units: ["day", "hour", "week", "month"],
+    defaultUnit: "day",
+    roleLabel: "Trade / role",
+  },
+  {
+    value: "supplier",
+    label: "Supplier",
+    plural: "Suppliers",
+    units: ["contract", "lump sum", "month", "piece"],
+    defaultUnit: "contract",
+    roleLabel: "Contact person",
+  },
+] as const;
+
+export type ResourceType = (typeof RESOURCE_TYPES)[number]["value"];
+
+export const resourceTypeInfo = (type: ResourceType) => RESOURCE_TYPES.find((t) => t.value === type)!;

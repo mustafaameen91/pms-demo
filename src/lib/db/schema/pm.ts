@@ -310,3 +310,67 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(user, { fields: [notifications.userId], references: [user.id] }),
   activity: one(activities, { fields: [notifications.activityId], references: [activities.id] }),
 }));
+
+// --- Resources (Phase 5) ---
+
+export const resourceType = pgEnum("resource_type", ["material", "equipment", "labor", "supplier"]);
+
+// Company-wide library: a resource and its default price are defined once.
+export const resources = pgTable(
+  "resources",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    type: resourceType("type").notNull(),
+    name: text("name").notNull(),
+    // bag, m³, day, hour, contract…
+    unit: text("unit").notNull(),
+    unitCost: numeric("unit_cost", { precision: 14, scale: 2 }),
+    currency: text("currency").notNull().default("USD"),
+    // Workers: trade ("Electrician"). Suppliers: contact person.
+    role: text("role"),
+    phone: text("phone"),
+    notes: text("notes"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [index("resources_workspace_idx").on(t.workspaceId, t.type)],
+);
+
+// A resource used by a project (optionally for one task), with its own quantities and price.
+export const projectResources = pgTable(
+  "project_resources",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    resourceId: text("resource_id")
+      .notNull()
+      .references(() => resources.id, { onDelete: "restrict" }),
+    taskId: text("task_id").references(() => tasks.id, { onDelete: "set null" }),
+    plannedQty: numeric("planned_qty", { precision: 14, scale: 2 }).notNull().default("0"),
+    usedQty: numeric("used_qty", { precision: 14, scale: 2 }).notNull().default("0"),
+    // Price per unit in the project's currency (copied from the library, editable).
+    unitCost: numeric("unit_cost", { precision: 14, scale: 2 }).notNull().default("0"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("project_resources_project_idx").on(t.projectId),
+    index("project_resources_resource_idx").on(t.resourceId),
+    index("project_resources_task_idx").on(t.taskId),
+  ],
+);
+
+export const resourcesRelations = relations(resources, ({ many }) => ({
+  usages: many(projectResources),
+}));
+
+export const projectResourcesRelations = relations(projectResources, ({ one }) => ({
+  project: one(projects, { fields: [projectResources.projectId], references: [projects.id] }),
+  resource: one(resources, { fields: [projectResources.resourceId], references: [resources.id] }),
+  task: one(tasks, { fields: [projectResources.taskId], references: [tasks.id] }),
+}));
