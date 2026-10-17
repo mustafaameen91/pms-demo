@@ -1,14 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { createProject } from "@/lib/actions/projects";
-import { PROJECT_COLORS } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { FieldError, ProjectFields } from "./project-fields";
 
 function suggestKey(name: string) {
   const words = name.toUpperCase().replace(/[^A-Z0-9 ]/g, "").split(/\s+/).filter(Boolean);
@@ -36,10 +34,12 @@ export function NewProjectDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New project</DialogTitle>
-          <DialogDescription>Projects hold tasks and their workflow.</DialogDescription>
+          <DialogDescription>
+            You can change any of this later in the project&apos;s settings.
+          </DialogDescription>
         </DialogHeader>
         {/* Remount on each open so the form starts empty. */}
         {open && <NewProjectForm workspaceSlug={workspaceSlug} onCancel={() => onOpenChange(false)} />}
@@ -50,39 +50,32 @@ export function NewProjectDialog({
 
 function NewProjectForm({ workspaceSlug, onCancel }: { workspaceSlug: string; onCancel: () => void }) {
   const [state, action, pending] = useActionState(createProject, undefined);
-  const [name, setName] = useState("");
   const [key, setKey] = useState("");
   const [keyEdited, setKeyEdited] = useState(false);
-  const [color, setColor] = useState<string>(PROJECT_COLORS[0]);
   const errors = state?.fieldErrors ?? {};
 
   return (
-    <form action={action} className="grid gap-4">
+    <form
+      // Submit manually: a plain form action resets the fields, losing input on validation errors.
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        startTransition(() => action(data));
+      }}
+      className="grid gap-4"
+    >
       <input type="hidden" name="workspaceSlug" value={workspaceSlug} />
-      <input type="hidden" name="color" value={color} />
+
+      <ProjectFields
+        errors={errors}
+        autoFocus
+        onNameChange={(name) => !keyEdited && setKey(suggestKey(name))}
+      />
 
       <div className="grid gap-1.5">
-        <Label htmlFor="project-name">Name</Label>
-        <Input
-          id="project-name"
-          name="name"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            if (!keyEdited) setKey(suggestKey(e.target.value));
-          }}
-          placeholder="Website redesign"
-          required
-          minLength={2}
-          maxLength={60}
-          autoFocus
-          aria-invalid={Boolean(errors.name)}
-        />
-        {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-      </div>
-
-      <div className="grid gap-1.5">
-        <Label htmlFor="project-key">Key</Label>
+        <Label htmlFor="project-key">
+          Project key <span aria-hidden className="text-destructive">*</span>
+        </Label>
         <Input
           id="project-key"
           name="key"
@@ -98,43 +91,12 @@ function NewProjectForm({ workspaceSlug, onCancel }: { workspaceSlug: string; on
           aria-describedby="project-key-help"
         />
         <p id="project-key-help" className="text-xs text-muted-foreground">
-          Prefix for task IDs, e.g. {key || "WEB"}-12.
+          Short code used in task IDs, e.g. {key || "WEB"}-12.
         </p>
-        {errors.key && <p className="text-sm text-destructive">{errors.key}</p>}
+        <FieldError message={errors.key} />
       </div>
 
-      <fieldset className="grid gap-1.5">
-        <legend className="mb-1.5 text-sm font-medium">Colour</legend>
-        <div className="flex flex-wrap gap-2">
-          {PROJECT_COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setColor(c)}
-              aria-label={`Colour ${c}`}
-              aria-pressed={color === c}
-              className={cn(
-                "size-7 rounded-md ring-offset-2 ring-offset-background transition-shadow",
-                color === c && "ring-2 ring-ring",
-              )}
-              style={{ backgroundColor: c }}
-            />
-          ))}
-        </div>
-      </fieldset>
-
-      <div className="grid gap-1.5">
-        <Label htmlFor="project-description">
-          Description <span className="font-normal text-muted-foreground">(optional)</span>
-        </Label>
-        <Textarea id="project-description" name="description" rows={2} maxLength={500} />
-      </div>
-
-      {state?.error && (
-        <p role="alert" className="text-sm text-destructive">
-          {state.error}
-        </p>
-      )}
+      {state?.error && <FieldError message={state.error} />}
 
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={onCancel}>

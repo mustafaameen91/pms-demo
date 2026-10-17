@@ -1,40 +1,62 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { FolderKanban } from "lucide-react";
+import { Archive, Building2, Calendar, FolderKanban, Wallet } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { listProjects } from "@/lib/data/projects";
+import { cn, formatDate, formatMoney } from "@/lib/utils";
 import { NewProjectButton } from "@/components/projects/new-project-button";
+import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
 
 export const metadata: Metadata = { title: "Projects" };
 
-export default async function ProjectsPage({ params }: PageProps<"/w/[slug]">) {
-  const { slug } = await params;
+export default async function ProjectsPage({ params, searchParams }: PageProps<"/w/[slug]">) {
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
   const { workspace } = await requireWorkspace(slug);
-  const projects = await listProjects(workspace.id);
+  const showArchived = query.archived === "1";
+  const projects = await listProjects(workspace.id, { archived: showArchived });
+  const base = `/w/${workspace.slug}`;
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Projects</h1>
+          <h1 className="text-xl font-semibold tracking-tight">
+            {showArchived ? "Archived projects" : "Projects"}
+          </h1>
           <p className="text-sm text-muted-foreground">
             {projects.length} {projects.length === 1 ? "project" : "projects"} in {workspace.name}
           </p>
         </div>
-        {projects.length > 0 && <NewProjectButton workspaceSlug={workspace.slug} />}
+        <div className="flex items-center gap-2">
+          <Link
+            href={showArchived ? base : `${base}?archived=1`}
+            className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            {showArchived ? <FolderKanban className="size-4" /> : <Archive className="size-4" />}
+            {showArchived ? "Active projects" : "Archived"}
+          </Link>
+          {!showArchived && projects.length > 0 && <NewProjectButton workspaceSlug={workspace.slug} />}
+        </div>
       </div>
 
       {projects.length === 0 ? (
-        <div className="flex flex-col items-center rounded-xl border border-dashed px-6 py-16 text-center">
-          <div className="mb-4 grid size-12 place-items-center rounded-full bg-accent text-primary">
-            <FolderKanban className="size-6" />
-          </div>
-          <h2 className="font-semibold">Create your first project</h2>
-          <p className="mt-1 mb-6 max-w-sm text-sm text-muted-foreground">
-            A project groups related tasks — a product launch, a client, or a team&apos;s ongoing work.
+        showArchived ? (
+          <p className="rounded-xl border border-dashed px-6 py-12 text-center text-sm text-muted-foreground">
+            No archived projects.
           </p>
-          <NewProjectButton workspaceSlug={workspace.slug} />
-        </div>
+        ) : (
+          <div className="flex flex-col items-center rounded-xl border border-dashed px-6 py-16 text-center">
+            <div className="mb-4 grid size-12 place-items-center rounded-full bg-accent text-primary">
+              <FolderKanban className="size-6" />
+            </div>
+            <h2 className="font-semibold">Create your first project</h2>
+            <p className="mt-1 mb-6 max-w-sm text-sm text-muted-foreground">
+              A project holds its tasks, budget, resources and expenses — for example a new branch, a
+              building, an event or a client contract.
+            </p>
+            <NewProjectButton workspaceSlug={workspace.slug} />
+          </div>
+        )
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => {
@@ -43,21 +65,57 @@ export default async function ProjectsPage({ params }: PageProps<"/w/[slug]">) {
             return (
               <li key={p.id}>
                 <Link
-                  href={`/w/${workspace.slug}/p/${p.key}`}
-                  className="group flex h-full flex-col rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-2 focus-visible:outline-ring"
+                  href={`${base}/p/${p.key}`}
+                  className={cn(
+                    "group flex h-full flex-col rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-2 focus-visible:outline-ring",
+                    showArchived && "opacity-80",
+                  )}
                 >
                   <div className="flex items-center gap-2">
-                    <span aria-hidden className="size-3 rounded-sm" style={{ backgroundColor: p.color }} />
+                    <span aria-hidden className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: p.color }} />
                     <span className="truncate font-medium">{p.name}</span>
                     <span className="ml-auto font-mono text-xs text-muted-foreground">{p.key}</span>
                   </div>
-                  {p.description && (
-                    <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>
-                  )}
+                  <div className="mt-2">
+                    <ProjectStatusBadge status={p.status} />
+                  </div>
+
+                  <dl className="mt-3 grid gap-1 text-sm text-muted-foreground">
+                    {p.client && (
+                      <div className="flex items-center gap-1.5">
+                        <dt>
+                          <Building2 className="size-3.5" aria-label="Client" />
+                        </dt>
+                        <dd className="truncate">{p.client}</dd>
+                      </div>
+                    )}
+                    {(p.startDate || p.endDate) && (
+                      <div className="flex items-center gap-1.5">
+                        <dt>
+                          <Calendar className="size-3.5" aria-label="Dates" />
+                        </dt>
+                        <dd className="tabular-nums">
+                          {formatDate(p.startDate)} → {formatDate(p.endDate)}
+                        </dd>
+                      </div>
+                    )}
+                    {p.budget && (
+                      <div className="flex items-center gap-1.5">
+                        <dt>
+                          <Wallet className="size-3.5" aria-label="Budget" />
+                        </dt>
+                        <dd className="tabular-nums">{formatMoney(p.budget, p.currency)}</dd>
+                      </div>
+                    )}
+                  </dl>
+
                   <div className="mt-auto pt-4">
+                    {/* Task-count progress for now; becomes weighted accomplishment % in Phase 4. */}
                     <div className="mb-1.5 flex justify-between text-xs text-muted-foreground tabular-nums">
-                      <span>{p.openCount} open</span>
-                      <span>{pct}% done</span>
+                      <span>
+                        {done}/{p.taskCount} tasks done
+                      </span>
+                      <span>{pct}%</span>
                     </div>
                     <div
                       className="h-1.5 overflow-hidden rounded-full bg-muted"
@@ -65,7 +123,7 @@ export default async function ProjectsPage({ params }: PageProps<"/w/[slug]">) {
                       aria-valuenow={pct}
                       aria-valuemin={0}
                       aria-valuemax={100}
-                      aria-label={`${p.name} progress`}
+                      aria-label={`${p.name} tasks done`}
                     >
                       <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
                     </div>

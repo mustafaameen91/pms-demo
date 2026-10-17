@@ -40,8 +40,8 @@ Legend: `[x]` done · `[ ]` not done yet
 
 ## Phase 2 — Projects
 - [x] Project list, create project
-- [ ] Project details: start/end dates, budget, currency, client, manager, status
-- [ ] Project settings: edit, archive / restore, delete
+- [x] Project details: start/end dates, budget, currency, client, manager, status
+- [x] Project settings: edit, change key, archive / restore, delete
 
 ## Phase 3 — Tasks (weighted work items)
 - [x] Basic tasks: title, description, status, priority, assignee, due date, activity history

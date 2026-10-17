@@ -33,12 +33,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex flex-wrap items-center gap-3 border-b px-4 py-3 sm:px-6">
-        <span aria-hidden className="size-3 rounded-sm" style={{ backgroundColor: project.color }} />
-        <h1 className="truncate text-base font-semibold">{project.name}</h1>
-        <span className="font-mono text-xs text-muted-foreground">{project.key}</span>
-
-        <nav aria-label="Views" className="ml-auto flex rounded-lg bg-muted p-0.5">
+      <div className="flex items-center border-b px-4 py-2 sm:px-6">
+        <nav aria-label="Task views" className="ml-auto flex rounded-lg bg-muted p-0.5">
           {(
             [
               { id: "board", label: "Board", icon: Columns3 },
@@ -59,7 +55,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
             </Link>
           ))}
         </nav>
-      </header>
+      </div>
 
       {view === "board" ? (
         <Board projectId={project.id} projectKey={project.key} statuses={board.statuses} tasks={board.tasks} />

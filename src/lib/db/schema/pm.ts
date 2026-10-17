@@ -7,6 +7,7 @@ import {
   doublePrecision,
   timestamp,
   date,
+  numeric,
   jsonb,
   primaryKey,
   index,
@@ -50,6 +51,14 @@ export const taskPriority = pgEnum("task_priority", [
   "urgent",
 ]);
 
+export const projectStatus = pgEnum("project_status", [
+  "planning",
+  "active",
+  "on_hold",
+  "completed",
+  "cancelled",
+]);
+
 export const projects = pgTable(
   "projects",
   {
@@ -60,6 +69,14 @@ export const projects = pgTable(
     key: text("key").notNull(),
     description: text("description"),
     color: text("color").notNull().default("#6366f1"),
+    status: projectStatus("status").notNull().default("planning"),
+    client: text("client"),
+    startDate: date("start_date"),
+    endDate: date("end_date"),
+    // Planned budget; money is stored as exact decimals (returned as strings).
+    budget: numeric("budget", { precision: 14, scale: 2 }),
+    currency: text("currency").notNull().default("USD"),
+    // Project manager.
     leadId: text("lead_id").references(() => user.id, { onDelete: "set null" }),
     // Incremented atomically when a task is created, to hand out task numbers.
     taskCounter: integer("task_counter").notNull().default(0),

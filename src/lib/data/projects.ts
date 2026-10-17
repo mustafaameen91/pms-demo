@@ -1,11 +1,12 @@
 import "server-only";
-import { and, asc, count, eq, isNull, sql } from "drizzle-orm";
+import { cache } from "react";
+import { and, asc, count, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { member, projects, taskStatuses, tasks, user } from "@/lib/db/schema";
 
 // All functions take an already-authorized workspaceId (see requireWorkspace).
 
-export async function listProjects(workspaceId: string) {
+export async function listProjects(workspaceId: string, { archived = false } = {}) {
   return db
     .select({
       id: projects.id,
@@ -13,6 +14,12 @@ export async function listProjects(workspaceId: string) {
       key: projects.key,
       color: projects.color,
       description: projects.description,
+      status: projects.status,
+      client: projects.client,
+      startDate: projects.startDate,
+      endDate: projects.endDate,
+      budget: projects.budget,
+      currency: projects.currency,
       createdAt: projects.createdAt,
       taskCount: count(tasks.id),
       openCount: sql<number>`count(${tasks.id}) filter (where ${tasks.completedAt} is null)`.mapWith(
@@ -21,19 +28,28 @@ export async function listProjects(workspaceId: string) {
     })
     .from(projects)
     .leftJoin(tasks, and(eq(tasks.projectId, projects.id), isNull(tasks.parentId)))
-    .where(and(eq(projects.workspaceId, workspaceId), isNull(projects.archivedAt)))
+    .where(
+      and(
+        eq(projects.workspaceId, workspaceId),
+        archived ? isNotNull(projects.archivedAt) : isNull(projects.archivedAt),
+      ),
+    )
     .groupBy(projects.id)
     .orderBy(asc(projects.name));
 }
 
-export async function getProjectByKey(workspaceId: string, key: string) {
-  const [project] = await db
-    .select()
+// Deduplicated per request: the project layout and page both call it.
+export const getProjectByKey = cache(async (workspaceId: string, key: string) => {
+  const [row] = await db
+    .select({ project: projects, leadName: user.name })
     .from(projects)
+    .leftJoin(user, eq(user.id, projects.leadId))
     .where(and(eq(projects.workspaceId, workspaceId), eq(projects.key, key.toUpperCase())))
     .limit(1);
-  return project ?? null;
-}
+  return row ? { ...row.project, leadName: row.leadName } : null;
+});
+
+export type Project = NonNullable<Awaited<ReturnType<typeof getProjectByKey>>>;
 
 export async function getBoard(projectId: string) {
   const [statuses, rows] = await Promise.all([

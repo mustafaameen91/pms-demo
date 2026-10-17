@@ -29,3 +29,27 @@ export const DEFAULT_STATUSES = [
 ] as const;
 
 export const POSITION_STEP = 1024;
+
+export const PROJECT_STATUSES = [
+  { value: "planning", label: "Planning", color: "#64748b" },
+  { value: "active", label: "Active", color: "#0d9488" },
+  { value: "on_hold", label: "On hold", color: "#d97706" },
+  { value: "completed", label: "Completed", color: "#16a34a" },
+  { value: "cancelled", label: "Cancelled", color: "#dc2626" },
+] as const;
+
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number]["value"];
+
+export const CURRENCIES = [
+  "USD",
+  "EUR",
+  "GBP",
+  "IQD",
+  "SAR",
+  "AED",
+  "KWD",
+  "QAR",
+  "JOD",
+  "EGP",
+  "TRY",
+] as const;
