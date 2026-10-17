@@ -72,10 +72,10 @@ Spent = used resource costs (automatic) + other expenses. Payments linked to a r
 - [x] Over-budget warnings (project + task, header badge)
 
 ## Phase 7 — Dashboards & reports
-- [ ] Project overview dashboard
-- [ ] Company dashboard (all projects)
-- [ ] Timeline / Gantt view
-- [ ] Export reports (PDF / Excel)
+- [x] Project overview dashboard (accomplishment, money, late & upcoming tasks)
+- [x] Company dashboard (all projects; problems first; totals per currency)
+- [x] Timeline / Gantt view (view only — dragging bars to reschedule is not built)
+- [x] Export reports: Excel (.xlsx) and PDF (print page → browser "Save as PDF")
 
 ## Phase 8 — Team & collaboration
 - [ ] Invite members by email, manage roles

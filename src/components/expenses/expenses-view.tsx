@@ -54,7 +54,8 @@ export function ExpensesView({
   const base = `/w/${project.slug}/p/${project.key}`;
 
   return (
-    <div className="grid gap-6">
+    // grid-cols-1 = minmax(0, 1fr): wide tables scroll inside their box instead of widening the page.
+    <div className="grid grid-cols-1 gap-6">
       {(summary.overBudget || overTasks.length > 0) && (
         <div role="alert" className="grid gap-1 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
           {summary.overBudget && (
@@ -139,7 +140,7 @@ export function ExpensesView({
           <h2 id="by-task" className="border-b px-4 py-3 font-semibold">
             Budget by task
           </h2>
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
               <thead className="text-left text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
@@ -205,7 +206,7 @@ export function ExpensesView({
               </Link>
             </p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[600px] text-sm">
               <thead className="text-left text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
@@ -264,7 +265,7 @@ export function ExpensesView({
             No expenses yet. Record payments for permits, transport, fees, or payments to your suppliers and workers.
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[820px] text-sm">
               <thead className="text-left text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">

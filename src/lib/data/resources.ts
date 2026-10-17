@@ -69,3 +69,25 @@ export async function getProjectResources(projectId: string) {
 }
 
 export type ProjectResource = Awaited<ReturnType<typeof getProjectResources>>[number];
+
+/** Project resources for every project in a workspace, grouped by project id. */
+export async function getWorkspaceUsages(workspaceId: string) {
+  const rows = await db
+    .select({
+      id: projectResources.id,
+      projectId: projectResources.projectId,
+      taskId: projectResources.taskId,
+      plannedQty: projectResources.plannedQty,
+      usedQty: projectResources.usedQty,
+      unitCost: projectResources.unitCost,
+    })
+    .from(projectResources)
+    .where(eq(projectResources.workspaceId, workspaceId));
+  return groupBy(rows, (r) => r.projectId);
+}
+
+export function groupBy<T>(rows: T[], key: (row: T) => string) {
+  const map = new Map<string, T[]>();
+  for (const row of rows) map.set(key(row), [...(map.get(key(row)) ?? []), row]);
+  return map;
+}

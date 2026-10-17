@@ -15,7 +15,7 @@ export function ProjectTabs({ basePath }: { basePath: string }) {
   ];
 
   return (
-    <nav aria-label="Project" className="-mb-px mt-3 flex gap-4">
+    <nav aria-label="Project" className="-mb-px mt-3 flex gap-4 overflow-x-auto whitespace-nowrap">
       {tabs.map((tab) => (
         <Link
           key={tab.href}

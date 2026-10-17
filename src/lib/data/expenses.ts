@@ -35,3 +35,19 @@ export async function getProjectExpenses(projectId: string) {
 }
 
 export type ProjectExpense = Awaited<ReturnType<typeof getProjectExpenses>>[number];
+
+/** Expense amounts for every project in a workspace, grouped by project id. */
+export async function getWorkspaceExpenses(workspaceId: string) {
+  const rows = await db
+    .select({
+      projectId: expenses.projectId,
+      amount: expenses.amount,
+      taskId: expenses.taskId,
+      projectResourceId: expenses.projectResourceId,
+    })
+    .from(expenses)
+    .where(eq(expenses.workspaceId, workspaceId));
+  const map = new Map<string, typeof rows>();
+  for (const r of rows) map.set(r.projectId, [...(map.get(r.projectId) ?? []), r]);
+  return map;
+}

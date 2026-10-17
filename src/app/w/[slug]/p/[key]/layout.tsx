@@ -12,6 +12,7 @@ import { formatDate, formatMoney } from "@/lib/utils";
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
 import { ProjectTabs } from "@/components/projects/project-tabs";
 import { ArchivedBanner } from "@/components/projects/archived-banner";
+import { ExportMenu } from "@/components/projects/export-menu";
 
 export default async function ProjectLayout({ children, params }: LayoutProps<"/w/[slug]/p/[key]">) {
   const { slug, key } = await params;
@@ -105,7 +106,12 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
           )}
         </dl>
 
-        <ProjectTabs basePath={basePath} />
+        <div className="flex items-end justify-between gap-3">
+          <ProjectTabs basePath={basePath} />
+          <div className="mb-1.5">
+            <ExportMenu excelHref={`${basePath}/export`} printHref={`/print/${workspace.slug}/${project.key}`} />
+          </div>
+        </div>
       </header>
 
       {children}

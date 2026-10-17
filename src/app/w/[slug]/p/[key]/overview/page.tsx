@@ -2,7 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle, Info } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
-import { getAccomplishmentTasks, getProjectByKey } from "@/lib/data/projects";
+import { getAccomplishmentTasks, getBoard, getProjectByKey } from "@/lib/data/projects";
+import { getProjectResources } from "@/lib/data/resources";
+import { getProjectExpenses } from "@/lib/data/expenses";
+import { computeBudget } from "@/lib/budget";
+import { lateTasks, upcomingTasks } from "@/lib/schedule";
+import { DeadlinesPanel, MoneyPanel } from "@/components/projects/overview-panels";
 import {
   SCHEDULE_TOLERANCE,
   computeAccomplishment,
@@ -25,8 +30,15 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
   const project = await getProjectByKey(workspace.id, key);
   if (!project) notFound();
 
-  const rows = await getAccomplishmentTasks(project.id);
+  const [rows, board, usages, expenseRows] = await Promise.all([
+    getAccomplishmentTasks(project.id),
+    getBoard(project.id),
+    getProjectResources(project.id),
+    getProjectExpenses(project.id),
+  ]);
   const today = todayISO();
+  const money = computeBudget(project.budget, usages, expenseRows, board.tasks);
+  const overPlanCount = usages.filter((u) => Number(u.plannedQty) > 0 && Number(u.usedQty) > Number(u.plannedQty)).length;
   const a = computeAccomplishment(rows, project, today);
   const warnings = weightWarnings(a);
   const tasksHref = `/w/${workspace.slug}/p/${project.key}`;
@@ -35,7 +47,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
   const denominator = rows.filter((r) => !r.cancelled).reduce((s, r) => s + weightOf(r.weight), 0);
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl gap-6 px-4 py-6 sm:px-6">
+    <div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-6 px-4 py-6 sm:px-6">
       {/* Headline + KPIs */}
       <section aria-labelledby="accomplishment-heading" className="rounded-xl border bg-card p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -119,6 +131,21 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
         </div>
       )}
 
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <MoneyPanel
+          summary={money}
+          currency={project.currency}
+          href={`${tasksHref}/expenses`}
+          overPlanCount={overPlanCount}
+        />
+        <DeadlinesPanel
+          late={lateTasks(rows, today)}
+          upcoming={upcomingTasks(rows, today)}
+          today={today}
+          taskHref={(n) => `${tasksHref}?task=${project.key}-${n}`}
+        />
+      </div>
+
       {/* Per-task breakdown */}
       <section aria-labelledby="breakdown-heading" className="rounded-xl border bg-card">
         <div className="flex items-center justify-between gap-4 px-5 pt-5 sm:px-6">
@@ -142,7 +169,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
             to start tracking accomplishment.
           </p>
         ) : (
-          <div className="mt-3 overflow-x-auto">
+          <div className="relative mt-3 overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="text-left text-xs text-muted-foreground">
                 <tr className="border-y bg-muted/40">

@@ -131,7 +131,7 @@ export function ProjectResourcesView({
                   {t.plural}
                   <span className="text-xs font-normal text-muted-foreground">{rows.length}</span>
                 </h2>
-                <div className="overflow-x-auto">
+                <div className="relative overflow-x-auto">
                   <table className="w-full min-w-[880px] table-fixed text-sm">
                     <thead className="text-left text-xs text-muted-foreground">
                       <tr className="border-b bg-muted/40">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Columns3, List, Table2 } from "lucide-react";
+import { CalendarRange, Columns3, List, Table2 } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { computeAccomplishment } from "@/lib/accomplishment";
 import { getBoard, getProjectByKey, getTaskDetail, listMembers } from "@/lib/data/projects";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Board } from "@/components/tasks/board";
 import { TaskList } from "@/components/tasks/task-list";
 import { TaskTable } from "@/components/tasks/task-table";
+import { TaskTimeline } from "@/components/tasks/task-timeline";
 import { TaskSheet } from "@/components/tasks/task-sheet";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]">) {
@@ -22,7 +23,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const project = await getProjectByKey(workspace.id, key);
   if (!project) notFound();
 
-  const view = query.view === "board" || query.view === "list" ? query.view : "table";
+  const view =
+    query.view === "board" || query.view === "list" || query.view === "timeline" ? query.view : "table";
   const taskParam = typeof query.task === "string" ? query.task : null;
   const taskNumber = taskParam?.match(/^[A-Z0-9]+-(\d+)$/i)?.[1];
 
@@ -42,6 +44,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           {(
             [
               { id: "table", label: "Table", icon: Table2 },
+              { id: "timeline", label: "Timeline", icon: CalendarRange },
               { id: "board", label: "Board", icon: Columns3 },
               { id: "list", label: "List", icon: List },
             ] as const
@@ -78,6 +81,15 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
               project,
             ).actual
           }
+        />
+      )}
+      {view === "timeline" && (
+        <TaskTimeline
+          projectKey={project.key}
+          projectStart={project.startDate}
+          projectEnd={project.endDate}
+          statuses={board.statuses}
+          tasks={board.tasks}
         />
       )}
       {view === "board" && (

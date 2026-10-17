@@ -8,6 +8,7 @@ import {
   Check,
   ChevronsUpDown,
   FolderKanban,
+  LayoutDashboard,
   LogOut,
   Menu,
   Monitor,
@@ -91,6 +92,10 @@ function SidebarContent({
       </div>
 
       <nav aria-label="Main" className="flex-1 overflow-y-auto px-2 pb-2">
+        <NavLink href={`${base}/dashboard`} active={pathname.startsWith(`${base}/dashboard`)} onNavigate={onNavigate}>
+          <LayoutDashboard className="size-4" />
+          Dashboard
+        </NavLink>
         <NavLink href={base} active={pathname === base} onNavigate={onNavigate}>
           <FolderKanban className="size-4" />
           Projects

@@ -76,7 +76,7 @@ export function ResourceLibrary({
           )}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-card">
+        <div className="relative overflow-x-auto rounded-xl border bg-card">
           <table className="w-full min-w-[760px] text-sm">
             <thead className="text-left text-xs text-muted-foreground">
               <tr className="border-b bg-muted/40">
