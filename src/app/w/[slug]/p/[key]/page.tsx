@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]"
 
 export default async function ProjectPage({ params, searchParams }: PageProps<"/w/[slug]/p/[key]">) {
   const [{ slug, key }, query] = await Promise.all([params, searchParams]);
-  const { workspace } = await requireWorkspace(slug);
+  const { user, workspace } = await requireWorkspace(slug);
   const project = await getProjectByKey(workspace.id, key);
   if (!project) notFound();
 
@@ -111,6 +111,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           members={members}
           resources={projectResources.filter((r) => selectedTask && r.taskId === selectedTask.id)}
           resourcesHref={`${basePath}/resources`}
+          currentUserId={user.id}
+          isAdmin={workspace.role === "owner" || workspace.role === "admin"}
           // Weight already given to the other main tasks, to show what's left of 100%.
           otherWeight={board.tasks
             .filter((t) => t.id !== selectedTask?.id)

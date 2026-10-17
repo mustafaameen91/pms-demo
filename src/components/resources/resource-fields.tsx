@@ -1,5 +1,7 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+
 import { CURRENCIES, RESOURCE_TYPES, resourceTypeInfo, type ResourceType } from "@/lib/constants";
 import type { ResourceInput } from "@/lib/actions/resources";
 import { Input } from "@/components/ui/input";
@@ -174,7 +176,7 @@ export function ResourceFields({
               id={id("currency")}
               value={value.currency}
               onChange={(e) => set("currency", e.target.value)}
-              className={`${nativeSelectClass} w-auto`}
+              className={cn(nativeSelectClass, "w-auto")}
             >
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>

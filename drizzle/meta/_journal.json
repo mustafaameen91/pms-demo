@@ -36,6 +36,13 @@
       "when": 1792261945484,
       "tag": "0004_parallel_blindfold",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792264392984,
+      "tag": "0005_famous_madelyne_pryor",
+      "breakpoints": true
     }
   ]
 }

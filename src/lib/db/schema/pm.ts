@@ -220,6 +220,8 @@ export const comments = pgTable(
       .references(() => tasks.id, { onDelete: "cascade" }),
     authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
     body: text("body").notNull(),
+    // User ids @mentioned in the body (validated workspace members).
+    mentions: jsonb("mentions").$type<string[]>().notNull().default([]),
     editedAt: timestamp("edited_at", { withTimezone: true }),
     ...timestamps,
   },
@@ -255,10 +257,22 @@ export const notifications = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     activityId: text("activity_id").references(() => activities.id, { onDelete: "cascade" }),
+    // "task.assigned" | "comment.mentioned" | "comment.added" | "task.late" | "project.over_budget"
+    type: text("type").notNull().default("activity"),
+    title: text("title").notNull().default(""),
+    body: text("body"),
+    // Where clicking the notification goes (app-relative path).
+    link: text("link"),
+    actorId: text("actor_id").references(() => user.id, { onDelete: "set null" }),
+    // Same key = same notification; prevents duplicates for repeated checks (late tasks, budget).
+    dedupeKey: text("dedupe_key"),
     readAt: timestamp("read_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [index("notifications_user_idx").on(t.userId, t.readAt, t.createdAt)],
+  (t) => [
+    index("notifications_user_idx").on(t.userId, t.readAt, t.createdAt),
+    uniqueIndex("notifications_dedupe_uidx").on(t.userId, t.dedupeKey),
+  ],
 );
 
 // --- relations ---

@@ -17,7 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { PriorityIcon, StatusDot, UserAvatar, formatDue } from "./task-bits";
+import { PriorityIcon, StatusDot, UserAvatar, formatDue, timeAgo } from "./task-bits";
+import { Comments } from "./comments";
 
 const UNASSIGNED = "__unassigned__";
 
@@ -32,6 +33,8 @@ type SheetProps = {
   otherWeight: number;
   resources: ProjectResource[];
   resourcesHref: string;
+  currentUserId: string;
+  isAdmin: boolean;
 };
 
 /** Builds "?view=…&task=…" keeping the current view. */
@@ -82,6 +85,8 @@ function TaskEditor({
   otherWeight,
   resources,
   resourcesHref,
+  currentUserId,
+  isAdmin,
   onClose,
 }: SheetProps & { task: TaskDetail; onClose: () => void }) {
   const [pending, startTransition] = useTransition();
@@ -427,6 +432,16 @@ function TaskEditor({
 
         <Separator />
 
+        <Comments
+          taskId={task.id}
+          comments={task.comments}
+          members={members}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+        />
+
+        <Separator />
+
         <section aria-labelledby="activity-heading">
           <h3 id="activity-heading" className="mb-3 text-sm font-medium">
             Activity
@@ -440,7 +455,9 @@ function TaskEditor({
                   {describeActivity(a.type, a.data, { statusName, memberName, currency, projectKey })}
                   <time
                     dateTime={new Date(a.createdAt).toISOString()}
+                    title={new Date(a.createdAt).toLocaleString()}
                     className="ml-1.5 text-xs whitespace-nowrap"
+                    suppressHydrationWarning
                   >
                     · {timeAgo(new Date(a.createdAt))}
                   </time>
@@ -629,6 +646,8 @@ function describeActivity(
       return data.to !== null ? `set the budget to ${formatMoney(s(data.to), ctx.currency)}` : "removed the budget";
     case "task.restored":
       return "restored the task";
+    case "comment.added":
+      return "commented";
     case "subtask.created":
       return `added sub-task ${ctx.projectKey}-${data.number} “${s(data.title)}”`;
     case "subtask.deleted":
@@ -638,14 +657,4 @@ function describeActivity(
     default:
       return type;
   }
-}
-
-function timeAgo(date: Date) {
-  const seconds = Math.round((Date.now() - date.getTime()) / 1000);
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
-  if (seconds < 60) return "just now";
-  if (seconds < 3600) return rtf.format(-Math.round(seconds / 60), "minute");
-  if (seconds < 86400) return rtf.format(-Math.round(seconds / 3600), "hour");
-  if (seconds < 604800) return rtf.format(-Math.round(seconds / 86400), "day");
-  return date.toLocaleDateString();
 }

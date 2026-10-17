@@ -22,7 +22,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const isSignup = mode === "signup";
   // Only allow same-site relative redirects.
   const nextParam = searchParams.get("next");
-  const next = nextParam?.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
+  const safeNext = nextParam?.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
+  // A brand-new account can't be in any workspace yet, so after sign-up only an
+  // invite link is worth returning to; anything else goes to onboarding via "/".
+  const next = isSignup && !safeNext.startsWith("/invite/") ? "/" : safeNext;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -48,7 +51,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl">{isSignup ? "Create your account" : "Welcome back"}</CardTitle>
+        <CardTitle className="text-xl">
+          <h1>{isSignup ? "Create your account" : "Welcome back"}</h1>
+        </CardTitle>
         <CardDescription>
           {isSignup ? "Start organizing your team's work." : "Log in to continue to your workspace."}
         </CardDescription>
@@ -74,7 +79,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              {!isSignup && (
+                <Link href="/forgot-password" className="text-xs text-primary underline-offset-4 hover:underline">
+                  Forgot password?
+                </Link>
+              )}
+            </div>
             <div className="relative">
               <Input
                 id="password"
@@ -117,7 +129,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {isSignup ? "Already have an account? " : "New here? "}
           <Link
-            href={isSignup ? "/login" : "/signup"}
+            href={`${isSignup ? "/login" : "/signup"}${safeNext !== "/" ? `?next=${encodeURIComponent(safeNext)}` : ""}`}
             className="font-medium text-primary underline-offset-4 hover:underline"
           >
             {isSignup ? "Log in" : "Create an account"}

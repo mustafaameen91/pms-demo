@@ -78,10 +78,10 @@ Spent = used resource costs (automatic) + other expenses. Payments linked to a r
 - [x] Export reports: Excel (.xlsx) and PDF (print page → browser "Save as PDF")
 
 ## Phase 8 — Team & collaboration
-- [ ] Invite members by email, manage roles
-- [ ] Email sending (invites, password reset)
-- [ ] Comments on tasks
-- [ ] Notifications (assigned, late task, over budget)
+- [x] Invite members (copy invite link), accept page, change roles, remove — Members page
+- [x] Email plumbing for invites, password reset and notifications — **printed to the server terminal until SMTP is configured** (see README)
+- [x] Comments on tasks with @mentions
+- [x] Notifications inbox: assigned, mentioned, comments, late task, over budget
 
 ## Phase 9 — Running it as a SaaS
 - [ ] Plans & limits, billing
@@ -89,6 +89,7 @@ Spent = used resource costs (automatic) + other expenses. Payments linked to a r
 - [ ] Admin panel, audit log
 
 ## Phase 10 — Going live on your Ubuntu servers
+- [ ] **Turn on real email** (SMTP settings in `.env`) — chosen to postpone; currently printed to terminal
 - [ ] Automated tests, production Docker setup
 - [ ] Deploy with HTTPS
 - [ ] Nightly backups, monitoring

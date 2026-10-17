@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { activities, projectResources, projects, resources, tasks } from "@/lib/db/schema";
 import { CURRENCIES, RESOURCE_TYPES } from "@/lib/constants";
 import { MAX_MONEY, MAX_QTY, decimalOrZero, optionalDecimal } from "@/lib/validation";
+import { checkOverBudget } from "@/lib/budget-alerts";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
@@ -182,6 +183,7 @@ export async function addProjectResource(
       data: { name: resourceName, plannedQty: parsedUsage.data.plannedQty },
     });
   });
+  await checkOverBudget(projectId, user.id);
 
   refresh();
   return { ok: true };
@@ -203,6 +205,7 @@ export async function updateProjectResource(usageId: string, input: UsageInput):
     return { ok: false, error: "Task not found in this project", fieldErrors: { taskId: "Task not found" } };
   }
   await db.update(projectResources).set(parsed.data).where(eq(projectResources.id, usageId));
+  await checkOverBudget(auth.usage.projectId, auth.user.id);
   refresh();
   return { ok: true };
 }

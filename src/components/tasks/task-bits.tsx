@@ -90,3 +90,14 @@ export function ProgressBar({ value, label, className }: { value: number; label:
     </div>
   );
 }
+
+/** "just now", "5 minutes ago", "3 days ago", then a date. Relative to the viewer's clock. */
+export function timeAgo(date: Date) {
+  const seconds = Math.round((Date.now() - date.getTime()) / 1000);
+  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return rtf.format(-Math.round(seconds / 60), "minute");
+  if (seconds < 86400) return rtf.format(-Math.round(seconds / 3600), "hour");
+  if (seconds < 604800) return rtf.format(-Math.round(seconds / 86400), "day");
+  return date.toLocaleDateString();
+}

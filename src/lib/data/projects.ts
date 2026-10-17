@@ -96,6 +96,10 @@ export async function getTaskDetail(projectId: string, number: number) {
     where: and(eq(tasks.projectId, projectId), eq(tasks.number, number), isNull(tasks.deletedAt)),
     with: {
       reporter: { columns: { id: true, name: true } },
+      comments: {
+        orderBy: (c, { asc }) => [asc(c.createdAt)],
+        with: { author: { columns: { id: true, name: true, image: true } } },
+      },
       parent: { columns: { id: true, number: true, title: true, deletedAt: true } },
       subtasks: {
         where: (sub, { isNull }) => isNull(sub.deletedAt),

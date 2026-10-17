@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { activities, member, projects, taskStatuses, tasks } from "@/lib/db/schema";
 import { POSITION_STEP, PRIORITIES } from "@/lib/constants";
 import { MAX_MONEY, optionalDecimal } from "@/lib/validation";
+import { notify, projectContext } from "@/lib/notifications";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 
@@ -261,6 +262,8 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
 
   if (Object.keys(set).length === 0) return { ok: true };
 
+  const newAssignee = set.assigneeId !== undefined ? set.assigneeId : undefined;
+
   await db.transaction(async (tx) => {
     await tx.update(tasks).set(set).where(eq(tasks.id, taskId));
     if (log.length) {
@@ -275,6 +278,22 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
       );
     }
   });
+
+  if (newAssignee) {
+    const ctx = await projectContext(task.projectId);
+    if (ctx) {
+      await notify({
+        workspaceId: task.workspaceId,
+        userIds: [newAssignee],
+        actorId: user.id,
+        type: "task.assigned",
+        title: `${user.name} assigned you ${ctx.key}-${task.number} ${set.title ?? task.title}`,
+        body: `Project: ${ctx.name}`,
+        link: `/w/${ctx.slug}/p/${ctx.key}?task=${ctx.key}-${task.number}`,
+        email: true,
+      });
+    }
+  }
 
   refresh();
   return { ok: true };

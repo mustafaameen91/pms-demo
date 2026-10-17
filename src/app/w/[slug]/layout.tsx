@@ -1,13 +1,18 @@
 import { getUserWorkspaces, requireWorkspace } from "@/lib/auth/session";
 import { listProjects } from "@/lib/data/projects";
+import { unreadCount } from "@/lib/data/notifications";
+import { ensureLateTaskNotifications } from "@/lib/notifications";
 import { AppShell } from "@/components/shell/app-shell";
 
 export default async function WorkspaceLayout({ children, params }: LayoutProps<"/w/[slug]">) {
   const { slug } = await params;
   const { user, workspace } = await requireWorkspace(slug);
-  const [workspaces, projects] = await Promise.all([
+  // No background scheduler: late-task reminders are created when the app is opened.
+  await ensureLateTaskNotifications(user.id, workspace.id);
+  const [workspaces, projects, unread] = await Promise.all([
     getUserWorkspaces(user.id),
     listProjects(workspace.id),
+    unreadCount(user.id, workspace.id),
   ]);
 
   return (
@@ -16,6 +21,7 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
       workspace={workspace}
       workspaces={workspaces}
       projects={projects.map((p) => ({ id: p.id, name: p.name, key: p.key, color: p.color }))}
+      unread={unread}
     >
       {children}
     </AppShell>

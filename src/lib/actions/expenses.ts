@@ -10,6 +10,7 @@ import { EXPENSE_CATEGORIES } from "@/lib/constants";
 import { canManageProject } from "@/lib/permissions";
 import { deleteStoredFile, saveReceipt } from "@/lib/uploads";
 import { MAX_MONEY, optionalDecimal } from "@/lib/validation";
+import { checkOverBudget } from "@/lib/budget-alerts";
 
 export type ExpenseResult = { ok: true } | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
@@ -140,6 +141,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
     throw error;
   }
   if (existing && receipt) await deleteStoredFile(existing.receiptPath);
+  await checkOverBudget(projectId, user.id);
 
   refresh();
   return { ok: true };

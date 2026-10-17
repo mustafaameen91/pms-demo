@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
+  Bell,
   Check,
   ChevronsUpDown,
   FolderKanban,
@@ -16,6 +17,7 @@ import {
   Package,
   Plus,
   Sun,
+  Users,
 } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import { cn, initials } from "@/lib/utils";
@@ -40,6 +42,7 @@ type ShellProps = {
   workspace: { id: string; name: string; slug: string; role: string };
   workspaces: { id: string; name: string; slug: string }[];
   projects: { id: string; name: string; key: string; color: string }[];
+  unread: number;
   children: React.ReactNode;
 };
 
@@ -61,8 +64,15 @@ export function AppShell(props: ShellProps) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-12 items-center gap-2 border-b px-3 lg:hidden">
-          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={() => setMobileOpen(true)}
+            aria-label={props.unread > 0 ? `Open navigation, ${props.unread} unread notifications` : "Open navigation"}
+          >
             <Menu className="size-5" />
+            {props.unread > 0 && <span aria-hidden className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary" />}
           </Button>
           <span className="truncate text-sm font-medium">{props.workspace.name}</span>
         </header>
@@ -79,6 +89,7 @@ function SidebarContent({
   workspace,
   workspaces,
   projects,
+  unread,
   onNavigate,
 }: Omit<ShellProps, "children"> & { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -92,6 +103,16 @@ function SidebarContent({
       </div>
 
       <nav aria-label="Main" className="flex-1 overflow-y-auto px-2 pb-2">
+        <NavLink href={`${base}/inbox`} active={pathname.startsWith(`${base}/inbox`)} onNavigate={onNavigate}>
+          <Bell className="size-4" />
+          Inbox
+          {unread > 0 && (
+            <span className="ml-auto rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground tabular-nums">
+              {unread > 99 ? "99+" : unread}
+              <span className="sr-only"> unread</span>
+            </span>
+          )}
+        </NavLink>
         <NavLink href={`${base}/dashboard`} active={pathname.startsWith(`${base}/dashboard`)} onNavigate={onNavigate}>
           <LayoutDashboard className="size-4" />
           Dashboard
@@ -103,6 +124,10 @@ function SidebarContent({
         <NavLink href={`${base}/resources`} active={pathname.startsWith(`${base}/resources`)} onNavigate={onNavigate}>
           <Package className="size-4" />
           Resources
+        </NavLink>
+        <NavLink href={`${base}/members`} active={pathname.startsWith(`${base}/members`)} onNavigate={onNavigate}>
+          <Users className="size-4" />
+          Members
         </NavLink>
 
         <div className="mt-5 mb-1 flex items-center justify-between pl-2.5 pr-1">

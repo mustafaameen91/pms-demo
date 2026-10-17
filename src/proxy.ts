@@ -3,7 +3,7 @@ import { getSessionCookie } from "better-auth/cookies";
 
 // Optimistic check only (cookie present). Real session validation happens
 // server-side in requireUser()/requireWorkspace().
-const PUBLIC_PATHS = ["/login", "/signup"];
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

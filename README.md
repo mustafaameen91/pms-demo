@@ -43,6 +43,13 @@ src/
 drizzle/                 SQL migrations
 ```
 
+## Email
+
+Without SMTP settings, **emails are not sent**: invitations, password-reset links and notification
+emails are printed in the terminal running the app. Invitations can also be shared with the
+"Copy invite link" button on the Members page. To send real email, set `SMTP_HOST`, `SMTP_PORT`,
+`SMTP_USER`, `SMTP_PASSWORD` and `EMAIL_FROM` in `.env` (see `.env.example`) and restart.
+
 ## Files
 
 Receipts are stored on disk in `UPLOAD_DIR` (default `./uploads`, git-ignored) and served only to
