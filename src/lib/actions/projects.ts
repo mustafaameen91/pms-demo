@@ -232,7 +232,7 @@ export async function setProjectArchived(projectId: string, archived: boolean) {
 }
 
 export async function deleteProject(projectId: string, confirmKey: string) {
-  const { project, role, slug } = await authorizeProject(projectId);
+  const { project, role, slug, user } = await authorizeProject(projectId);
   if (role !== "owner" && role !== "admin") {
     return { ok: false as const, error: "Only workspace owners and admins can delete projects." };
   }
@@ -244,7 +244,16 @@ export async function deleteProject(projectId: string, confirmKey: string) {
     .select({ path: expenses.receiptPath })
     .from(expenses)
     .where(and(eq(expenses.projectId, project.id), isNotNull(expenses.receiptPath)));
-  await db.delete(projects).where(eq(projects.id, project.id));
+  await db.transaction(async (tx) => {
+    await tx.delete(projects).where(eq(projects.id, project.id));
+    // Kept in the workspace audit log (no project link: the project is gone).
+    await tx.insert(activities).values({
+      workspaceId: project.workspaceId,
+      actorId: user.id,
+      type: "project.deleted",
+      data: { name: project.name, key: project.key },
+    });
+  });
   await Promise.all(receipts.map((r) => deleteStoredFile(r.path)));
   redirect(`/w/${slug}`);
 }

@@ -13,6 +13,7 @@ import {
   index,
   uniqueIndex,
   foreignKey,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { organization, user } from "./auth";
 
@@ -447,3 +448,77 @@ export const expensesRelations = relations(expenses, ({ one }) => ({
     references: [projectResources.id],
   }),
 }));
+
+// --- SaaS: subscriptions & manual payments (Phase 9) ---
+
+export const subscriptionStatus = pgEnum("subscription_status", ["trial", "pending", "active", "cancelled"]);
+
+/**
+ * One per workspace. Access is allowed while status is trial/active and
+ * paidUntil (if set) hasn't passed. paidUntil = null on an active workspace
+ * means complimentary (no expiry).
+ */
+export const subscriptions = pgTable("subscriptions", {
+  workspaceId: text("workspace_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  status: subscriptionStatus("status").notNull().default("pending"),
+  paidUntil: date("paid_until"),
+  note: text("note"),
+  ...timestamps,
+});
+
+// Payments you receive outside the app (cash, bank transfer, ZainCash…), recorded by a platform admin.
+export const payments = pgTable(
+  "payments",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    currency: text("currency").notNull(),
+    method: text("method").notNull(),
+    reference: text("reference"),
+    note: text("note"),
+    // The paid-until date this payment extended the workspace to.
+    coversUntil: date("covers_until").notNull(),
+    recordedById: text("recorded_by_id").references(() => user.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("payments_workspace_idx").on(t.workspaceId, t.createdAt)],
+);
+
+// Platform-wide settings edited in the admin panel (single row, id = "platform").
+export const platformSettings = pgTable("platform_settings", {
+  id: text("id").primaryKey().default("platform"),
+  price: numeric("price", { precision: 14, scale: 2 }),
+  currency: text("currency").notNull().default("USD"),
+  billingPeriod: text("billing_period").notNull().default("month"),
+  // Shown to customers on the billing page: how to pay you.
+  paymentInstructions: text("payment_instructions"),
+  contact: text("contact"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+// --- Client share links (Phase 9) ---
+
+/** A secret read-only link a client can open without logging in. */
+export const projectShares = pgTable(
+  "project_shares",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    token: text("token").notNull(),
+    showBudget: boolean("show_budget").notNull().default(false),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    lastViewedAt: timestamp("last_viewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("project_shares_token_uidx").on(t.token), index("project_shares_project_idx").on(t.projectId)],
+);

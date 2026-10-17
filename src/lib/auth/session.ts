@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { member, organization } from "@/lib/db/schema";
+import { getWorkspaceAccess } from "@/lib/billing";
 
 export type WorkspaceRole = "owner" | "admin" | "member";
 
@@ -37,10 +38,11 @@ export const getUserWorkspaces = cache(async (userId: string) => {
 });
 
 /**
- * Resolves a workspace by slug and verifies the signed-in user is a member.
- * Use in every page and server action that touches workspace data.
+ * Resolves a workspace by slug and verifies the signed-in user is a member,
+ * without checking the subscription. Only for the workspace shell and the
+ * Billing page, which must stay reachable while a workspace is locked.
  */
-export const requireWorkspace = cache(async (slug: string) => {
+export const requireMembership = cache(async (slug: string) => {
   const user = await requireUser();
   const [row] = await db
     .select({
@@ -61,6 +63,19 @@ export const requireWorkspace = cache(async (slug: string) => {
   return { user, workspace: { ...row, role: row.role as WorkspaceRole } };
 });
 
+/**
+ * Member of the workspace AND its subscription is active (else → Billing page).
+ * Use in every page and server action that touches workspace data.
+ */
+export const requireWorkspace = cache(async (slug: string) => {
+  const ctx = await requireMembership(slug);
+  const access = await getWorkspaceAccess(ctx.workspace.id);
+  if (!access.allowed) redirect(`/w/${ctx.workspace.slug}/billing`);
+  return ctx;
+});
+
+export const SUBSCRIPTION_INACTIVE = "This workspace's subscription isn't active. Open Billing to renew it.";
+
 /** Like requireWorkspace, but by id — for server actions that receive ids. */
 export async function requireWorkspaceById(workspaceId: string) {
   const user = await requireUser();
@@ -71,5 +86,6 @@ export async function requireWorkspaceById(workspaceId: string) {
     .where(and(eq(member.organizationId, workspaceId), eq(member.userId, user.id)))
     .limit(1);
   if (!row) throw new Error("Not a member of this workspace");
+  if (!(await getWorkspaceAccess(workspaceId)).allowed) throw new Error(SUBSCRIPTION_INACTIVE);
   return { user, role: row.role as WorkspaceRole, slug: row.slug };
 }

@@ -3,7 +3,8 @@ import { getSessionCookie } from "better-auth/cookies";
 
 // Optimistic check only (cookie present). Real session validation happens
 // server-side in requireUser()/requireWorkspace().
-const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password"];
+// "/share" = client links (secret token, read-only, no account).
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/share"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

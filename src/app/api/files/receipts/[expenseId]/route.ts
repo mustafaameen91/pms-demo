@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { expenses, member } from "@/lib/db/schema";
 import { readStoredFile } from "@/lib/uploads";
+import { getWorkspaceAccess } from "@/lib/billing";
 
 // Receipts are only served to members of the expense's workspace.
 export async function GET(_request: Request, ctx: RouteContext<"/api/files/receipts/[expenseId]">) {
@@ -12,7 +13,12 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/files/recei
   if (!session) return new Response("Unauthorized", { status: 401 });
 
   const [row] = await db
-    .select({ path: expenses.receiptPath, name: expenses.receiptName, type: expenses.receiptType })
+    .select({
+      path: expenses.receiptPath,
+      name: expenses.receiptName,
+      type: expenses.receiptType,
+      workspaceId: expenses.workspaceId,
+    })
     .from(expenses)
     .innerJoin(
       member,
@@ -21,6 +27,9 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/files/recei
     .where(eq(expenses.id, expenseId))
     .limit(1);
   if (!row?.path || !row.type) return new Response("Not found", { status: 404 });
+  if (!(await getWorkspaceAccess(row.workspaceId)).allowed) {
+    return new Response("This workspace's subscription isn't active.", { status: 402 });
+  }
 
   const file = await readStoredFile(row.path).catch(() => null);
   if (!file) return new Response("Not found", { status: 404 });

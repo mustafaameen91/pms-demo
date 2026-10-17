@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { member, organization } from "@/lib/db/schema";
 import { getProjectReport } from "@/lib/data/report";
 import { buildProjectWorkbook } from "@/lib/excel";
+import { getWorkspaceAccess } from "@/lib/billing";
 
 // GET /w/[slug]/p/[key]/export → project report as an Excel file (members only).
 export async function GET(_request: Request, ctx: RouteContext<"/w/[slug]/p/[key]/export">) {
@@ -19,6 +20,9 @@ export async function GET(_request: Request, ctx: RouteContext<"/w/[slug]/p/[key
     .where(eq(organization.slug, slug))
     .limit(1);
   if (!workspace) return new Response("Not found", { status: 404 });
+  if (!(await getWorkspaceAccess(workspace.id)).allowed) {
+    return new Response("This workspace's subscription isn't active.", { status: 402 });
+  }
 
   const report = await getProjectReport(workspace.id, key);
   if (!report) return new Response("Not found", { status: 404 });

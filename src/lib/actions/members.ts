@@ -7,7 +7,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { requireWorkspace } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { member } from "@/lib/db/schema";
+import { activities, member, user as userTable } from "@/lib/db/schema";
 
 type Result = { ok: true } | { ok: false; error: string };
 const ROLES = ["owner", "admin", "member"] as const;
@@ -37,7 +37,7 @@ const inviteSchema = z.object({
 export async function inviteMember(slug: string, input: z.input<typeof inviteSchema>): Promise<Result> {
   const parsed = inviteSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
-  const { workspace } = await requireAdmin(slug);
+  const { workspace, user } = await requireAdmin(slug);
   try {
     await auth.api.createInvitation({
       body: { email: parsed.data.email, role: parsed.data.role, organizationId: workspace.id, resend: true },
@@ -46,17 +46,19 @@ export async function inviteMember(slug: string, input: z.input<typeof inviteSch
   } catch (error) {
     return { ok: false, error: errorMessage(error, "Could not send the invitation.") };
   }
+  await audit(workspace.id, user.id, "member.invited", { email: parsed.data.email, role: parsed.data.role });
   refresh();
   return { ok: true };
 }
 
 export async function cancelInvitation(slug: string, invitationId: string): Promise<Result> {
-  await requireAdmin(slug);
+  const { workspace, user } = await requireAdmin(slug);
   try {
     await auth.api.cancelInvitation({ body: { invitationId }, headers: await headers() });
   } catch (error) {
     return { ok: false, error: errorMessage(error, "Could not cancel the invitation.") };
   }
+  await audit(workspace.id, user.id, "member.invitation_cancelled", { invitationId });
   refresh();
   return { ok: true };
 }
@@ -80,7 +82,7 @@ async function loadMember(workspaceId: string, memberId: string) {
 
 export async function changeMemberRole(slug: string, memberId: string, role: string): Promise<Result> {
   if (!ROLES.includes(role as (typeof ROLES)[number])) return { ok: false, error: "Invalid role" };
-  const { workspace } = await requireAdmin(slug);
+  const { workspace, user } = await requireAdmin(slug);
   const target = await loadMember(workspace.id, memberId);
   if (!target) return { ok: false, error: "Member not found" };
   if ((role === "owner" || target.role === "owner") && workspace.role !== "owner") {
@@ -97,6 +99,7 @@ export async function changeMemberRole(slug: string, memberId: string, role: str
   } catch (error) {
     return { ok: false, error: errorMessage(error, "Could not change the role.") };
   }
+  await audit(workspace.id, user.id, "member.role_changed", { email: await emailOf(target.userId), from: target.role, to: role });
   refresh();
   return { ok: true };
 }
@@ -120,6 +123,16 @@ export async function removeMember(slug: string, memberId: string): Promise<Resu
   } catch (error) {
     return { ok: false, error: errorMessage(error, "Could not remove the member.") };
   }
+  await audit(workspace.id, user.id, "member.removed", { email: await emailOf(target.userId), role: target.role });
   refresh();
   return { ok: true };
+}
+
+async function audit(workspaceId: string, actorId: string, type: string, data: Record<string, unknown>) {
+  await db.insert(activities).values({ workspaceId, actorId, type, data });
+}
+
+async function emailOf(userId: string) {
+  const [row] = await db.select({ email: userTable.email }).from(userTable).where(eq(userTable.id, userId)).limit(1);
+  return row?.email ?? null;
 }

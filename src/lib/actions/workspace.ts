@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { organization } from "@/lib/db/schema";
+import { createInitialSubscription } from "@/lib/billing";
 
 export type FormState = { error?: string } | undefined;
 
@@ -46,10 +47,13 @@ export async function createWorkspace(_prev: FormState, formData: FormData): Pro
 
   const slug = await uniqueSlug(slugify(parsed.data.name));
   try {
-    await auth.api.createOrganization({
+    const created = await auth.api.createOrganization({
       body: { name: parsed.data.name, slug },
       headers: await headers(),
     });
+    if (!created) throw new Error("No workspace returned");
+    // Pro is the only plan: a new workspace waits for payment (or gets TRIAL_DAYS).
+    await createInitialSubscription(created.id);
   } catch {
     return { error: "Could not create the workspace. Please try again." };
   }

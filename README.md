@@ -50,6 +50,12 @@ emails are printed in the terminal running the app. Invitations can also be shar
 "Copy invite link" button on the Members page. To send real email, set `SMTP_HOST`, `SMTP_PORT`,
 `SMTP_USER`, `SMTP_PASSWORD` and `EMAIL_FROM` in `.env` (see `.env.example`) and restart.
 
+## Billing (manual payments)
+
+One paid plan ("Pro"). New workspaces are locked until a platform admin records a payment at `/admin`
+(set `SUPER_ADMIN_EMAILS` in `.env`). `TRIAL_DAYS` (default 0) gives new workspaces a trial instead.
+Price and "how to pay" text are edited in the admin panel.
+
 ## Files
 
 Receipts are stored on disk in `UPLOAD_DIR` (default `./uploads`, git-ignored) and served only to

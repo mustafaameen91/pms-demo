@@ -43,6 +43,13 @@
       "when": 1792264392984,
       "tag": "0005_famous_madelyne_pryor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792266070955,
+      "tag": "0006_curvy_wasp",
+      "breakpoints": true
     }
   ]
 }

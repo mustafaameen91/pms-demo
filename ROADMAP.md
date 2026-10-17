@@ -84,9 +84,14 @@ Spent = used resource costs (automatic) + other expenses. Payments linked to a r
 - [x] Notifications inbox: assigned, mentioned, comments, late task, over budget
 
 ## Phase 9 — Running it as a SaaS
-- [ ] Plans & limits, billing
-- [ ] Client / guest access (clients view their project's progress)
-- [ ] Admin panel, audit log
+One plan: **Pro** (unlimited, paid only). Customers pay you outside the app (cash, bank, ZainCash, FIB, Qi…);
+you record the payment in the admin panel, which activates/extends the workspace.
+- [x] Subscription per workspace: awaiting payment → active until date → warning 7 days before → locked when expired (data kept)
+- [x] Billing page for customers (price, how to pay, payment history)
+- [x] Platform admin panel (`/admin`): all workspaces, record payments, free access / cancel, price & payment instructions
+- [x] Client access: private read-only link per project (optional budget), can be turned off or replaced
+- [x] Audit log with filters and CSV download
+- [ ] Online card/wallet payments (later, once a provider that works for you is chosen)
 
 ## Phase 10 — Going live on your Ubuntu servers
 - [ ] **Turn on real email** (SMTP settings in `.env`) — chosen to postpone; currently printed to terminal

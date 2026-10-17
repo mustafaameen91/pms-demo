@@ -6,6 +6,7 @@ import { EXPENSE_CATEGORIES, PROJECT_STATUSES, resourceTypeInfo } from "@/lib/co
 import { formatDate, formatMoney } from "@/lib/utils";
 import { fmtPct } from "@/components/projects/accomplishment";
 import { PrintButton } from "./print-button";
+import { LightTheme } from "@/components/light-theme";
 
 export async function generateMetadata({ params }: PageProps<"/print/[slug]/[key]">) {
   const { key } = await params;
@@ -25,20 +26,9 @@ export default async function ProjectReportPage({ params }: PageProps<"/print/[s
   const backHref = `/w/${workspace.slug}/p/${project.key}/overview`;
 
   return (
-    // Reports are always black-on-white (screen and paper), whatever the app theme:
-    // the light tokens are re-declared on this wrapper.
-    <div className="report-light min-h-dvh w-full bg-background text-foreground">
+    <LightTheme>
     <main className="mx-auto w-full max-w-4xl px-6 py-8 text-sm print:max-w-none print:px-0 print:py-0">
-      <style>{`
-        .report-light {
-          --background: oklch(1 0 0); --foreground: oklch(0.21 0.02 230);
-          --muted-foreground: oklch(0.45 0.02 230); --border: oklch(0.88 0.008 210);
-          --primary: oklch(0.511 0.086 186.4); --primary-foreground: oklch(0.99 0 0);
-          --destructive: oklch(0.55 0.22 27); color-scheme: light;
-        }
-        @page { size: A4; margin: 14mm; }
-        @media print { html, body { background: white !important; } }
-      `}</style>
+      <style>{`@page { size: A4; margin: 14mm; }`}</style>
 
       <div className="mb-6 flex items-center justify-between gap-4 print:hidden">
         <Link href={backHref} className="text-sm text-primary underline-offset-4 hover:underline">
@@ -143,7 +133,7 @@ export default async function ProjectReportPage({ params }: PageProps<"/print/[s
         not counted twice.
       </p>
     </main>
-    </div>
+    </LightTheme>
   );
 }
 

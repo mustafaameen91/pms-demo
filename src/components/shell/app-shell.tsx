@@ -5,7 +5,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
+  AlertTriangle,
   Bell,
+  CreditCard,
+  ScrollText,
+  ShieldCheck,
   Check,
   ChevronsUpDown,
   FolderKanban,
@@ -36,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { NewProjectDialog } from "@/components/projects/new-project-dialog";
+import type { AccessState } from "@/lib/access";
 
 type ShellProps = {
   user: { name: string; email: string; image: string | null };
@@ -43,6 +48,8 @@ type ShellProps = {
   workspaces: { id: string; name: string; slug: string }[];
   projects: { id: string; name: string; key: string; color: string }[];
   unread: number;
+  access: AccessState;
+  isPlatformAdmin: boolean;
   children: React.ReactNode;
 };
 
@@ -76,6 +83,7 @@ export function AppShell(props: ShellProps) {
           </Button>
           <span className="truncate text-sm font-medium">{props.workspace.name}</span>
         </header>
+        <SubscriptionBanner access={props.access} billingHref={`/w/${props.workspace.slug}/billing`} />
         <main id="main" className="flex min-w-0 flex-1 flex-col">
           {props.children}
         </main>
@@ -90,6 +98,8 @@ function SidebarContent({
   workspaces,
   projects,
   unread,
+  access,
+  isPlatformAdmin,
   onNavigate,
 }: Omit<ShellProps, "children"> & { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -103,6 +113,21 @@ function SidebarContent({
       </div>
 
       <nav aria-label="Main" className="flex-1 overflow-y-auto px-2 pb-2">
+        {!access.allowed ? (
+          <>
+            <NavLink href={`${base}/billing`} active={pathname.startsWith(`${base}/billing`)} onNavigate={onNavigate}>
+              <CreditCard className="size-4" />
+              Billing
+            </NavLink>
+            {isPlatformAdmin && (
+              <NavLink href="/admin" active={pathname.startsWith("/admin")} onNavigate={onNavigate}>
+                <ShieldCheck className="size-4" />
+                Platform admin
+              </NavLink>
+            )}
+          </>
+        ) : (
+        <>
         <NavLink href={`${base}/inbox`} active={pathname.startsWith(`${base}/inbox`)} onNavigate={onNavigate}>
           <Bell className="size-4" />
           Inbox
@@ -129,6 +154,24 @@ function SidebarContent({
           <Users className="size-4" />
           Members
         </NavLink>
+        {(workspace.role === "owner" || workspace.role === "admin") && (
+          <NavLink href={`${base}/audit`} active={pathname.startsWith(`${base}/audit`)} onNavigate={onNavigate}>
+            <ScrollText className="size-4" />
+            Audit log
+          </NavLink>
+        )}
+        {(workspace.role === "owner" || workspace.role === "admin") && (
+          <NavLink href={`${base}/billing`} active={pathname.startsWith(`${base}/billing`)} onNavigate={onNavigate}>
+            <CreditCard className="size-4" />
+            Billing
+          </NavLink>
+        )}
+        {isPlatformAdmin && (
+          <NavLink href="/admin" active={pathname.startsWith("/admin")} onNavigate={onNavigate}>
+            <ShieldCheck className="size-4" />
+            Platform admin
+          </NavLink>
+        )}
 
         <div className="mt-5 mb-1 flex items-center justify-between pl-2.5 pr-1">
           <span className="text-xs font-medium text-muted-foreground">Your projects</span>
@@ -158,6 +201,8 @@ function SidebarContent({
               );
             })}
           </ul>
+        )}
+        </>
         )}
       </nav>
 
@@ -281,5 +326,37 @@ function UserMenu({ user }: Pick<ShellProps, "user">) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function SubscriptionBanner({ access, billingHref }: { access: AccessState; billingHref: string }) {
+  if (access.allowed && access.kind === "complimentary") return null;
+  if (access.allowed && !access.endingSoon && access.kind === "active") return null;
+  const locked = !access.allowed;
+  const text = !access.allowed
+    ? access.kind === "pending"
+      ? "This workspace is waiting for payment. Projects open once the subscription is activated."
+      : access.kind === "expired"
+        ? "The subscription has ended, so this workspace is locked. Your data is safe — renew to continue."
+        : "This workspace's subscription was cancelled."
+    : access.kind === "trial"
+      ? `Trial: ${access.daysLeft} ${access.daysLeft === 1 ? "day" : "days"} left.`
+      : access.daysLeft === 0
+        ? "The subscription ends today."
+        : `The subscription ends in ${access.daysLeft} ${access.daysLeft === 1 ? "day" : "days"}.`;
+  return (
+    <div
+      role={locked ? "alert" : "status"}
+      className={cn(
+        "flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-2 text-sm sm:px-6",
+        locked ? "bg-destructive/10 text-destructive" : "bg-amber-500/10 text-amber-800 dark:text-amber-300",
+      )}
+    >
+      <AlertTriangle className="size-4 shrink-0" aria-hidden />
+      <span className="flex-1">{text}</span>
+      <Link href={billingHref} className="font-medium underline underline-offset-4">
+        {locked ? "Billing & payment" : "Renew"}
+      </Link>
+    </div>
   );
 }
