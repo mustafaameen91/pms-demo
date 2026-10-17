@@ -92,3 +92,24 @@ export const RESOURCE_TYPES = [
 export type ResourceType = (typeof RESOURCE_TYPES)[number]["value"];
 
 export const resourceTypeInfo = (type: ResourceType) => RESOURCE_TYPES.find((t) => t.value === type)!;
+
+export const EXPENSE_CATEGORIES = [
+  { value: "materials", label: "Materials" },
+  { value: "equipment", label: "Equipment" },
+  { value: "labor", label: "Labour" },
+  { value: "subcontractor", label: "Subcontractor" },
+  { value: "transport", label: "Transport" },
+  { value: "permits_fees", label: "Permits & fees" },
+  { value: "utilities", label: "Utilities" },
+  { value: "other", label: "Other" },
+] as const;
+
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number]["value"];
+
+/** Default category for a payment against a resource of this type. */
+export const CATEGORY_FOR_RESOURCE: Record<ResourceType, ExpenseCategory> = {
+  material: "materials",
+  equipment: "equipment",
+  labor: "labor",
+  supplier: "subcontractor",
+};

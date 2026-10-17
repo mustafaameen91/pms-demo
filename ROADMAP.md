@@ -65,10 +65,11 @@ Workers are names with a rate (they don't log in). No availability / double-book
 - [x] Project Resources tab (+ resources listed in the task panel)
 
 ## Phase 6 — Expenses & budget
-- [ ] Record expenses (amount, date, category, task, resource / supplier)
-- [ ] Receipt upload
-- [ ] Budget vs actual per project and per task
-- [ ] Over-budget warnings
+Spent = used resource costs (automatic) + other expenses. Payments linked to a resource reduce what is owed and are not counted twice.
+- [x] Record expenses (amount, date, category, task, payee) and payments to resources
+- [x] Receipt upload (PDF / images, stored on your server, members only)
+- [x] Budget vs actual per project and per task (Expenses tab)
+- [x] Over-budget warnings (project + task, header badge)
 
 ## Phase 7 — Dashboards & reports
 - [ ] Project overview dashboard

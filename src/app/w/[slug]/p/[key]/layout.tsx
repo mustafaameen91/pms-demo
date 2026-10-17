@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
-import { Calendar, User, Wallet, Building2 } from "lucide-react";
+import { AlertTriangle, Calendar, User, Wallet, Building2 } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getAccomplishmentTasks, getProjectByKey } from "@/lib/data/projects";
 import { computeAccomplishment } from "@/lib/accomplishment";
+import { computeBudget } from "@/lib/budget";
+import { getProjectResources } from "@/lib/data/resources";
+import { getProjectExpenses } from "@/lib/data/expenses";
 import { AccomplishmentMeter, AccomplishmentSummary } from "@/components/projects/accomplishment";
 import { canManageProject } from "@/lib/permissions";
 import { formatDate, formatMoney } from "@/lib/utils";
@@ -17,7 +20,13 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
   if (!project) notFound();
 
   const basePath = `/w/${workspace.slug}/p/${project.key}`;
-  const accomplishment = computeAccomplishment(await getAccomplishmentTasks(project.id), project);
+  const [accomplishmentTasks, usages, expenseRows] = await Promise.all([
+    getAccomplishmentTasks(project.id),
+    getProjectResources(project.id),
+    getProjectExpenses(project.id),
+  ]);
+  const accomplishment = computeAccomplishment(accomplishmentTasks, project);
+  const budget = computeBudget(project.budget, usages, expenseRows);
   const hasDates = project.startDate || project.endDate;
 
   return (
@@ -35,6 +44,15 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
           <h1 className="truncate text-lg font-semibold">{project.name}</h1>
           <span className="font-mono text-xs text-muted-foreground">{project.key}</span>
           <ProjectStatusBadge status={project.status} />
+          {budget.overBudget && (
+            <a
+              href={`${basePath}/expenses`}
+              className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+            >
+              <AlertTriangle className="size-3.5" aria-hidden />
+              Over budget
+            </a>
+          )}
           <div className="ml-auto flex items-center gap-3">
             <AccomplishmentSummary a={accomplishment} />
             {accomplishment.mode !== "empty" && (
@@ -72,7 +90,9 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
               <dt>
                 <Wallet className="size-4" aria-label="Budget" />
               </dt>
-              <dd className="tabular-nums">Budget {formatMoney(project.budget, project.currency)}</dd>
+              <dd className="tabular-nums">
+                {formatMoney(budget.actual, project.currency)} of {formatMoney(project.budget, project.currency)} spent
+              </dd>
             </div>
           )}
           {project.leadName && (

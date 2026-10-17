@@ -29,6 +29,13 @@
       "when": 1792261150347,
       "tag": "0003_overjoyed_siren",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792261945484,
+      "tag": "0004_parallel_blindfold",
+      "breakpoints": true
     }
   ]
 }

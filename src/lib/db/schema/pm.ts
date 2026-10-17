@@ -374,3 +374,62 @@ export const projectResourcesRelations = relations(projectResources, ({ one }) =
   resource: one(resources, { fields: [projectResources.resourceId], references: [resources.id] }),
   task: one(tasks, { fields: [projectResources.taskId], references: [tasks.id] }),
 }));
+
+// --- Expenses (Phase 6) ---
+
+export const expenseCategory = pgEnum("expense_category", [
+  "materials",
+  "equipment",
+  "labor",
+  "subcontractor",
+  "transport",
+  "permits_fees",
+  "utilities",
+  "other",
+]);
+
+/**
+ * Money spent on a project. When `projectResourceId` is set, the expense is a
+ * PAYMENT for that resource: its cost is already counted from the resource's
+ * used quantity, so it is not added to actual spending again.
+ */
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    taskId: text("task_id").references(() => tasks.id, { onDelete: "set null" }),
+    projectResourceId: text("project_resource_id").references(() => projectResources.id, {
+      onDelete: "set null",
+    }),
+    date: date("date").notNull(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    category: expenseCategory("category").notNull().default("other"),
+    description: text("description").notNull(),
+    // Who was paid (free text when not linked to a resource).
+    payee: text("payee"),
+    // Receipt stored on the server's disk (see lib/uploads.ts).
+    receiptPath: text("receipt_path"),
+    receiptName: text("receipt_name"),
+    receiptType: text("receipt_type"),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("expenses_project_idx").on(t.projectId, t.date),
+    index("expenses_task_idx").on(t.taskId),
+    index("expenses_resource_idx").on(t.projectResourceId),
+  ],
+);
+
+export const expensesRelations = relations(expenses, ({ one }) => ({
+  project: one(projects, { fields: [expenses.projectId], references: [projects.id] }),
+  task: one(tasks, { fields: [expenses.taskId], references: [tasks.id] }),
+  projectResource: one(projectResources, {
+    fields: [expenses.projectResourceId],
+    references: [projectResources.id],
+  }),
+}));

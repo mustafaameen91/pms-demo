@@ -43,6 +43,15 @@ src/
 drizzle/                 SQL migrations
 ```
 
+## Files
+
+Receipts are stored on disk in `UPLOAD_DIR` (default `./uploads`, git-ignored) and served only to
+workspace members via `/api/files/receipts/[expenseId]`. **Back this folder up together with the database.**
+
+## Tests
+
+`pnpm test` runs the unit tests for the accomplishment and budget calculations (`tests/`).
+
 ## Multi-tenancy
 
 A workspace is a Better Auth *organization*. Every PM table has a `workspace_id`.

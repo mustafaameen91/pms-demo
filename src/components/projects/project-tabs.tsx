@@ -4,13 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-// The Expenses tab is added in Phase 6 (see ROADMAP.md).
 export function ProjectTabs({ basePath }: { basePath: string }) {
   const pathname = usePathname();
   const tabs = [
     { href: `${basePath}/overview`, label: "Overview", active: pathname.startsWith(`${basePath}/overview`) },
     { href: basePath, label: "Tasks", active: pathname === basePath },
     { href: `${basePath}/resources`, label: "Resources", active: pathname.startsWith(`${basePath}/resources`) },
+    { href: `${basePath}/expenses`, label: "Expenses", active: pathname.startsWith(`${basePath}/expenses`) },
     { href: `${basePath}/settings`, label: "Settings", active: pathname.startsWith(`${basePath}/settings`) },
   ];
 

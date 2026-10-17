@@ -2,11 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspace, requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { activities, member, projects, taskStatuses } from "@/lib/db/schema";
+import { activities, expenses, member, projects, taskStatuses } from "@/lib/db/schema";
+import { deleteStoredFile } from "@/lib/uploads";
 import {
   CURRENCIES,
   DEFAULT_STATUSES,
@@ -238,8 +239,13 @@ export async function deleteProject(projectId: string, confirmKey: string) {
   if (confirmKey.trim().toUpperCase() !== project.key) {
     return { ok: false as const, error: `Type ${project.key} to confirm.` };
   }
-  // Statuses, tasks, comments, activity etc. cascade with the project.
+  // Statuses, tasks, expenses, activity etc. cascade with the project; receipt files don't.
+  const receipts = await db
+    .select({ path: expenses.receiptPath })
+    .from(expenses)
+    .where(and(eq(expenses.projectId, project.id), isNotNull(expenses.receiptPath)));
   await db.delete(projects).where(eq(projects.id, project.id));
+  await Promise.all(receipts.map((r) => deleteStoredFile(r.path)));
   redirect(`/w/${slug}`);
 }
 
