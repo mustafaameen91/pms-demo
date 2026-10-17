@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Columns3, List, Table2 } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
+import { computeAccomplishment } from "@/lib/accomplishment";
 import { getBoard, getProjectByKey, getTaskDetail, listMembers } from "@/lib/data/projects";
 import { cn } from "@/lib/utils";
 import { Board } from "@/components/tasks/board";
@@ -66,6 +67,15 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           currency={project.currency}
           statuses={board.statuses}
           tasks={board.tasks}
+          accomplishment={
+            computeAccomplishment(
+              board.tasks.map((t) => ({
+                ...t,
+                cancelled: board.statuses.find((s) => s.id === t.statusId)?.category === "canceled",
+              })),
+              project,
+            ).actual
+          }
         />
       )}
       {view === "board" && (

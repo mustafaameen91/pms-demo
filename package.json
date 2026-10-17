@@ -10,7 +10,8 @@
     "db:up": "docker compose up -d",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -11,12 +11,15 @@ export function TaskTable({
   currency,
   statuses,
   tasks,
+  accomplishment,
 }: {
   projectId: string;
   projectKey: string;
   currency: string;
   statuses: BoardStatus[];
   tasks: BoardTask[];
+  /** Project accomplishment % (see lib/accomplishment). */
+  accomplishment: number | null;
 }) {
   const statusById = new Map(statuses.map((s) => [s.id, s]));
   const ordered = [...tasks].sort(
@@ -127,7 +130,14 @@ export function TaskTable({
               >
                 {fmtPct(totalWeight)}
               </td>
-              <td colSpan={3} />
+              <td className="px-3 py-2">
+                {accomplishment !== null && (
+                  <ProgressBar value={Math.round(accomplishment)} label="Project accomplishment" />
+                )}
+              </td>
+              <td colSpan={2} className="px-3 py-2 text-foreground">
+                {accomplishment !== null && <span className="font-medium">Project accomplishment</span>}
+              </td>
               <td className="px-3 py-2 text-right font-medium whitespace-nowrap text-foreground tabular-nums">
                 {formatMoney(totalBudget, currency)}
               </td>

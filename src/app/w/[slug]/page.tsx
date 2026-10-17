@@ -2,7 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Archive, Building2, Calendar, FolderKanban, Wallet } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
-import { listProjects } from "@/lib/data/projects";
+import { getWorkspaceAccomplishmentTasks, listProjects } from "@/lib/data/projects";
+import { computeAccomplishment } from "@/lib/accomplishment";
+import { AccomplishmentMeter, AccomplishmentSummary } from "@/components/projects/accomplishment";
 import { cn, formatDate, formatMoney } from "@/lib/utils";
 import { NewProjectButton } from "@/components/projects/new-project-button";
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
@@ -13,7 +15,10 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const { workspace } = await requireWorkspace(slug);
   const showArchived = query.archived === "1";
-  const projects = await listProjects(workspace.id, { archived: showArchived });
+  const [projects, tasksByProject] = await Promise.all([
+    listProjects(workspace.id, { archived: showArchived }),
+    getWorkspaceAccomplishmentTasks(workspace.id),
+  ]);
   const base = `/w/${workspace.slug}`;
 
   return (
@@ -60,8 +65,7 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => {
-            const done = p.taskCount - p.openCount;
-            const pct = p.taskCount ? Math.round((done / p.taskCount) * 100) : 0;
+            const accomplishment = computeAccomplishment(tasksByProject.get(p.id) ?? [], p);
             return (
               <li key={p.id}>
                 <Link
@@ -109,24 +113,15 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
                     )}
                   </dl>
 
-                  <div className="mt-auto pt-4">
-                    {/* Task-count progress for now; becomes weighted accomplishment % in Phase 4. */}
-                    <div className="mb-1.5 flex justify-between text-xs text-muted-foreground tabular-nums">
-                      <span>
-                        {done}/{p.taskCount} tasks done
-                      </span>
-                      <span>{pct}%</span>
-                    </div>
-                    <div
-                      className="h-1.5 overflow-hidden rounded-full bg-muted"
-                      role="progressbar"
-                      aria-valuenow={pct}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={`${p.name} tasks done`}
-                    >
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                    </div>
+                  <div className="mt-auto grid gap-2 pt-4">
+                    <AccomplishmentSummary a={accomplishment} />
+                    {accomplishment.mode !== "empty" && (
+                      <AccomplishmentMeter
+                        actual={accomplishment.actual}
+                        planned={accomplishment.planned}
+                        label={`${p.name} accomplishment`}
+                      />
+                    )}
                   </div>
                 </Link>
               </li>

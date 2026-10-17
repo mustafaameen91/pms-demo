@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { Calendar, User, Wallet, Building2 } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
-import { getProjectByKey } from "@/lib/data/projects";
+import { getAccomplishmentTasks, getProjectByKey } from "@/lib/data/projects";
+import { computeAccomplishment } from "@/lib/accomplishment";
+import { AccomplishmentMeter, AccomplishmentSummary } from "@/components/projects/accomplishment";
 import { canManageProject } from "@/lib/permissions";
 import { formatDate, formatMoney } from "@/lib/utils";
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
@@ -15,6 +17,7 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
   if (!project) notFound();
 
   const basePath = `/w/${workspace.slug}/p/${project.key}`;
+  const accomplishment = computeAccomplishment(await getAccomplishmentTasks(project.id), project);
   const hasDates = project.startDate || project.endDate;
 
   return (
@@ -32,6 +35,17 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
           <h1 className="truncate text-lg font-semibold">{project.name}</h1>
           <span className="font-mono text-xs text-muted-foreground">{project.key}</span>
           <ProjectStatusBadge status={project.status} />
+          <div className="ml-auto flex items-center gap-3">
+            <AccomplishmentSummary a={accomplishment} />
+            {accomplishment.mode !== "empty" && (
+              <AccomplishmentMeter
+                actual={accomplishment.actual}
+                planned={accomplishment.planned}
+                label="Project accomplishment"
+                className="hidden w-32 sm:block"
+              />
+            )}
+          </div>
         </div>
 
         <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">

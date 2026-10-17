@@ -53,9 +53,9 @@ Legend: `[x]` done · `[ ]` not done yet
 - [x] Delete task (with Undo)
 
 ## Phase 4 — Accomplishment
-- [ ] Automatic project % from weighted tasks
-- [ ] Planned % for today's date + ahead / on track / behind indicator
-- [ ] Warning when task weights don't add up to 100%
+- [x] Automatic project % from weighted tasks (Overview tab, header, project cards, table total)
+- [x] Planned % for today's date + ahead / on track / behind indicator
+- [x] Warning when task weights don't add up to 100%
 
 ## Phase 5 — Resources
 - [ ] Company resource library (materials, equipment, workers, suppliers)

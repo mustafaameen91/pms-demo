@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { and, asc, count, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { member, projects, taskStatuses, tasks, user } from "@/lib/db/schema";
 
@@ -21,23 +21,14 @@ export async function listProjects(workspaceId: string, { archived = false } = {
       budget: projects.budget,
       currency: projects.currency,
       createdAt: projects.createdAt,
-      taskCount: count(tasks.id),
-      openCount: sql<number>`count(${tasks.id}) filter (where ${tasks.completedAt} is null)`.mapWith(
-        Number,
-      ),
     })
     .from(projects)
-    .leftJoin(
-      tasks,
-      and(eq(tasks.projectId, projects.id), isNull(tasks.parentId), isNull(tasks.deletedAt)),
-    )
     .where(
       and(
         eq(projects.workspaceId, workspaceId),
         archived ? isNotNull(projects.archivedAt) : isNull(projects.archivedAt),
       ),
     )
-    .groupBy(projects.id)
     .orderBy(asc(projects.name));
 }
 
@@ -134,3 +125,45 @@ export async function listMembers(workspaceId: string) {
 }
 
 export type WorkspaceMember = Awaited<ReturnType<typeof listMembers>>[number];
+
+const accomplishmentColumns = {
+  id: tasks.id,
+  projectId: tasks.projectId,
+  number: tasks.number,
+  title: tasks.title,
+  weight: tasks.weight,
+  progress: tasks.progress,
+  startDate: tasks.startDate,
+  dueDate: tasks.dueDate,
+  statusName: taskStatuses.name,
+  statusColor: taskStatuses.color,
+  category: taskStatuses.category,
+};
+
+/** Main (non-deleted) tasks of a project, with what the accomplishment calculation needs. */
+export const getAccomplishmentTasks = cache(async (projectId: string) => {
+  const rows = await db
+    .select(accomplishmentColumns)
+    .from(tasks)
+    .innerJoin(taskStatuses, eq(taskStatuses.id, tasks.statusId))
+    .where(and(eq(tasks.projectId, projectId), isNull(tasks.parentId), isNull(tasks.deletedAt)))
+    .orderBy(asc(taskStatuses.position), asc(tasks.position));
+  return rows.map((r) => ({ ...r, cancelled: r.category === "canceled" }));
+});
+
+export type AccomplishmentRow = Awaited<ReturnType<typeof getAccomplishmentTasks>>[number];
+
+/** Same as above for every project in a workspace, grouped by project id. */
+export async function getWorkspaceAccomplishmentTasks(workspaceId: string) {
+  const rows = await db
+    .select(accomplishmentColumns)
+    .from(tasks)
+    .innerJoin(taskStatuses, eq(taskStatuses.id, tasks.statusId))
+    .where(and(eq(tasks.workspaceId, workspaceId), isNull(tasks.parentId), isNull(tasks.deletedAt)));
+  const byProject = new Map<string, AccomplishmentRow[]>();
+  for (const r of rows) {
+    const row = { ...r, cancelled: r.category === "canceled" };
+    byProject.set(r.projectId, [...(byProject.get(r.projectId) ?? []), row]);
+  }
+  return byProject;
+}
