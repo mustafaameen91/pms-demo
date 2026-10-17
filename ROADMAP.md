@@ -45,12 +45,12 @@ Legend: `[x]` done · `[ ]` not done yet
 
 ## Phase 3 — Tasks (weighted work items)
 - [x] Basic tasks: title, description, status, priority, assignee, due date, activity history
-- [x] Board (Kanban) view with drag & drop, list view
-- [ ] Task weight (%) and % done
-- [ ] Start and end dates per task
-- [ ] Budget per task
-- [ ] Sub-tasks
-- [ ] Delete task
+- [x] Table view (default), Board (Kanban) with drag & drop, List view
+- [x] Task weight (%) and % done
+- [x] Start and end dates per task
+- [x] Budget per task
+- [x] Sub-tasks
+- [x] Delete task (with Undo)
 
 ## Phase 4 — Accomplishment
 - [ ] Automatic project % from weighted tasks

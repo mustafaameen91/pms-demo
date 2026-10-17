@@ -26,13 +26,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { ListTree } from "lucide-react";
 import { toast } from "sonner";
 import { moveTask } from "@/lib/actions/tasks";
 import type { BoardStatus, BoardTask } from "@/lib/data/projects";
 import { POSITION_STEP } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { QuickAddTask } from "./quick-add-task";
-import { PriorityIcon, StatusDot, UserAvatar, formatDue } from "./task-bits";
+import { ProgressBar, PriorityIcon, StatusDot, UserAvatar, formatDue } from "./task-bits";
 
 type Props = {
   projectId: string;
@@ -158,7 +159,7 @@ export function Board({ projectId, projectKey, statuses, tasks }: Props) {
   function openTask(number: number) {
     // A pointer drag ends with a click on the card; don't treat it as "open".
     if (activeId || msSince(lastDragEnd.current) < 250) return;
-    router.push(`${pathname}?task=${projectKey}-${number}`, { scroll: false });
+    router.push(`${pathname}?view=board&task=${projectKey}-${number}`, { scroll: false });
   }
 
   return (
@@ -298,7 +299,7 @@ function TaskCard({
     >
       <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
         <Link
-          href={`?task=${key}`}
+          href={`?view=board&task=${key}`}
           scroll={false}
           onClick={(e) => e.stopPropagation()}
           className="font-mono hover:text-foreground hover:underline"
@@ -309,6 +310,21 @@ function TaskCard({
         {task.priority !== "none" && <PriorityIcon priority={task.priority} className="ml-auto size-3.5" />}
       </div>
       <p className={cn("leading-snug font-medium", done && "text-muted-foreground line-through")}>{task.title}</p>
+      {(task.progress > 0 || task.weight) && (
+        <ProgressBar value={task.progress} label={`${task.title} progress`} className="mt-2" />
+      )}
+      {(task.weight || task.subtaskCount > 0) && (
+        <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+          {task.weight && <span>Weight {Number(task.weight)}%</span>}
+          {task.subtaskCount > 0 && (
+            <span className="flex items-center gap-1" title="Sub-tasks done">
+              <ListTree className="size-3.5" aria-hidden />
+              {task.subtaskDone}/{task.subtaskCount}
+              <span className="sr-only">sub-tasks done</span>
+            </span>
+          )}
+        </div>
+      )}
       {(due || task.assigneeName) && (
         <div className="mt-2.5 flex items-center gap-2">
           {due && (

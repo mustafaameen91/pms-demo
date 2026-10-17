@@ -15,6 +15,13 @@
       "when": 1792259177942,
       "tag": "0001_round_kang",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792259904773,
+      "tag": "0002_cheerful_thaddeus_ross",
+      "breakpoints": true
     }
   ]
 }

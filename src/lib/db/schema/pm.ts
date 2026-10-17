@@ -126,13 +126,22 @@ export const tasks = pgTable(
     assigneeId: text("assignee_id").references(() => user.id, { onDelete: "set null" }),
     reporterId: text("reporter_id").references(() => user.id, { onDelete: "set null" }),
     startDate: date("start_date"),
+    // Shown as "End date" in the UI.
     dueDate: date("due_date"),
     estimate: integer("estimate"),
+    // Share of the whole project, in percent (top-level tasks). Drives accomplishment %.
+    weight: numeric("weight", { precision: 5, scale: 2 }),
+    // How much of this task is done, 0–100.
+    progress: integer("progress").notNull().default(0),
+    // Planned budget, in the project's currency.
+    budget: numeric("budget", { precision: 14, scale: 2 }),
     // Fractional index for drag-and-drop ordering inside a column.
     position: doublePrecision("position").notNull(),
     // Values for workspace-defined custom fields, keyed by custom_fields.id.
     customFields: jsonb("custom_fields").$type<Record<string, unknown>>().notNull().default({}),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    // Soft delete, so "Undo" can restore a deleted task.
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [

@@ -69,3 +69,24 @@ export function formatDue(date: string, done = false) {
   });
   return { label, overdue: !done && due < today };
 }
+
+export function ProgressBar({ value, label, className }: { value: number; label: string; className?: string }) {
+  return (
+    <div className={cn("flex items-center gap-2", className)}>
+      <div
+        className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={label}
+      >
+        <div
+          className={cn("h-full rounded-full", value === 100 ? "bg-green-600 dark:bg-green-500" : "bg-primary")}
+          style={{ width: `${value}%` }}
+        />
+      </div>
+      <span className="w-9 text-right text-xs text-muted-foreground tabular-nums">{value}%</span>
+    </div>
+  );
+}

@@ -27,7 +27,10 @@ export async function listProjects(workspaceId: string, { archived = false } = {
       ),
     })
     .from(projects)
-    .leftJoin(tasks, and(eq(tasks.projectId, projects.id), isNull(tasks.parentId)))
+    .leftJoin(
+      tasks,
+      and(eq(tasks.projectId, projects.id), isNull(tasks.parentId), isNull(tasks.deletedAt)),
+    )
     .where(
       and(
         eq(projects.workspaceId, workspaceId),
@@ -65,15 +68,29 @@ export async function getBoard(projectId: string) {
         title: tasks.title,
         statusId: tasks.statusId,
         priority: tasks.priority,
+        startDate: tasks.startDate,
         dueDate: tasks.dueDate,
+        weight: tasks.weight,
+        progress: tasks.progress,
+        budget: tasks.budget,
         position: tasks.position,
         assigneeId: tasks.assigneeId,
         assigneeName: user.name,
         assigneeImage: user.image,
+        subtaskCount: sql<number>`(
+          select count(*) from ${tasks} s
+          where s.parent_id = ${tasks.id} and s.deleted_at is null
+        )`.mapWith(Number),
+        subtaskDone: sql<number>`(
+          select count(*) from ${tasks} s
+          join ${taskStatuses} st on st.id = s.status_id
+          where s.parent_id = ${tasks.id} and s.deleted_at is null
+            and st.category in ('done', 'canceled')
+        )`.mapWith(Number),
       })
       .from(tasks)
       .leftJoin(user, eq(user.id, tasks.assigneeId))
-      .where(and(eq(tasks.projectId, projectId), isNull(tasks.parentId)))
+      .where(and(eq(tasks.projectId, projectId), isNull(tasks.parentId), isNull(tasks.deletedAt)))
       .orderBy(asc(tasks.position)),
   ]);
   return { statuses, tasks: rows };
@@ -85,9 +102,16 @@ export type BoardStatus = BoardData["statuses"][number];
 
 export async function getTaskDetail(projectId: string, number: number) {
   const task = await db.query.tasks.findFirst({
-    where: and(eq(tasks.projectId, projectId), eq(tasks.number, number)),
+    where: and(eq(tasks.projectId, projectId), eq(tasks.number, number), isNull(tasks.deletedAt)),
     with: {
       reporter: { columns: { id: true, name: true } },
+      parent: { columns: { id: true, number: true, title: true, deletedAt: true } },
+      subtasks: {
+        where: (sub, { isNull }) => isNull(sub.deletedAt),
+        orderBy: (sub, { asc }) => [asc(sub.number)],
+        columns: { id: true, number: true, title: true, statusId: true, assigneeId: true },
+        with: { status: { columns: { category: true } } },
+      },
       activities: {
         orderBy: (a, { desc }) => [desc(a.createdAt)],
         limit: 30,

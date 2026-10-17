@@ -12,7 +12,8 @@ export function QuickAddTask({
   className,
 }: {
   projectId: string;
-  statusId: string;
+  /** Column to add into; omitted = the project's default "To do" status. */
+  statusId?: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -61,12 +62,12 @@ export function QuickAddTask({
         submit();
       }}
     >
-      <label htmlFor={`quick-add-${statusId}`} className="sr-only">
+      <label htmlFor={`quick-add-${statusId ?? "default"}`} className="sr-only">
         Task title
       </label>
       <input
         ref={inputRef}
-        id={`quick-add-${statusId}`}
+        id={`quick-add-${statusId ?? "default"}`}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={(e) => {

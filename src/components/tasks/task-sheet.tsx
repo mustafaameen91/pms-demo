@@ -1,52 +1,65 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { CornerLeftUp, Loader2, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { updateTask, type TaskPatch } from "@/lib/actions/tasks";
+import { createTask, deleteTask, restoreTask, updateTask, type TaskPatch } from "@/lib/actions/tasks";
 import type { BoardStatus, TaskDetail, WorkspaceMember } from "@/lib/data/projects";
 import { PRIORITIES, type Priority } from "@/lib/constants";
+import { cn, formatMoney } from "@/lib/utils";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { PriorityIcon, StatusDot, UserAvatar, formatDue } from "./task-bits";
 
 const UNASSIGNED = "__unassigned__";
 
-export function TaskSheet({
-  task,
-  taskKey,
-  statuses,
-  members,
-}: {
+type SheetProps = {
   task: TaskDetail | null;
   taskKey: string;
+  projectId: string;
+  projectKey: string;
+  currency: string;
   statuses: BoardStatus[];
   members: WorkspaceMember[];
-}) {
-  const router = useRouter();
+  otherWeight: number;
+};
+
+/** Builds "?view=…&task=…" keeping the current view. */
+function useTaskHref() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const view = searchParams.get("view");
+  return (taskKey?: string) => {
+    const params = new URLSearchParams();
+    if (view) params.set("view", view);
+    if (taskKey) params.set("task", taskKey);
+    const qs = params.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  };
+}
 
-  function close() {
-    const view = searchParams.get("view");
-    router.push(view ? `${pathname}?view=${view}` : pathname, { scroll: false });
-  }
+export function TaskSheet(props: SheetProps) {
+  const router = useRouter();
+  const taskHref = useTaskHref();
+  const close = () => router.push(taskHref(), { scroll: false });
 
   return (
     <Sheet open onOpenChange={(open) => !open && close()}>
-      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-xl">
-        {task ? (
-          <TaskEditor task={task} taskKey={taskKey} statuses={statuses} members={members} />
+      <SheetContent className="gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-xl">
+        {props.task ? (
+          <TaskEditor {...props} task={props.task} onClose={close} />
         ) : (
           <SheetHeader>
             <SheetTitle>Task not found</SheetTitle>
             <SheetDescription>
-              {taskKey} doesn&apos;t exist in this project, or it was deleted.
+              {props.taskKey} doesn&apos;t exist in this project, or it was deleted.
             </SheetDescription>
           </SheetHeader>
         )}
@@ -58,17 +71,26 @@ export function TaskSheet({
 function TaskEditor({
   task,
   taskKey,
+  projectId,
+  projectKey,
+  currency,
   statuses,
   members,
-}: {
-  task: TaskDetail;
-  taskKey: string;
-  statuses: BoardStatus[];
-  members: WorkspaceMember[];
-}) {
+  otherWeight,
+  onClose,
+}: SheetProps & { task: TaskDetail; onClose: () => void }) {
   const [pending, startTransition] = useTransition();
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
+  const [progress, setProgress] = useState(task.progress);
+  // Server can change progress too (e.g. moving to Done sets 100%); follow it.
+  const [syncedProgress, setSyncedProgress] = useState(task.progress);
+  if (task.progress !== syncedProgress) {
+    setSyncedProgress(task.progress);
+    setProgress(task.progress);
+  }
+  const taskHref = useTaskHref();
+  const isSubtask = Boolean(task.parentId);
 
   function save(patch: TaskPatch) {
     startTransition(async () => {
@@ -77,19 +99,69 @@ function TaskEditor({
     });
   }
 
+  function commitProgress(value: number) {
+    const clamped = Math.max(0, Math.min(100, Math.round(value)));
+    setProgress(clamped);
+    if (clamped !== task.progress) save({ progress: clamped });
+  }
+
+  function handleDelete() {
+    startTransition(async () => {
+      const result = await deleteTask(task.id);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      onClose();
+      toast(`${taskKey} deleted`, {
+        description: task.title,
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            const undo = await restoreTask(task.id);
+            if (undo.ok) toast.success(`${taskKey} restored`);
+            else toast.error(undo.error);
+          },
+        },
+      });
+    });
+  }
+
   const statusName = new Map(statuses.map((s) => [s.id, s.name]));
   const memberName = new Map(members.map((m) => [m.id, m.name]));
+  const remainingWeight = 100 - otherWeight - (task.weight ? Number(task.weight) : 0);
+  const fmtPct = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(2)}%`;
 
   return (
     <>
       <SheetHeader className="pb-2">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {isSubtask && task.parent && !task.parent.deletedAt && (
+          <Link
+            href={taskHref(`${projectKey}-${task.parent.number}`)}
+            scroll={false}
+            className="flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+          >
+            <CornerLeftUp className="size-3.5" />
+            Sub-task of {projectKey}-{task.parent.number} · {task.parent.title}
+          </Link>
+        )}
+        <div className="flex items-center gap-2 pr-8 text-xs text-muted-foreground">
           <span className="font-mono">{taskKey}</span>
           {pending && (
             <span className="flex items-center gap-1" role="status">
               <Loader2 className="size-3 animate-spin" /> Saving…
             </span>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto h-7 text-muted-foreground hover:text-destructive"
+            onClick={handleDelete}
+            disabled={pending}
+          >
+            <Trash2 className="size-3.5" />
+            Delete
+          </Button>
         </div>
         <SheetTitle className="sr-only">{task.title}</SheetTitle>
         <SheetDescription className="sr-only">Edit task details</SheetDescription>
@@ -108,11 +180,11 @@ function TaskEditor({
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), e.currentTarget.blur())}
           rows={1}
           maxLength={300}
-          className="field-sizing-content resize-none rounded-md bg-transparent text-xl font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="field-sizing-content w-full min-w-0 resize-none rounded-md bg-transparent text-xl font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </SheetHeader>
 
-      <div className="grid gap-5 px-4 pb-8">
+      <div className="grid min-w-0 gap-5 px-4 pb-8">
         <dl className="grid grid-cols-[7rem_1fr] items-center gap-x-3 gap-y-2 text-sm">
           <dt className="text-muted-foreground">
             <Label htmlFor="task-status">Status</Label>
@@ -130,6 +202,115 @@ function TaskEditor({
                 ))}
               </SelectContent>
             </Select>
+          </dd>
+
+          <dt className="text-muted-foreground">
+            <Label htmlFor="task-progress">Progress</Label>
+          </dt>
+          <dd className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={progress}
+              onChange={(e) => setProgress(Number(e.target.value))}
+              onPointerUp={(e) => commitProgress(Number(e.currentTarget.value))}
+              onKeyUp={(e) => commitProgress(Number(e.currentTarget.value))}
+              aria-label="Progress slider"
+              className="h-2 w-full cursor-pointer accent-[var(--primary)] sm:w-40"
+            />
+            <div className="relative">
+              <Input
+                id="task-progress"
+                type="number"
+                min={0}
+                max={100}
+                value={progress}
+                onChange={(e) => setProgress(Number(e.target.value))}
+                onBlur={(e) => commitProgress(Number(e.target.value))}
+                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                className="h-8 w-20 pr-6 tabular-nums"
+              />
+              <span className="pointer-events-none absolute top-1.5 right-2 text-sm text-muted-foreground">%</span>
+            </div>
+          </dd>
+
+          {!isSubtask && (
+            <>
+              <dt className="text-muted-foreground">
+                <Label htmlFor="task-weight">Weight</Label>
+              </dt>
+              <dd>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative">
+                    <Input
+                      id="task-weight"
+                      inputMode="decimal"
+                      defaultValue={task.weight ? String(Number(task.weight)) : ""}
+                      placeholder="0"
+                      onBlur={(e) => save({ weight: e.target.value.trim() || null })}
+                      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                      aria-describedby="task-weight-help"
+                      className="h-8 w-24 pr-6 tabular-nums"
+                    />
+                    <span className="pointer-events-none absolute top-1.5 right-2 text-sm text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                  <span
+                    id="task-weight-help"
+                    className={cn("text-xs", remainingWeight < 0 ? "text-destructive" : "text-muted-foreground")}
+                  >
+                    {remainingWeight < 0
+                      ? `Tasks add up to ${fmtPct(100 - remainingWeight)} — over 100%`
+                      : `${fmtPct(remainingWeight)} of the project not yet assigned`}
+                  </span>
+                </div>
+              </dd>
+            </>
+          )}
+
+          <dt className="text-muted-foreground">
+            <Label htmlFor="task-start">Start date</Label>
+          </dt>
+          <dd>
+            <Input
+              id="task-start"
+              type="date"
+              defaultValue={task.startDate ?? ""}
+              onChange={(e) => save({ startDate: e.target.value || null })}
+              className="h-8 w-full sm:w-56"
+            />
+          </dd>
+
+          <dt className="text-muted-foreground">
+            <Label htmlFor="task-due">End date</Label>
+          </dt>
+          <dd>
+            <Input
+              id="task-due"
+              type="date"
+              defaultValue={task.dueDate ?? ""}
+              onChange={(e) => save({ dueDate: e.target.value || null })}
+              className="h-8 w-full sm:w-56"
+            />
+          </dd>
+
+          <dt className="text-muted-foreground">
+            <Label htmlFor="task-budget">Budget</Label>
+          </dt>
+          <dd className="flex items-center gap-2">
+            <Input
+              id="task-budget"
+              inputMode="decimal"
+              defaultValue={task.budget ? String(Number(task.budget)) : ""}
+              placeholder="0"
+              onBlur={(e) => save({ budget: e.target.value.trim() || null })}
+              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+              className="h-8 w-full tabular-nums sm:w-40"
+            />
+            <span className="text-sm text-muted-foreground">{currency}</span>
           </dd>
 
           <dt className="text-muted-foreground">
@@ -174,19 +355,6 @@ function TaskEditor({
             </Select>
           </dd>
 
-          <dt className="text-muted-foreground">
-            <Label htmlFor="task-due">Due date</Label>
-          </dt>
-          <dd className="flex items-center gap-2">
-            <Input
-              id="task-due"
-              type="date"
-              defaultValue={task.dueDate ?? ""}
-              onChange={(e) => save({ dueDate: e.target.value || null })}
-              className="h-8 w-full sm:w-56"
-            />
-          </dd>
-
           {task.reporter && (
             <>
               <dt className="text-muted-foreground">Reporter</dt>
@@ -206,10 +374,20 @@ function TaskEditor({
             onChange={(e) => setDescription(e.target.value)}
             onBlur={() => description !== (task.description ?? "") && save({ description })}
             placeholder="Add more detail…"
-            rows={6}
-            className="field-sizing-content min-h-32"
+            rows={5}
+            className="field-sizing-content w-full min-w-0 min-h-28"
           />
         </div>
+
+        {!isSubtask && (
+          <Subtasks
+            task={task}
+            projectId={projectId}
+            projectKey={projectKey}
+            statuses={statuses}
+            taskHref={taskHref}
+          />
+        )}
 
         <Separator />
 
@@ -223,7 +401,7 @@ function TaskEditor({
                 <UserAvatar name={a.actor?.name ?? "?"} className="size-5" />
                 <p className="min-w-0 flex-1 text-muted-foreground">
                   <span className="font-medium text-foreground">{a.actor?.name ?? "Someone"}</span>{" "}
-                  {describeActivity(a.type, a.data, statusName, memberName)}
+                  {describeActivity(a.type, a.data, { statusName, memberName, currency, projectKey })}
                   <time
                     dateTime={new Date(a.createdAt).toISOString()}
                     className="ml-1.5 text-xs whitespace-nowrap"
@@ -240,13 +418,154 @@ function TaskEditor({
   );
 }
 
+function Subtasks({
+  task,
+  projectId,
+  projectKey,
+  statuses,
+  taskHref,
+}: {
+  task: TaskDetail;
+  projectId: string;
+  projectKey: string;
+  statuses: BoardStatus[];
+  taskHref: (key?: string) => string;
+}) {
+  const [title, setTitle] = useState("");
+  const [pending, startTransition] = useTransition();
+  const doneStatus = statuses.find((s) => s.category === "done");
+  const todoStatus = statuses.find((s) => s.category === "todo") ?? statuses[0];
+  // Tick boxes instantly; the server result replaces this when it arrives.
+  const [doneIds, setDoneOptimistic] = useOptimistic(
+    new Set(
+      task.subtasks
+        .filter((s) => s.status.category === "done" || s.status.category === "canceled")
+        .map((s) => s.id),
+    ),
+    (current, change: { id: string; done: boolean }) => {
+      const next = new Set(current);
+      if (change.done) next.add(change.id);
+      else next.delete(change.id);
+      return next;
+    },
+  );
+
+  function add(e: React.FormEvent) {
+    e.preventDefault();
+    const value = title.trim();
+    if (!value) return;
+    startTransition(async () => {
+      const result = await createTask({ projectId, parentId: task.id, title: value });
+      if (result.ok) setTitle("");
+      else toast.error(result.error);
+    });
+  }
+
+  function toggle(sub: TaskDetail["subtasks"][number], checked: boolean) {
+    const target = checked ? doneStatus : todoStatus;
+    if (!target) return;
+    startTransition(async () => {
+      setDoneOptimistic({ id: sub.id, done: checked });
+      const result = await updateTask(sub.id, { statusId: target.id, progress: checked ? 100 : 0 });
+      if (!result.ok) toast.error(result.error);
+    });
+  }
+
+  function remove(sub: TaskDetail["subtasks"][number]) {
+    startTransition(async () => {
+      const result = await deleteTask(sub.id);
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast(`Sub-task deleted`, {
+        description: sub.title,
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            const undo = await restoreTask(sub.id);
+            if (!undo.ok) toast.error(undo.error);
+          },
+        },
+      });
+    });
+  }
+
+  return (
+    <section aria-labelledby="subtasks-heading" className="grid gap-2">
+      <h3 id="subtasks-heading" className="flex items-center gap-2 text-sm font-medium">
+        Sub-tasks
+        {task.subtasks.length > 0 && (
+          <span className="text-xs font-normal text-muted-foreground tabular-nums">
+            {doneIds.size}/{task.subtasks.length} done
+          </span>
+        )}
+      </h3>
+      {task.subtasks.length > 0 && (
+        <ul className="grid divide-y rounded-lg border">
+          {task.subtasks.map((sub) => {
+            const isDone = doneIds.has(sub.id);
+            const key = `${projectKey}-${sub.number}`;
+            return (
+              <li key={sub.id} className="group flex items-center gap-2.5 px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={isDone}
+                  onChange={(e) => toggle(sub, e.target.checked)}
+                  aria-label={`Mark “${sub.title}” as ${isDone ? "not done" : "done"}`}
+                  className="size-4 cursor-pointer accent-[var(--primary)]"
+                />
+                <Link
+                  href={taskHref(key)}
+                  scroll={false}
+                  className={cn(
+                    "min-w-0 flex-1 truncate hover:underline",
+                    isDone && "text-muted-foreground line-through",
+                  )}
+                >
+                  <span className="mr-2 font-mono text-xs text-muted-foreground no-underline">{key}</span>
+                  {sub.title}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => remove(sub)}
+                  aria-label={`Delete sub-task “${sub.title}”`}
+                  className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-60 hover:bg-accent hover:text-destructive hover:opacity-100 focus-visible:opacity-100"
+                >
+                  <X className="size-4" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <form onSubmit={add} className="flex gap-2">
+        <label htmlFor="new-subtask" className="sr-only">
+          New sub-task
+        </label>
+        <Input
+          id="new-subtask"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Add a sub-task…"
+          maxLength={300}
+          className="h-8"
+        />
+        <Button type="submit" size="sm" variant="outline" disabled={pending || !title.trim()}>
+          Add
+        </Button>
+      </form>
+    </section>
+  );
+}
+
 function describeActivity(
   type: string,
   data: Record<string, unknown>,
-  statusName: Map<string, string>,
-  memberName: Map<string, string>,
+  ctx: { statusName: Map<string, string>; memberName: Map<string, string>; currency: string; projectKey: string },
 ) {
   const s = (v: unknown) => (typeof v === "string" ? v : "");
+  const pct = (v: unknown) => `${Number(v)}%`;
   switch (type) {
     case "task.created":
       return "created the task";
@@ -255,13 +574,31 @@ function describeActivity(
     case "task.description_changed":
       return "updated the description";
     case "task.status_changed":
-      return `moved it to ${statusName.get(s(data.to)) ?? s(data.toName)}`;
+      return `moved it to ${ctx.statusName.get(s(data.to)) ?? s(data.toName)}`;
     case "task.priority_changed":
       return `set priority to ${PRIORITIES.find((p) => p.value === data.to)?.label ?? s(data.to)}`;
     case "task.assignee_changed":
-      return data.to ? `assigned it to ${memberName.get(s(data.to)) ?? "a former member"}` : "removed the assignee";
+      return data.to
+        ? `assigned it to ${ctx.memberName.get(s(data.to)) ?? "a former member"}`
+        : "removed the assignee";
+    case "task.start_date_changed":
+      return data.to ? `set the start date to ${formatDue(s(data.to), true).label}` : "removed the start date";
     case "task.due_date_changed":
-      return data.to ? `set the due date to ${formatDue(s(data.to), true).label}` : "removed the due date";
+      return data.to ? `set the end date to ${formatDue(s(data.to), true).label}` : "removed the end date";
+    case "task.weight_changed":
+      return data.to !== null ? `set the weight to ${pct(data.to)}` : "removed the weight";
+    case "task.progress_changed":
+      return `updated progress to ${pct(data.to)}`;
+    case "task.budget_changed":
+      return data.to !== null ? `set the budget to ${formatMoney(s(data.to), ctx.currency)}` : "removed the budget";
+    case "task.restored":
+      return "restored the task";
+    case "subtask.created":
+      return `added sub-task ${ctx.projectKey}-${data.number} “${s(data.title)}”`;
+    case "subtask.deleted":
+      return `deleted sub-task “${s(data.title)}”`;
+    case "subtask.restored":
+      return `restored sub-task “${s(data.title)}”`;
     default:
       return type;
   }
