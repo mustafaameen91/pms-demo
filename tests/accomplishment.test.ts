@@ -74,3 +74,13 @@ test("task dates override project dates; undated tasks excluded from planned", (
   assert.equal(a.planned, 100);
   assert.equal(a.scheduledCount, 1);
 });
+
+test("milestones never count toward accomplishment or weights", () => {
+  const a = computeAccomplishment(
+    [t(100, 50), { weight: null, progress: 0, startDate: null, dueDate: "2026-01-05", isMilestone: true }],
+    noDates,
+  );
+  assert.equal(a.actual, 50);
+  assert.equal(a.taskCount, 1);
+  assert.deepEqual(weightWarnings(a), []);
+});

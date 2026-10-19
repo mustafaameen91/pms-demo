@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { BoardStatus, BoardTask } from "@/lib/data/projects";
 import { cn } from "@/lib/utils";
 import { QuickAddTask } from "./quick-add-task";
-import { PriorityIcon, StatusDot, UserAvatar, formatDue, priorityLabel } from "./task-bits";
+import { BlockedBadge, MilestoneIcon, PriorityIcon, StatusDot, UserAvatar, formatDue, priorityLabel } from "./task-bits";
 
 export function TaskList({
   projectId,
@@ -40,9 +40,11 @@ export function TaskList({
                     >
                       <PriorityIcon priority={task.priority} />
                       <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">{key}</span>
+                      {task.isMilestone && <MilestoneIcon />}
                       <span className={cn("min-w-0 flex-1 truncate", done && "text-muted-foreground line-through")}>
                         {task.title}
                       </span>
+                      {!done && task.blockedBy > 0 && <BlockedBadge count={task.blockedBy} />}
                       <span className="sr-only">Priority: {priorityLabel(task.priority)}</span>
                       {due && (
                         <span

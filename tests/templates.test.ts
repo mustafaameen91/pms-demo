@@ -23,3 +23,20 @@ test("length and dates", () => {
   assert.equal(describeLength(10), "10 days");
   assert.equal(addDays("2026-12-30", 3), "2027-01-02");
 });
+
+test("built-in dependencies form a valid chain with no date conflicts", () => {
+  const c = BUILTIN_TEMPLATES.find((t) => t.id === "construction")!.data.tasks;
+  // Site preparation (day 40) waits on Permits (ends day 40); Handover waits on Inspection.
+  assert.deepEqual(c[2].dependsOn, [1]);
+  assert.deepEqual(c[8].dependsOn, [7]);
+  assert.equal(c[0].dependsOn, undefined);
+  for (const tpl of BUILTIN_TEMPLATES) {
+    for (const [i, task] of tpl.data.tasks.entries()) {
+      for (const d of task.dependsOn ?? []) {
+        assert.ok(d < i, `${tpl.id}: forward dependency`);
+        const pred = tpl.data.tasks[d];
+        assert.ok(pred.startOffset! + pred.duration! <= task.startOffset!, `${tpl.id}: ${task.title} starts before ${pred.title} ends`);
+      }
+    }
+  }
+});

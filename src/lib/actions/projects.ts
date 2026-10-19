@@ -6,7 +6,7 @@ import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspace, requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { activities, expenses, member, projectTemplates, projects, taskStatuses, tasks } from "@/lib/db/schema";
+import { activities, expenses, member, projectTemplates, projects, taskDependencies, taskStatuses, tasks } from "@/lib/db/schema";
 import { addDays, builtinTemplate, templateDataSchema, templateLengthDays } from "@/lib/templates";
 import { deleteStoredFile } from "@/lib/uploads";
 import {
@@ -148,6 +148,7 @@ export async function createProject(
       const startStatus = statusRows.find((s) => s.category === "todo") ?? statusRows[0];
       const start = details.data.startDate;
       let number = 0;
+      const ids: string[] = [];
       for (const [i, task] of template.tasks.entries()) {
         const startDate = start && task.startOffset !== undefined ? addDays(start, task.startOffset) : null;
         const dueDate = startDate && task.duration ? addDays(startDate, task.duration - 1) : null;
@@ -160,13 +161,16 @@ export async function createProject(
             statusId: startStatus.id,
             title: task.title,
             description: task.description ?? null,
-            weight: task.weight !== undefined ? task.weight.toFixed(2) : null,
-            startDate,
-            dueDate,
+            // Milestones are one date with no weight.
+            weight: !task.milestone && task.weight !== undefined ? task.weight.toFixed(2) : null,
+            startDate: task.milestone ? null : startDate,
+            dueDate: task.milestone ? (dueDate ?? startDate) : dueDate,
+            isMilestone: task.milestone ?? false,
             reporterId: user.id,
             position: (i + 1) * POSITION_STEP,
           })
           .returning({ id: tasks.id });
+        ids.push(main.id);
         for (const [j, title] of (task.subtasks ?? []).entries()) {
           await tx.insert(tasks).values({
             workspaceId: workspace.id,
@@ -181,6 +185,15 @@ export async function createProject(
         }
       }
       await tx.update(projects).set({ taskCounter: number }).where(eq(projects.id, project.id));
+      const edges = template.tasks.flatMap((task, i) =>
+        (task.dependsOn ?? []).map((d) => ({
+          workspaceId: workspace.id,
+          projectId: project.id,
+          taskId: ids[i],
+          dependsOnId: ids[d],
+        })),
+      );
+      if (edges.length) await tx.insert(taskDependencies).values(edges).onConflictDoNothing();
     }
 
     await tx.insert(activities).values({

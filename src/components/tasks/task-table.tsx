@@ -3,7 +3,7 @@ import { ListTree } from "lucide-react";
 import type { BoardStatus, BoardTask } from "@/lib/data/projects";
 import { cn, formatMoney } from "@/lib/utils";
 import { QuickAddTask } from "./quick-add-task";
-import { ProgressBar, StatusDot, UserAvatar, formatDue } from "./task-bits";
+import { BlockedBadge, MilestoneIcon, ProgressBar, StatusDot, UserAvatar, formatDue } from "./task-bits";
 
 export function TaskTable({
   projectId,
@@ -65,9 +65,11 @@ export function TaskTable({
                     className="flex items-center gap-2 after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-ring"
                   >
                     <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">{key}</span>
+                    {task.isMilestone && <MilestoneIcon />}
                     <span className={cn("truncate font-medium", done && "text-muted-foreground line-through")}>
                       {task.title}
                     </span>
+                    {!done && task.blockedBy > 0 && <BlockedBadge count={task.blockedBy} />}
                     {task.subtaskCount > 0 && (
                       <span
                         className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground tabular-nums"
@@ -92,7 +94,11 @@ export function TaskTable({
                   {task.weight ? fmtPct(Number(task.weight)) : <span className="text-muted-foreground">—</span>}
                 </td>
                 <td className="px-3 py-2.5">
-                  <ProgressBar value={task.progress} label={`${task.title} progress`} />
+                  {task.isMilestone ? (
+                    <span className="text-xs text-muted-foreground">{done ? "Reached" : "Milestone"}</span>
+                  ) : (
+                    <ProgressBar value={task.progress} label={`${task.title} progress`} />
+                  )}
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap tabular-nums text-muted-foreground">
                   {task.startDate ? formatDue(task.startDate, true).label : "—"}

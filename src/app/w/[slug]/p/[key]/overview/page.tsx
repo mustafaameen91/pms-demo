@@ -7,7 +7,7 @@ import { getProjectResources } from "@/lib/data/resources";
 import { getProjectExpenses } from "@/lib/data/expenses";
 import { computeBudget } from "@/lib/budget";
 import { lateTasks, upcomingTasks } from "@/lib/schedule";
-import { DeadlinesPanel, MoneyPanel } from "@/components/projects/overview-panels";
+import { DeadlinesPanel, MilestonesPanel, MoneyPanel } from "@/components/projects/overview-panels";
 import {
   SCHEDULE_TOLERANCE,
   computeAccomplishment,
@@ -44,7 +44,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
   const tasksHref = `/w/${workspace.slug}/p/${project.key}`;
 
   const weightOf = (w: string | null) => (a.mode === "weighted" ? (w ? Number(w) : 0) : 1);
-  const denominator = rows.filter((r) => !r.cancelled).reduce((s, r) => s + weightOf(r.weight), 0);
+  const denominator = rows.filter((r) => !r.cancelled && !r.isMilestone).reduce((s, r) => s + weightOf(r.weight), 0);
 
   return (
     <div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-6 px-4 py-6 sm:px-6">
@@ -146,6 +146,12 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
         />
       </div>
 
+      <MilestonesPanel
+        milestones={rows.filter((r) => r.isMilestone)}
+        today={today}
+        taskHref={(n) => `${tasksHref}?task=${project.key}-${n}`}
+      />
+
       {/* Per-task breakdown */}
       <section aria-labelledby="breakdown-heading" className="rounded-xl border bg-card">
         <div className="flex items-center justify-between gap-4 px-5 pt-5 sm:px-6">
@@ -181,7 +187,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => {
+                {rows.filter((r) => !r.isMilestone).map((r) => {
                   const planned = plannedProgress(
                     r.startDate ?? project.startDate,
                     r.dueDate ?? project.endDate,

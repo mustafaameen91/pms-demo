@@ -57,6 +57,13 @@
       "when": 1792407307755,
       "tag": "0007_fixed_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792408080344,
+      "tag": "0008_funny_timeslip",
+      "breakpoints": true
     }
   ]
 }

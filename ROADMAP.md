@@ -100,10 +100,10 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] "Save as template" from any project, and a Templates page to manage them
 
 ## Phase 11 — Milestones & dependencies *(construction, PMO, product)*
-- [ ] Milestones (key dates) shown on the timeline and Overview
-- [ ] Task dependencies: "B can't start before A is finished"
-- [ ] Warning when a task starts before what it depends on is done
-- [ ] Dependency arrows / markers on the timeline
+- [x] Milestones (key dates) shown on the timeline and Overview; not counted in the %
+- [x] Task dependencies: "B can't start before A is finished" (loops refused; Blocked badge; built-in templates come with dependency chains)
+- [x] Warning when a task starts before what it depends on is done, or is scheduled to start before it ends
+- [x] Dependency arrows on the timeline (red = date conflict)
 
 ## Phase 12 — Approvals *(finance, construction)*
 - [ ] Approval rule per workspace: expenses above an amount need approval

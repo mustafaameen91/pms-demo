@@ -5,12 +5,14 @@ import { and, asc, eq, isNull, max, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { activities, member, projects, taskStatuses, tasks } from "@/lib/db/schema";
+import { activities, member, projects, taskDependencies, taskStatuses, tasks } from "@/lib/db/schema";
+import { isFinished, startsTooEarly, wouldCreateCycle } from "@/lib/dependencies";
 import { POSITION_STEP, PRIORITIES } from "@/lib/constants";
 import { MAX_MONEY, optionalDecimal } from "@/lib/validation";
 import { notify, projectContext } from "@/lib/notifications";
 
-type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
+/** `warning`: the change was saved, but the user should know something (e.g. started while blocked). */
+type Result<T = undefined> = { ok: true; data?: T; warning?: string } | { ok: false; error: string };
 
 /** Loads a task and authorizes the current user against its workspace. */
 async function authorizeTask(taskId: string, { includeDeleted = false } = {}) {
@@ -44,6 +46,19 @@ async function defaultStatus(projectId: string) {
 }
 
 const isDone = (category: string) => category === "done" || category === "canceled";
+
+/** Unfinished predecessors of a task, and the latest end date among all its predecessors. */
+async function predecessorState(taskId: string) {
+  const rows = await db
+    .select({ number: tasks.number, title: tasks.title, dueDate: tasks.dueDate, category: taskStatuses.category })
+    .from(taskDependencies)
+    .innerJoin(tasks, and(eq(tasks.id, taskDependencies.dependsOnId), isNull(tasks.deletedAt)))
+    .innerJoin(taskStatuses, eq(taskStatuses.id, tasks.statusId))
+    .where(eq(taskDependencies.taskId, taskId));
+  return { open: rows.filter((r) => !isFinished(r.category)), all: rows };
+}
+
+const listTitles = (rows: { title: string }[]) => rows.map((r) => `“${r.title}”`).join(", ");
 
 const createSchema = z.object({
   projectId: z.string().min(1),
@@ -157,6 +172,10 @@ export async function moveTask(taskId: string, statusId: string, position: numbe
   });
 
   refresh();
+  if (statusChanged && status.category !== "todo" && status.category !== "backlog") {
+    const { open } = await predecessorState(taskId);
+    if (open.length) return { ok: true, warning: `Started before ${listTitles(open)} ${open.length === 1 ? "is" : "are"} finished.` };
+  }
   return { ok: true };
 }
 
@@ -177,6 +196,7 @@ const updateSchema = z
     weight: optionalDecimal(100, "Weight must be between 0 and 100%"),
     progress: z.number().int().min(0, "Progress must be 0–100%").max(100, "Progress must be 0–100%"),
     budget: optionalDecimal(MAX_MONEY, "Enter a valid amount"),
+    isMilestone: z.boolean(),
   })
   .partial();
 
@@ -260,6 +280,18 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
     log.push({ type: "task.budget_changed", data: { from: task.budget, to: changes.budget } });
   }
 
+  if (changes.isMilestone !== undefined && changes.isMilestone !== task.isMilestone) {
+    if (task.parentId) return { ok: false, error: "Only main tasks can be milestones" };
+    set.isMilestone = changes.isMilestone;
+    if (changes.isMilestone) {
+      // A milestone is a single date with no weight: keep the end date, drop the rest.
+      set.dueDate = set.dueDate !== undefined ? set.dueDate : (task.dueDate ?? task.startDate);
+      set.startDate = null;
+      set.weight = null;
+    }
+    log.push({ type: changes.isMilestone ? "task.made_milestone" : "task.unmade_milestone", data: {} });
+  }
+
   if (Object.keys(set).length === 0) return { ok: true };
 
   const newAssignee = set.assigneeId !== undefined ? set.assigneeId : undefined;
@@ -295,6 +327,85 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
     }
   }
 
+  refresh();
+
+  // Saved; now tell the user if this breaks a dependency.
+  const started =
+    (set.statusId !== undefined && set.completedAt !== undefined && changes.statusId !== undefined) ||
+    (set.progress !== undefined && set.progress > 0 && task.progress === 0);
+  if (started || set.startDate) {
+    const { open, all } = await predecessorState(taskId);
+    if (started && open.length) {
+      const [newStatus] = set.statusId
+        ? await db.select({ category: taskStatuses.category }).from(taskStatuses).where(eq(taskStatuses.id, set.statusId))
+        : [null];
+      if (!newStatus || (newStatus.category !== "todo" && newStatus.category !== "backlog")) {
+        return { ok: true, warning: `Started before ${listTitles(open)} ${open.length === 1 ? "is" : "are"} finished.` };
+      }
+    }
+    const start = set.startDate ?? task.startDate;
+    const clash = all.filter((p) => startsTooEarly(start, p.dueDate));
+    if (set.startDate && clash.length) {
+      return { ok: true, warning: `Starts before ${listTitles(clash)} ${clash.length === 1 ? "ends" : "end"}.` };
+    }
+  }
+  return { ok: true };
+}
+
+/** "taskId can't start before dependsOnId is finished." Same project, no loops. */
+export async function addDependency(taskId: string, dependsOnId: string): Promise<Result> {
+  const auth = await authorizeTask(taskId);
+  if (!auth) return { ok: false, error: "Task not found" };
+  const { task, user } = auth;
+  const [other] = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.id, dependsOnId), eq(tasks.projectId, task.projectId), isNull(tasks.deletedAt)))
+    .limit(1);
+  if (!other) return { ok: false, error: "That task isn't in this project." };
+  const edges = await db
+    .select({ taskId: taskDependencies.taskId, dependsOnId: taskDependencies.dependsOnId })
+    .from(taskDependencies)
+    .where(eq(taskDependencies.projectId, task.projectId));
+  if (edges.some((e) => e.taskId === taskId && e.dependsOnId === dependsOnId)) return { ok: true };
+  if (wouldCreateCycle(edges, taskId, dependsOnId)) {
+    return { ok: false, error: `That would make a loop: “${other.title}” already waits on this task.` };
+  }
+  await db.transaction(async (tx) => {
+    await tx.insert(taskDependencies).values({ workspaceId: task.workspaceId, projectId: task.projectId, taskId, dependsOnId });
+    await tx.insert(activities).values({
+      workspaceId: task.workspaceId,
+      projectId: task.projectId,
+      taskId,
+      actorId: user.id,
+      type: "task.dependency_added",
+      data: { number: other.number, title: other.title },
+    });
+  });
+  refresh();
+  return startsTooEarly(task.startDate, other.dueDate)
+    ? { ok: true, warning: `This task starts before “${other.title}” ends. Consider moving its start date.` }
+    : { ok: true };
+}
+
+export async function removeDependency(taskId: string, dependsOnId: string): Promise<Result> {
+  const auth = await authorizeTask(taskId);
+  if (!auth) return { ok: false, error: "Task not found" };
+  const { task, user } = auth;
+  const [other] = await db.select({ number: tasks.number, title: tasks.title }).from(tasks).where(eq(tasks.id, dependsOnId)).limit(1);
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(taskDependencies)
+      .where(and(eq(taskDependencies.taskId, taskId), eq(taskDependencies.dependsOnId, dependsOnId)));
+    await tx.insert(activities).values({
+      workspaceId: task.workspaceId,
+      projectId: task.projectId,
+      taskId,
+      actorId: user.id,
+      type: "task.dependency_removed",
+      data: { number: other?.number, title: other?.title },
+    });
+  });
   refresh();
   return { ok: true };
 }

@@ -33,7 +33,7 @@ import type { BoardStatus, BoardTask } from "@/lib/data/projects";
 import { POSITION_STEP } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { QuickAddTask } from "./quick-add-task";
-import { ProgressBar, PriorityIcon, StatusDot, UserAvatar, formatDue } from "./task-bits";
+import { BlockedBadge, MilestoneIcon, ProgressBar, PriorityIcon, StatusDot, UserAvatar, formatDue } from "./task-bits";
 
 type Props = {
   projectId: string;
@@ -153,6 +153,8 @@ export function Board({ projectId, projectKey, statuses, tasks }: Props) {
     if (!result.ok) {
       toast.error(result.error);
       setItems(tasks);
+    } else if (result.warning) {
+      toast.warning(result.warning);
     }
   }
 
@@ -309,8 +311,12 @@ function TaskCard({
         </Link>
         {task.priority !== "none" && <PriorityIcon priority={task.priority} className="ml-auto size-3.5" />}
       </div>
-      <p className={cn("leading-snug font-medium", done && "text-muted-foreground line-through")}>{task.title}</p>
-      {(task.progress > 0 || task.weight) && (
+      <p className={cn("flex items-center gap-1.5 leading-snug font-medium", done && "text-muted-foreground line-through")}>
+        {task.isMilestone && <MilestoneIcon />}
+        {task.title}
+      </p>
+      {!done && task.blockedBy > 0 && <BlockedBadge count={task.blockedBy} className="mt-1.5" />}
+      {!task.isMilestone && (task.progress > 0 || task.weight) && (
         <ProgressBar value={task.progress} label={`${task.title} progress`} className="mt-2" />
       )}
       {(task.weight || task.subtaskCount > 0) && (

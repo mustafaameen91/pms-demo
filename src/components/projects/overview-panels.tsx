@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, CalendarClock, CircleCheck, Wallet } from "lucide-react";
+import { AlertTriangle, CalendarClock, CircleCheck, Diamond, Wallet } from "lucide-react";
 import type { BudgetSummary } from "@/lib/budget";
 import { daysBetween } from "@/lib/schedule";
 import { cn, formatDate, formatMoney } from "@/lib/utils";
@@ -178,5 +178,55 @@ function DeadlineList({
       })}
       {rows.length > 6 && <li className="px-3 py-2 text-xs text-muted-foreground">and {rows.length - 6} more</li>}
     </ul>
+  );
+}
+
+/** Key dates of the project: reached, upcoming or missed. */
+export function MilestonesPanel({
+  milestones,
+  today,
+  taskHref,
+}: {
+  milestones: { id: string; number: number; title: string; dueDate: string | null; category: string }[];
+  today: string;
+  taskHref: (number: number) => string;
+}) {
+  if (milestones.length === 0) return null;
+  const sorted = [...milestones].sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"));
+  return (
+    <section aria-labelledby="milestones-heading" className="rounded-xl border bg-card p-5">
+      <h2 id="milestones-heading" className="flex items-center gap-2 font-semibold">
+        <Diamond className="size-4 fill-current text-brand-accent" aria-hidden />
+        Milestones
+      </h2>
+      <ol className="mt-4 grid gap-2">
+        {sorted.map((m) => {
+          const reached = m.category === "done" || m.category === "canceled";
+          const days = m.dueDate ? daysBetween(today, m.dueDate) : null;
+          const missed = !reached && days !== null && days < 0;
+          const state = reached
+            ? { label: "Reached", icon: CircleCheck, className: "text-green-700 dark:text-green-400" }
+            : missed
+              ? { label: `Missed by ${-days!} ${-days! === 1 ? "day" : "days"}`, icon: AlertTriangle, className: "text-destructive" }
+              : {
+                  label: days === null ? "No date" : days === 0 ? "Today" : `In ${days} ${days === 1 ? "day" : "days"}`,
+                  icon: CalendarClock,
+                  className: "text-muted-foreground",
+                };
+          return (
+            <li key={m.id}>
+              <Link href={taskHref(m.number)} className="flex items-center gap-3 rounded-lg border px-3 py-2 text-sm hover:bg-accent/50">
+                <span className="w-24 shrink-0 text-xs text-muted-foreground tabular-nums">{formatDate(m.dueDate)}</span>
+                <span className={cn("min-w-0 flex-1 truncate font-medium", reached && "text-muted-foreground line-through")}>{m.title}</span>
+                <span className={cn("flex shrink-0 items-center gap-1 text-xs font-medium", state.className)}>
+                  <state.icon className="size-3.5" aria-hidden />
+                  {state.label}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }

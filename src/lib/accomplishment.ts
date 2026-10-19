@@ -7,7 +7,7 @@
  *              0% before its start, 100% after its end, linear in between.
  *              Tasks without dates fall back to the project's dates; tasks with
  *              no dates at all are left out of the planned figure.
- * - Cancelled tasks are ignored.
+ * - Cancelled tasks and milestones are ignored.
  */
 
 export type AccomplishmentTask = {
@@ -16,6 +16,8 @@ export type AccomplishmentTask = {
   startDate: string | null;
   dueDate: string | null;
   cancelled?: boolean;
+  /** Milestones are key dates, not work: they never count toward the %. */
+  isMilestone?: boolean;
 };
 
 export type ScheduleState = "ahead" | "on_track" | "behind";
@@ -72,7 +74,7 @@ export function computeAccomplishment(
   project: { startDate: string | null; endDate: string | null },
   today: string = todayISO(),
 ): Accomplishment {
-  const tasks = allTasks.filter((t) => !t.cancelled);
+  const tasks = allTasks.filter((t) => !t.cancelled && !t.isMilestone);
   const weightOf = (t: AccomplishmentTask) => (t.weight === null || t.weight === "" ? 0 : Number(t.weight));
   const totalWeight = tasks.reduce((sum, t) => sum + weightOf(t), 0);
   const mode = tasks.length === 0 ? "empty" : totalWeight > 0 ? "weighted" : "equal";

@@ -30,9 +30,16 @@ export const templateDataSchema = z.object({
         /** Length in days (≥ 1). */
         duration: z.number().int().min(1).max(3650).optional(),
         subtasks: z.array(z.string().trim().min(1).max(300)).max(50).optional(),
+        milestone: z.boolean().optional(),
+        /** Indexes (in this list) of tasks that must finish first. */
+        dependsOn: z.array(z.number().int().min(0)).max(50).optional(),
       }),
     )
-    .max(200),
+    .max(200)
+    .refine(
+      (tasks) => tasks.every((t, i) => (t.dependsOn ?? []).every((d) => d < tasks.length && d !== i)),
+      "Dependencies must point to other tasks in the template",
+    ),
 });
 
 export type TemplateData = z.infer<typeof templateDataSchema>;
@@ -63,7 +70,32 @@ const t = (title: string, weight: number, startOffset: number, duration: number,
   ...(subtasks && { subtasks }),
 });
 
-export const BUILTIN_TEMPLATES: BuiltinTemplate[] = [
+/**
+ * Finish-to-start chain from timing: each task waits on the latest earlier task
+ * that ends before it starts. Never creates loops or date conflicts.
+ */
+export function deriveDependencies(data: TemplateData): TemplateData {
+  return {
+    ...data,
+    tasks: data.tasks.map((task, i) => {
+      if (task.dependsOn || task.startOffset === undefined) return task;
+      let best = -1;
+      let bestEnd = -1;
+      for (let j = 0; j < i; j++) {
+        const other = data.tasks[j];
+        if (other.startOffset === undefined || !other.duration) continue;
+        const end = other.startOffset + other.duration; // first free day
+        if (end <= task.startOffset && end > bestEnd) {
+          best = j;
+          bestEnd = end;
+        }
+      }
+      return best >= 0 ? { ...task, dependsOn: [best] } : task;
+    }),
+  };
+}
+
+const BUILTIN_SOURCE: BuiltinTemplate[] = [
   {
     id: "construction",
     name: "Building construction",
@@ -231,6 +263,11 @@ export const BUILTIN_TEMPLATES: BuiltinTemplate[] = [
     },
   },
 ];
+
+export const BUILTIN_TEMPLATES: BuiltinTemplate[] = BUILTIN_SOURCE.map((tpl) => ({
+  ...tpl,
+  data: deriveDependencies(tpl.data),
+}));
 
 export const builtinTemplate = (id: string) => BUILTIN_TEMPLATES.find((tpl) => tpl.id === id);
 

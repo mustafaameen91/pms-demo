@@ -141,6 +141,8 @@ export const tasks = pgTable(
     // Values for workspace-defined custom fields, keyed by custom_fields.id.
     customFields: jsonb("custom_fields").$type<Record<string, unknown>>().notNull().default({}),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    // A key date (one date = dueDate, no weight); excluded from accomplishment %.
+    isMilestone: boolean("is_milestone").notNull().default(false),
     // Soft delete, so "Undo" can restore a deleted task.
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     ...timestamps,
@@ -538,4 +540,28 @@ export const projectTemplates = pgTable(
     ...timestamps,
   },
   (t) => [index("project_templates_workspace_idx").on(t.workspaceId)],
+);
+
+// --- Dependencies (Phase 11): finish-to-start, "taskId can't start before dependsOnId is done". ---
+
+export const taskDependencies = pgTable(
+  "task_dependencies",
+  {
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    dependsOnId: text("depends_on_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.taskId, t.dependsOnId] }),
+    index("task_dependencies_project_idx").on(t.projectId),
+    index("task_dependencies_depends_on_idx").on(t.dependsOnId),
+  ],
 );

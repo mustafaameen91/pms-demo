@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CalendarRange, Columns3, List, Table2 } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { computeAccomplishment } from "@/lib/accomplishment";
-import { getBoard, getProjectByKey, getTaskDetail, listMembers } from "@/lib/data/projects";
+import { getBoard, getDependencies, getProjectByKey, getTaskDetail, getTaskLinks, listMembers } from "@/lib/data/projects";
 import { getProjectResources } from "@/lib/data/resources";
 import { cn } from "@/lib/utils";
 import { Board } from "@/components/tasks/board";
@@ -28,12 +28,14 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const taskParam = typeof query.task === "string" ? query.task : null;
   const taskNumber = taskParam?.match(/^[A-Z0-9]+-(\d+)$/i)?.[1];
 
-  const [board, members, selectedTask, projectResources] = await Promise.all([
+  const [board, members, selectedTask, projectResources, dependencies] = await Promise.all([
     getBoard(project.id),
     listMembers(workspace.id),
     taskNumber ? getTaskDetail(project.id, Number(taskNumber)) : null,
     taskNumber ? getProjectResources(project.id) : [],
+    view === "timeline" ? getDependencies(project.id) : [],
   ]);
+  const links = selectedTask ? await getTaskLinks(selectedTask.id) : null;
 
   const basePath = `/w/${workspace.slug}/p/${project.key}`;
 
@@ -90,6 +92,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           projectEnd={project.endDate}
           statuses={board.statuses}
           tasks={board.tasks}
+          dependencies={dependencies}
         />
       )}
       {view === "board" && (
@@ -112,6 +115,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           resources={projectResources.filter((r) => selectedTask && r.taskId === selectedTask.id)}
           resourcesHref={`${basePath}/resources`}
           currentUserId={user.id}
+          links={links}
+          mainTasks={board.tasks.map((t) => ({ id: t.id, number: t.number, title: t.title }))}
           isAdmin={workspace.role === "owner" || workspace.role === "admin"}
           // Weight already given to the other main tasks, to show what's left of 100%.
           otherWeight={board.tasks

@@ -1,4 +1,4 @@
-import { AlertTriangle, Minus, SignalHigh, SignalLow, SignalMedium } from "lucide-react";
+import { AlertTriangle, Diamond, Lock, Minus, SignalHigh, SignalLow, SignalMedium } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { PRIORITIES, type Priority } from "@/lib/constants";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -100,4 +100,30 @@ export function timeAgo(date: Date) {
   if (seconds < 86400) return rtf.format(-Math.round(seconds / 3600), "hour");
   if (seconds < 604800) return rtf.format(-Math.round(seconds / 86400), "day");
   return date.toLocaleDateString();
+}
+
+/** ◆ for milestones (decorative; the row text says "Milestone" to screen readers). */
+export function MilestoneIcon({ className }: { className?: string }) {
+  return (
+    <>
+      <Diamond className={cn("size-3.5 shrink-0 fill-current text-brand-accent", className)} aria-hidden />
+      <span className="sr-only">Milestone:</span>
+    </>
+  );
+}
+
+/** Shown when a task waits on unfinished tasks. Icon + text, never colour alone. */
+export function BlockedBadge({ count, className }: { count: number; className?: string }) {
+  return (
+    <span
+      title={`Waiting on ${count} unfinished ${count === 1 ? "task" : "tasks"}`}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300",
+        className,
+      )}
+    >
+      <Lock className="size-3" aria-hidden />
+      Blocked
+    </span>
+  );
 }
