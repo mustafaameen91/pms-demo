@@ -33,10 +33,10 @@ export function TaskTable({
 
   return (
     <div className="flex-1 overflow-auto pb-10">
-      <table className="w-full min-w-[960px] border-collapse text-sm">
+      <table className="w-full min-w-[1040px] border-collapse text-sm">
         <thead className="sticky top-0 z-10 bg-muted/80 text-left text-xs text-muted-foreground backdrop-blur">
           <tr className="border-b">
-            <th scope="col" className="py-2 pr-3 pl-4 font-medium sm:pl-6">Task</th>
+            <th scope="col" className="w-[34%] py-2 pr-3 pl-4 font-medium sm:pl-6">Task</th>
             <th scope="col" className="px-3 py-2 font-medium">Status</th>
             <th scope="col" className="px-3 py-2 text-right font-medium">Weight</th>
             <th scope="col" className="w-40 px-3 py-2 font-medium">Progress</th>

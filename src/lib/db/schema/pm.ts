@@ -522,3 +522,20 @@ export const projectShares = pgTable(
   },
   (t) => [uniqueIndex("project_shares_token_uidx").on(t.token), index("project_shares_project_idx").on(t.projectId)],
 );
+
+// --- Project templates saved by a workspace (Phase 10) ---
+
+export const projectTemplates = pgTable(
+  "project_templates",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    name: text("name").notNull(),
+    description: text("description"),
+    // Validated with templateDataSchema (lib/templates.ts) on write and read.
+    data: jsonb("data").$type<import("@/lib/templates").TemplateData>().notNull(),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [index("project_templates_workspace_idx").on(t.workspaceId)],
+);

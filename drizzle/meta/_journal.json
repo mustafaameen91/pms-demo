@@ -50,6 +50,13 @@
       "when": 1792266070955,
       "tag": "0006_curvy_wasp",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792407307755,
+      "tag": "0007_fixed_roland_deschain",
+      "breakpoints": true
     }
   ]
 }

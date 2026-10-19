@@ -6,7 +6,8 @@ import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspace, requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { activities, expenses, member, projects, taskStatuses } from "@/lib/db/schema";
+import { activities, expenses, member, projectTemplates, projects, taskStatuses, tasks } from "@/lib/db/schema";
+import { addDays, builtinTemplate, templateDataSchema, templateLengthDays } from "@/lib/templates";
 import { deleteStoredFile } from "@/lib/uploads";
 import {
   CURRENCIES,
@@ -107,6 +108,14 @@ export async function createProject(
     .limit(1);
   if (existing) return { fieldErrors: { key: `Key ${key.data} is already used in this workspace` } };
 
+  const template = await resolveTemplate(String(formData.get("template") ?? ""), workspace.id);
+  if (template === "invalid") return { error: "That template is no longer available. Choose another one." };
+
+  // With a template and a start date but no end date, finish when the template's last task does.
+  const length = template ? templateLengthDays(template) : 0;
+  const endDate =
+    details.data.endDate ?? (template && details.data.startDate && length > 0 ? addDays(details.data.startDate, length - 1) : null);
+
   await db.transaction(async (tx) => {
     const [project] = await tx
       .insert(projects)
@@ -114,28 +123,72 @@ export async function createProject(
         workspaceId: workspace.id,
         key: key.data,
         ...details.data,
+        endDate,
         leadId: user.id,
         createdById: user.id,
       })
       .returning({ id: projects.id });
 
-    await tx.insert(taskStatuses).values(
-      DEFAULT_STATUSES.map((s, i) => ({
-        workspaceId: workspace.id,
-        projectId: project.id,
-        name: s.name,
-        category: s.category,
-        color: s.color,
-        position: (i + 1) * POSITION_STEP,
-      })),
-    );
+    const statusRows = await tx
+      .insert(taskStatuses)
+      .values(
+        (template?.statuses ?? DEFAULT_STATUSES).map((s, i) => ({
+          workspaceId: workspace.id,
+          projectId: project.id,
+          name: s.name,
+          category: s.category,
+          color: s.color,
+          position: (i + 1) * POSITION_STEP,
+        })),
+      )
+      .returning({ id: taskStatuses.id, category: taskStatuses.category });
+
+    if (template && template.tasks.length > 0) {
+      // New tasks go in the first "to do" column (or the first column).
+      const startStatus = statusRows.find((s) => s.category === "todo") ?? statusRows[0];
+      const start = details.data.startDate;
+      let number = 0;
+      for (const [i, task] of template.tasks.entries()) {
+        const startDate = start && task.startOffset !== undefined ? addDays(start, task.startOffset) : null;
+        const dueDate = startDate && task.duration ? addDays(startDate, task.duration - 1) : null;
+        const [main] = await tx
+          .insert(tasks)
+          .values({
+            workspaceId: workspace.id,
+            projectId: project.id,
+            number: ++number,
+            statusId: startStatus.id,
+            title: task.title,
+            description: task.description ?? null,
+            weight: task.weight !== undefined ? task.weight.toFixed(2) : null,
+            startDate,
+            dueDate,
+            reporterId: user.id,
+            position: (i + 1) * POSITION_STEP,
+          })
+          .returning({ id: tasks.id });
+        for (const [j, title] of (task.subtasks ?? []).entries()) {
+          await tx.insert(tasks).values({
+            workspaceId: workspace.id,
+            projectId: project.id,
+            parentId: main.id,
+            number: ++number,
+            statusId: startStatus.id,
+            title,
+            reporterId: user.id,
+            position: (j + 1) * POSITION_STEP,
+          });
+        }
+      }
+      await tx.update(projects).set({ taskCounter: number }).where(eq(projects.id, project.id));
+    }
 
     await tx.insert(activities).values({
       workspaceId: workspace.id,
       projectId: project.id,
       actorId: user.id,
       type: "project.created",
-      data: { name: details.data.name },
+      data: { name: details.data.name, ...(template && { template: template.name }) },
     });
   });
 
@@ -277,4 +330,24 @@ export async function changeProjectKey(projectId: string, newKey: string) {
 
   await db.update(projects).set({ key: key.data }).where(eq(projects.id, project.id));
   redirect(`/w/${slug}/p/${key.data}/settings`);
+}
+
+/** "builtin:<id>" or "custom:<id>" → template data; "" → none; unknown → "invalid". */
+async function resolveTemplate(value: string, workspaceId: string) {
+  if (!value) return null;
+  const [kind, id] = value.split(":");
+  if (kind === "builtin") {
+    const tpl = builtinTemplate(id);
+    return tpl ? { name: tpl.name, ...tpl.data } : "invalid";
+  }
+  if (kind === "custom" && id) {
+    const [row] = await db
+      .select({ name: projectTemplates.name, data: projectTemplates.data })
+      .from(projectTemplates)
+      .where(and(eq(projectTemplates.id, id), eq(projectTemplates.workspaceId, workspaceId)))
+      .limit(1);
+    const parsed = row ? templateDataSchema.safeParse(row.data) : null;
+    return parsed?.success ? { name: row!.name, ...parsed.data } : "invalid";
+  }
+  return "invalid";
 }

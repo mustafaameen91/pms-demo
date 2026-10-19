@@ -14,6 +14,7 @@ import {
   ChevronsUpDown,
   FolderKanban,
   LayoutDashboard,
+  LayoutTemplate,
   LogOut,
   Menu,
   Monitor,
@@ -149,6 +150,10 @@ function SidebarContent({
         <NavLink href={`${base}/resources`} active={pathname.startsWith(`${base}/resources`)} onNavigate={onNavigate}>
           <Package className="size-4" />
           Resources
+        </NavLink>
+        <NavLink href={`${base}/templates`} active={pathname.startsWith(`${base}/templates`)} onNavigate={onNavigate}>
+          <LayoutTemplate className="size-4" />
+          Templates
         </NavLink>
         <NavLink href={`${base}/members`} active={pathname.startsWith(`${base}/members`)} onNavigate={onNavigate}>
           <Users className="size-4" />

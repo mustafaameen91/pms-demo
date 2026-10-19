@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useActionState, useState } from "react";
+import { startTransition, useActionState, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { createProject } from "@/lib/actions/projects";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FieldError, ProjectFields } from "./project-fields";
+import { TemplatePicker, type PickedTemplate } from "./template-picker";
+import { listWorkspaceTemplates, type CustomTemplateSummary } from "@/lib/actions/templates";
+import { describeLength } from "@/lib/templates";
+import { cn } from "@/lib/utils";
 
 function suggestKey(name: string) {
   const words = name.toUpperCase().replace(/[^A-Z0-9 ]/g, "").split(/\s+/).filter(Boolean);
@@ -34,21 +38,58 @@ export function NewProjectDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>New project</DialogTitle>
-          <DialogDescription>
-            You can change any of this later in the project&apos;s settings.
-          </DialogDescription>
-        </DialogHeader>
-        {/* Remount on each open so the form starts empty. */}
-        {open && <NewProjectForm workspaceSlug={workspaceSlug} onCancel={() => onOpenChange(false)} />}
-      </DialogContent>
+      {/* Remount on each open so it starts at the template step with an empty form. */}
+      {open && <NewProjectFlow workspaceSlug={workspaceSlug} onCancel={() => onOpenChange(false)} />}
     </Dialog>
   );
 }
 
-function NewProjectForm({ workspaceSlug, onCancel }: { workspaceSlug: string; onCancel: () => void }) {
+function NewProjectFlow({ workspaceSlug, onCancel }: { workspaceSlug: string; onCancel: () => void }) {
+  const [picked, setPicked] = useState<PickedTemplate | null>(null);
+  const [custom, setCustom] = useState<CustomTemplateSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    listWorkspaceTemplates(workspaceSlug)
+      .then((rows) => alive && setCustom(rows))
+      .catch(() => alive && setCustom([]))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, [workspaceSlug]);
+
+  return (
+    <DialogContent className={cn("max-h-[90dvh] overflow-y-auto", picked ? "sm:max-w-lg" : "sm:max-w-3xl")}>
+      <DialogHeader>
+        <DialogTitle>New project</DialogTitle>
+        <DialogDescription>
+          {picked
+            ? "You can change any of this later in the project's settings."
+            : "Start from a template made for your field, or from a blank project."}
+        </DialogDescription>
+      </DialogHeader>
+      {picked ? (
+        <NewProjectForm workspaceSlug={workspaceSlug} template={picked} onChangeTemplate={() => setPicked(null)} onCancel={onCancel} />
+      ) : (
+        <TemplatePicker custom={custom} loadingCustom={loading} onPick={setPicked} />
+      )}
+    </DialogContent>
+  );
+}
+
+function NewProjectForm({
+  workspaceSlug,
+  template,
+  onChangeTemplate,
+  onCancel,
+}: {
+  workspaceSlug: string;
+  template: PickedTemplate;
+  onChangeTemplate: () => void;
+  onCancel: () => void;
+}) {
   const [state, action, pending] = useActionState(createProject, undefined);
   const [key, setKey] = useState("");
   const [keyEdited, setKeyEdited] = useState(false);
@@ -65,6 +106,43 @@ function NewProjectForm({ workspaceSlug, onCancel }: { workspaceSlug: string; on
       className="grid gap-4"
     >
       <input type="hidden" name="workspaceSlug" value={workspaceSlug} />
+      <input type="hidden" name="template" value={template.value} />
+
+      <div className="rounded-lg border bg-muted/40 px-3 py-2.5 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="min-w-0 flex-1">
+            <span className="text-muted-foreground">Template: </span>
+            <span className="font-medium">{template.name}</span>
+            {template.taskCount > 0 && (
+              <span className="text-muted-foreground">
+                {" "}
+                · {template.taskCount} tasks · {describeLength(template.lengthDays)}
+              </span>
+            )}
+          </span>
+          <Button type="button" variant="ghost" size="sm" onClick={onChangeTemplate}>
+            Change
+          </Button>
+        </div>
+        {template.tasks.length > 0 && (
+          <details className="mt-1">
+            <summary className="cursor-pointer text-xs text-primary">Show tasks</summary>
+            <ol className="mt-2 grid gap-0.5 text-xs">
+              {template.tasks.map((t, i) => (
+                <li key={i} className="flex justify-between gap-3">
+                  <span className="truncate">{t.title}</span>
+                  {t.weight !== undefined && <span className="text-muted-foreground tabular-nums">{t.weight}%</span>}
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
+        {template.lengthDays > 0 && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Set a start date and the tasks get their dates automatically (and the end date, if you leave it empty).
+          </p>
+        )}
+      </div>
 
       <ProjectFields
         errors={errors}

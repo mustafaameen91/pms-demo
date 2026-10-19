@@ -93,7 +93,47 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Audit log with filters and CSV download
 - [ ] Online card/wallet payments (later, once a provider that works for you is chosen)
 
-## Phase 10 — Going live on your Ubuntu servers
+## Phase 10 — Project templates *(fit every field)*
+- [x] Built-in industry templates: construction, renovation / fit-out, marketing campaign, IT rollout, event, client consulting, product launch, production run
+- [x] Each template: workflow statuses + weighted tasks + sub-tasks + planned durations
+- [x] "New project" starts from a template (dates placed from the project start date; end date derived)
+- [x] "Save as template" from any project, and a Templates page to manage them
+
+## Phase 11 — Milestones & dependencies *(construction, PMO, product)*
+- [ ] Milestones (key dates) shown on the timeline and Overview
+- [ ] Task dependencies: "B can't start before A is finished"
+- [ ] Warning when a task starts before what it depends on is done
+- [ ] Dependency arrows / markers on the timeline
+
+## Phase 12 — Approvals *(finance, construction)*
+- [ ] Approval rule per workspace: expenses above an amount need approval
+- [ ] Pending / approved / rejected expenses; only approved ones count as spent
+- [ ] Approve / reject with a comment; notifications to approvers and requester
+
+## Phase 13 — Request forms *(IT, operations, marketing)*
+- [ ] Public request form per project (no login) → creates a task in a "Requests" column
+- [ ] Choose which fields to ask; spam protection
+- [ ] Requester gets a reference number; team gets notified
+
+## Phase 14 — Everyday productivity
+- [ ] "My tasks" across all projects
+- [ ] Global search (⌘K / Ctrl+K)
+- [ ] Workload view: tasks per person per week, who is overloaded
+- [ ] Calendar view
+- [ ] Recurring tasks
+- [ ] Custom fields per project
+
+## Phase 15 — Automations
+- [ ] Rules: "when status becomes Done → notify the manager", "when an expense is added → …", "when a task is late → …"
+- [ ] Simple rule builder (when … then …), on/off per rule, run history
+
+## Phase 16 — AI assistant & integrations *(needs a decision: AI has a small cost per use)*
+- [ ] AI: turn a project brief into weighted tasks
+- [ ] AI: weekly status summary and risk list per project
+- [ ] "Continue with Google" sign-in
+- [ ] Outgoing webhooks / API for other systems
+
+## Phase 17 — Going live on your Ubuntu servers
 - [ ] **Turn on real email** (SMTP settings in `.env`) — chosen to postpone; currently printed to terminal
 - [ ] Automated tests, production Docker setup
 - [ ] Deploy with HTTPS
