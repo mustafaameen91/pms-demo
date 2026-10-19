@@ -6,6 +6,9 @@ import { ProjectSettings } from "@/components/projects/project-settings";
 import { ClientShare } from "@/components/projects/client-share";
 import { SaveAsTemplate } from "@/components/projects/save-as-template";
 import { ApprovalThreshold } from "@/components/projects/approval-threshold";
+import { RequestForms } from "@/components/projects/request-forms";
+import { formSubmissions, requestForms, taskStatuses } from "@/lib/db/schema";
+import { asc, count, max } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { projectShares } from "@/lib/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
@@ -22,6 +25,26 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
   if (!project) notFound();
   const members = await listMembers(workspace.id);
   const canManage = canManageProject(workspace.role, user.id, project);
+  const [forms, statuses] = canManage
+    ? await Promise.all([
+        db
+          .select({
+            form: requestForms,
+            submissions: count(formSubmissions.id),
+            lastSubmission: max(formSubmissions.createdAt),
+          })
+          .from(requestForms)
+          .leftJoin(formSubmissions, eq(formSubmissions.formId, requestForms.id))
+          .where(eq(requestForms.projectId, project.id))
+          .groupBy(requestForms.id)
+          .orderBy(asc(requestForms.createdAt)),
+        db
+          .select({ id: taskStatuses.id, name: taskStatuses.name })
+          .from(taskStatuses)
+          .where(eq(taskStatuses.projectId, project.id))
+          .orderBy(asc(taskStatuses.position)),
+      ])
+    : [[], []];
   const [share] = canManage
     ? await db
         .select({ token: projectShares.token, showBudget: projectShares.showBudget, lastViewedAt: projectShares.lastViewedAt })
@@ -36,6 +59,26 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
         <ClientShare
           projectId={project.id}
           share={share ?? null}
+          appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
+        />
+      )}
+      {canManage && (
+        <RequestForms
+          projectId={project.id}
+          forms={forms.map(({ form, submissions, lastSubmission }) => ({
+            id: form.id,
+            token: form.token,
+            title: form.title,
+            intro: form.intro,
+            config: form.config,
+            statusId: form.statusId,
+            assigneeId: form.assigneeId,
+            enabled: form.enabled,
+            submissions,
+            lastSubmission,
+          }))}
+          statuses={statuses}
+          members={members.map((m) => ({ id: m.id, name: m.name }))}
           appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
         />
       )}

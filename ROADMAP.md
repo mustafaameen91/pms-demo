@@ -111,9 +111,9 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Approve / reject (reason required) on the Expenses tab and a workspace Approvals page; notifications to approvers and requester
 
 ## Phase 13 — Request forms *(IT, operations, marketing)*
-- [ ] Public request form per project (no login) → creates a task in a "Requests" column
-- [ ] Choose which fields to ask; spam protection
-- [ ] Requester gets a reference number; team gets notified
+- [x] Public request form per project (no login) → creates a task in the chosen column, optionally assigned
+- [x] Choose which fields to ask + your own questions; spam protection (hidden trap field, too-fast check, 5 requests / 10 min per connection)
+- [x] Requester gets a reference number (and a confirmation email when SMTP is on); team gets notified; form can be closed or its link replaced
 
 ## Phase 14 — Everyday productivity
 - [ ] "My tasks" across all projects

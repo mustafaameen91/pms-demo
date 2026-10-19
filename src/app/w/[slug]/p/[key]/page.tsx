@@ -5,6 +5,9 @@ import { requireWorkspace } from "@/lib/auth/session";
 import { computeAccomplishment } from "@/lib/accomplishment";
 import { getBoard, getDependencies, getProjectByKey, getTaskDetail, getTaskLinks, listMembers } from "@/lib/data/projects";
 import { getProjectResources } from "@/lib/data/resources";
+import { db } from "@/lib/db";
+import { formSubmissions, requestForms } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { cn } from "@/lib/utils";
 import { Board } from "@/components/tasks/board";
 import { TaskList } from "@/components/tasks/task-list";
@@ -35,7 +38,23 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
     taskNumber ? getProjectResources(project.id) : [],
     view === "timeline" ? getDependencies(project.id) : [],
   ]);
-  const links = selectedTask ? await getTaskLinks(selectedTask.id) : null;
+  const [links, [request]] = selectedTask
+    ? await Promise.all([
+        getTaskLinks(selectedTask.id),
+        db
+          .select({
+            formTitle: requestForms.title,
+            name: formSubmissions.requesterName,
+            email: formSubmissions.requesterEmail,
+            phone: formSubmissions.requesterPhone,
+            createdAt: formSubmissions.createdAt,
+          })
+          .from(formSubmissions)
+          .innerJoin(requestForms, eq(requestForms.id, formSubmissions.formId))
+          .where(eq(formSubmissions.taskId, selectedTask.id))
+          .limit(1),
+      ])
+    : [null, []];
 
   const basePath = `/w/${workspace.slug}/p/${project.key}`;
 
@@ -116,6 +135,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           resourcesHref={`${basePath}/resources`}
           currentUserId={user.id}
           links={links}
+          request={request ?? null}
           mainTasks={board.tasks.map((t) => ({ id: t.id, number: t.number, title: t.title }))}
           isAdmin={workspace.role === "owner" || workspace.role === "admin"}
           // Weight already given to the other main tasks, to show what's left of 100%.

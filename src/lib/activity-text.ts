@@ -38,6 +38,8 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "share.created": return `created a client link${data.showBudget ? " (with budget)" : ""}`;
     case "share.revoked": return "turned off the client link";
     case "task.created": return `created ${taskRef ?? "a task"}`;
+    case "task.created_from_form": return `request ${taskRef ?? ""} came in through “${s(data.form)}”${data.requester ? ` from ${s(data.requester)}` : ""}`;
+    case "form.created": return `created the request form “${s(data.title)}”`;
     case "task.deleted": return `deleted task “${s(data.title)}”`;
     case "task.restored": return `restored ${taskRef ?? "a task"}`;
     case "task.renamed": return `renamed ${taskRef ?? "a task"} to “${s(data.to)}”`;

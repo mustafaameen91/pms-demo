@@ -15,7 +15,8 @@ export type NotificationType =
   | "project.over_budget"
   | "expense.approval_requested"
   | "expense.approved"
-  | "expense.rejected";
+  | "expense.rejected"
+  | "request.received";
 
 type Notify = {
   workspaceId: string;

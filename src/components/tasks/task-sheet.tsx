@@ -3,7 +3,7 @@
 import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CornerLeftUp, Loader2, Lock, Trash2, X } from "lucide-react";
+import { ClipboardList, CornerLeftUp, Loader2, Lock, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createTask, deleteTask, restoreTask, updateTask, type TaskPatch } from "@/lib/actions/tasks";
 import type { BoardStatus, TaskDetail, TaskLinks, WorkspaceMember } from "@/lib/data/projects";
@@ -37,6 +37,8 @@ type SheetProps = {
   currentUserId: string;
   isAdmin: boolean;
   links: TaskLinks | null;
+  /** Set when the task came in through a public request form. */
+  request: { formTitle: string; name: string | null; email: string | null; phone: string | null; createdAt: Date } | null;
   /** Main tasks of the project, for picking dependencies. */
   mainTasks: { id: string; number: number; title: string }[];
 };
@@ -92,6 +94,7 @@ function TaskEditor({
   currentUserId,
   isAdmin,
   links,
+  request,
   mainTasks,
   onClose,
 }: SheetProps & { task: TaskDetail; onClose: () => void }) {
@@ -210,6 +213,32 @@ function TaskEditor({
       </SheetHeader>
 
       <div className="grid min-w-0 gap-5 px-4 pb-8">
+        {request && (
+          <div className="rounded-lg border bg-muted/50 px-3 py-2 text-sm">
+            <p className="flex items-center gap-2 font-medium">
+              <ClipboardList className="size-4 text-muted-foreground" aria-hidden />
+              Request via “{request.formTitle}”
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {[request.name, request.email, request.phone].filter(Boolean).join(" · ") || "No contact details given"} ·{" "}
+              <span suppressHydrationWarning>{new Date(request.createdAt).toLocaleString()}</span>
+            </p>
+            {(request.email || request.phone) && (
+              <p className="mt-1 flex gap-3 text-xs">
+                {request.email && (
+                  <a href={`mailto:${request.email}?subject=${encodeURIComponent(`Your request ${taskKey}`)}`} className="text-primary underline-offset-4 hover:underline">
+                    Email them
+                  </a>
+                )}
+                {request.phone && (
+                  <a href={`tel:${request.phone}`} className="text-primary underline-offset-4 hover:underline">
+                    Call
+                  </a>
+                )}
+              </p>
+            )}
+          </div>
+        )}
         {waitingOn.length > 0 && (
           <p role="status" className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
             <Lock className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -520,7 +549,9 @@ function TaskEditor({
               <li key={a.id} className="flex gap-2.5 text-sm">
                 <UserAvatar name={a.actor?.name ?? "?"} className="size-5" />
                 <p className="min-w-0 flex-1 text-muted-foreground">
-                  <span className="font-medium text-foreground">{a.actor?.name ?? "Someone"}</span>{" "}
+                  <span className="font-medium text-foreground">
+                    {a.actor?.name ?? (a.type === "task.created_from_form" ? "Request" : "Someone")}
+                  </span>{" "}
                   {describeActivity(a.type, a.data, { statusName, memberName, currency, projectKey })}
                   <time
                     dateTime={new Date(a.createdAt).toISOString()}
@@ -717,6 +748,8 @@ function describeActivity(
       return "restored the task";
     case "comment.added":
       return "commented";
+    case "task.created_from_form":
+      return `came in through the form “${s(data.form)}”${data.requester ? ` from ${s(data.requester)}` : ""}`;
     case "task.made_milestone":
       return "made it a milestone";
     case "task.unmade_milestone":

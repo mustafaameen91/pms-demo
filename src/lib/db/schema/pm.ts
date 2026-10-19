@@ -574,3 +574,67 @@ export const taskDependencies = pgTable(
     index("task_dependencies_depends_on_idx").on(t.dependsOnId),
   ],
 );
+
+// --- Request forms (Phase 13): public forms that create tasks. ---
+
+export type FormQuestion = {
+  id: string;
+  label: string;
+  type: "text" | "textarea" | "choice";
+  options?: string[];
+  required: boolean;
+};
+
+export type FormConfig = {
+  /** Built-in fields to ask; "subject" and "details" are always asked. */
+  askName: "off" | "optional" | "required";
+  askEmail: "off" | "optional" | "required";
+  askPhone: "off" | "optional" | "required";
+  askPriority: boolean;
+  askNeededBy: boolean;
+  questions: FormQuestion[];
+};
+
+export const requestForms = pgTable(
+  "request_forms",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    // Secret part of the public URL (/f/<token>).
+    token: text("token").notNull(),
+    title: text("title").notNull(),
+    intro: text("intro"),
+    config: jsonb("config").$type<FormConfig>().notNull(),
+    // Where new requests land, and who gets them (both optional).
+    statusId: text("status_id").references(() => taskStatuses.id, { onDelete: "set null" }),
+    assigneeId: text("assignee_id").references(() => user.id, { onDelete: "set null" }),
+    enabled: boolean("enabled").notNull().default(true),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("request_forms_token_uidx").on(t.token), index("request_forms_project_idx").on(t.projectId)],
+);
+
+export const formSubmissions = pgTable(
+  "form_submissions",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    formId: text("form_id")
+      .notNull()
+      .references(() => requestForms.id, { onDelete: "cascade" }),
+    taskId: text("task_id").references(() => tasks.id, { onDelete: "set null" }),
+    requesterName: text("requester_name"),
+    requesterEmail: text("requester_email"),
+    requesterPhone: text("requester_phone"),
+    // { questionId: answer } for the form's own questions.
+    answers: jsonb("answers").$type<Record<string, string>>().notNull().default({}),
+    // Hashed client address, only for rate limiting / abuse review.
+    ipHash: text("ip_hash"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("form_submissions_form_idx").on(t.formId, t.createdAt), index("form_submissions_task_idx").on(t.taskId)],
+);
