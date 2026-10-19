@@ -37,7 +37,7 @@ export async function GET(request: Request, ctx: RouteContext<"/w/[slug]/audit/e
     ["Date (UTC)", "Person", "Area", "What happened", "Project"],
     ...entries.map((e) => [
       new Date(e.createdAt).toISOString().replace("T", " ").slice(0, 19),
-      e.actorName ?? "System",
+      e.actorName ?? (e.data.automation ? "Automation" : "System"),
       ACTIVITY_GROUPS[activityGroup(e.type)],
       describeActivity(e.type, e.data, e.projectKey && e.taskNumber ? `${e.projectKey}-${e.taskNumber}` : null),
       e.projectName ?? "",

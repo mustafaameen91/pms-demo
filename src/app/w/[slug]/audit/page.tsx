@@ -95,7 +95,7 @@ export default async function AuditPage({ params, searchParams }: PageProps<"/w/
                   {when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                 </time>
                 <p className="min-w-0 flex-1">
-                  <span className="font-medium">{e.actorName ?? (e.type === "task.created_from_form" ? "Request form:" : "System")}</span> {describeActivity(e.type, e.data, taskRef)}
+                  <span className="font-medium">{e.actorName ?? (e.data.automation ? "Automation:" : e.type === "task.created_from_form" ? "Request form:" : "System")}</span> {describeActivity(e.type, e.data, taskRef)}
                   {e.projectName && (
                     <Link href={`/w/${workspace.slug}/p/${e.projectKey}/overview`} className="ml-1 text-muted-foreground hover:underline">
                       · {e.projectName}

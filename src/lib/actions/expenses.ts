@@ -12,6 +12,7 @@ import { deleteStoredFile, saveReceipt } from "@/lib/uploads";
 import { MAX_MONEY, optionalDecimal } from "@/lib/validation";
 import { checkOverBudget } from "@/lib/budget-alerts";
 import { notify, projectManagers } from "@/lib/notifications";
+import { runAutomations } from "@/lib/automation-runner";
 import { formatMoney } from "@/lib/utils";
 
 export type ExpenseResult =
@@ -122,6 +123,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
     : { approvalStatus: "approved" as const };
 
   const values = { ...data, category: data.category as Category, amount: data.amount!, ...approval };
+  let newExpenseId: string | undefined;
   try {
     await db.transaction(async (tx) => {
       if (existing) {
@@ -130,13 +132,16 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
           .set({ ...values, ...receipt })
           .where(eq(expenses.id, existing.id));
       } else {
-        await tx.insert(expenses).values({
-          ...values,
-          ...receipt,
-          workspaceId: project.workspaceId,
-          projectId,
-          createdById: user.id,
-        });
+        [{ id: newExpenseId }] = await tx
+          .insert(expenses)
+          .values({
+            ...values,
+            ...receipt,
+            workspaceId: project.workspaceId,
+            projectId,
+            createdById: user.id,
+          })
+          .returning({ id: expenses.id });
       }
       await tx.insert(activities).values({
         workspaceId: project.workspaceId,
@@ -166,6 +171,12 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
     });
   } else {
     await checkOverBudget(projectId, user.id);
+  }
+  if (newExpenseId) {
+    await runAutomations(
+      { type: "expense.added", projectId, expenseId: newExpenseId, amount: values.amount, description: data.description },
+      user.id,
+    );
   }
 
   refresh();

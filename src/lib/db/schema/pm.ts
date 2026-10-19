@@ -16,6 +16,7 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 import { organization, user } from "./auth";
+import type { Action, Trigger } from "@/lib/automations";
 
 // "Workspace" in the product = Better Auth "organization" in the database.
 const id = () =>
@@ -642,4 +643,51 @@ export const formSubmissions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index("form_submissions_form_idx").on(t.formId, t.createdAt), index("form_submissions_task_idx").on(t.taskId)],
+);
+
+// --- Automations (Phase 15): "when … then …" rules per project. ---
+
+export const automationRules = pgTable(
+  "automation_rules",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    // Shapes and validation live in src/lib/automations.ts.
+    trigger: jsonb("trigger").$type<Trigger>().notNull(),
+    action: jsonb("action").$type<Action>().notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [index("automation_rules_project_idx").on(t.projectId)],
+);
+
+export const automationRunStatus = pgEnum("automation_run_status", ["done", "skipped", "failed"]);
+
+export const automationRuns = pgTable(
+  "automation_runs",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    ruleId: text("rule_id")
+      .notNull()
+      .references(() => automationRules.id, { onDelete: "cascade" }),
+    taskId: text("task_id").references(() => tasks.id, { onDelete: "set null" }),
+    status: automationRunStatus("status").notNull(),
+    // What happened, in words ("Moved PS-3 to Done", "Notified 2 people").
+    message: text("message").notNull(),
+    // Time-based rules (late tasks) run once per key.
+    dedupeKey: text("dedupe_key"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("automation_runs_project_idx").on(t.projectId, t.createdAt),
+    uniqueIndex("automation_runs_dedupe_uidx").on(t.ruleId, t.dedupeKey),
+  ],
 );

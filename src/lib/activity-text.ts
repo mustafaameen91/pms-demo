@@ -40,6 +40,11 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "task.created": return `created ${taskRef ?? "a task"}`;
     case "task.created_from_form": return `request ${taskRef ?? ""} came in through “${s(data.form)}”${data.requester ? ` from ${s(data.requester)}` : ""}`;
     case "form.created": return `created the request form “${s(data.title)}”`;
+    case "automation.created": return `added an automation: ${s(data.rule)}`;
+    case "automation.updated": return `changed an automation to: ${s(data.rule)}`;
+    case "automation.enabled": return `turned on an automation: ${s(data.rule)}`;
+    case "automation.disabled": return `turned off an automation: ${s(data.rule)}`;
+    case "automation.deleted": return `deleted an automation: ${s(data.rule)}`;
     case "task.deleted": return `deleted task “${s(data.title)}”`;
     case "task.restored": return `restored ${taskRef ?? "a task"}`;
     case "task.renamed": return `renamed ${taskRef ?? "a task"} to “${s(data.to)}”`;

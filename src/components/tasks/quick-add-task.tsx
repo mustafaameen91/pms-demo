@@ -33,6 +33,7 @@ export function QuickAddTask({
         toast.error(result.error);
         return;
       }
+      if (result.info) toast.success(result.info);
       setTitle("");
       inputRef.current?.focus(); // stay open for rapid entry
     });

@@ -16,7 +16,8 @@ export type NotificationType =
   | "expense.approval_requested"
   | "expense.approved"
   | "expense.rejected"
-  | "request.received";
+  | "request.received"
+  | "automation";
 
 type Notify = {
   workspaceId: string;
@@ -32,10 +33,10 @@ type Notify = {
   email?: boolean;
 };
 
-/** Creates in-app notifications (and optional emails) for workspace members. */
-export async function notify(n: Notify) {
+/** Creates in-app notifications (and optional emails) for workspace members. Returns who got one. */
+export async function notify(n: Notify): Promise<string[]> {
   const ids = [...new Set(n.userIds.filter((id): id is string => Boolean(id) && id !== n.actorId))];
-  if (ids.length === 0) return;
+  if (ids.length === 0) return [];
 
   // Only people who are still members of the workspace.
   const recipients = await db
@@ -43,7 +44,7 @@ export async function notify(n: Notify) {
     .from(member)
     .innerJoin(user, eq(user.id, member.userId))
     .where(and(eq(member.organizationId, n.workspaceId), inArray(member.userId, ids)));
-  if (recipients.length === 0) return;
+  if (recipients.length === 0) return [];
 
   const inserted = await db
     .insert(notifications)
@@ -62,8 +63,8 @@ export async function notify(n: Notify) {
     .onConflictDoNothing()
     .returning({ userId: notifications.userId });
 
+  const fresh = new Set(inserted.map((i) => i.userId));
   if (n.email) {
-    const fresh = new Set(inserted.map((i) => i.userId));
     await Promise.all(
       recipients
         .filter((r) => fresh.has(r.id))
@@ -76,6 +77,7 @@ export async function notify(n: Notify) {
         ),
     );
   }
+  return [...fresh];
 }
 
 /** Owners/admins of a workspace plus the project manager. */

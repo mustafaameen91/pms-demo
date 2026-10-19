@@ -1,9 +1,11 @@
+import { after } from "next/server";
 import { getUserWorkspaces, requireMembership } from "@/lib/auth/session";
 import { getWorkspaceAccess, isSuperAdmin } from "@/lib/billing";
 import { listProjects } from "@/lib/data/projects";
 import { unreadCount } from "@/lib/data/notifications";
 import { listPendingApprovals } from "@/lib/data/expenses";
 import { ensureLateTaskNotifications } from "@/lib/notifications";
+import { sweepLateTaskAutomations } from "@/lib/automation-runner";
 import { AppShell } from "@/components/shell/app-shell";
 
 export default async function WorkspaceLayout({ children, params }: LayoutProps<"/w/[slug]">) {
@@ -11,7 +13,11 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
   const { user, workspace } = await requireMembership(slug);
   const access = await getWorkspaceAccess(workspace.id);
   // No background scheduler: late-task reminders are created when the app is opened.
-  if (access.allowed) await ensureLateTaskNotifications(user.id, workspace.id);
+  if (access.allowed) {
+    await ensureLateTaskNotifications(user.id, workspace.id);
+    // "Task becomes late" automations: after the page is sent, so they never slow it down.
+    after(() => sweepLateTaskAutomations(workspace.id));
+  }
   const isAdmin = workspace.role === "owner" || workspace.role === "admin";
   const [workspaces, projects, unread, approvals] = await Promise.all([
     getUserWorkspaces(user.id),

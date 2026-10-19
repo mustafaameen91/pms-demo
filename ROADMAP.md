@@ -124,8 +124,8 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Custom fields per project
 
 ## Phase 15 — Automations
-- [ ] Rules: "when status becomes Done → notify the manager", "when an expense is added → …", "when a task is late → …"
-- [ ] Simple rule builder (when … then …), on/off per rule, run history
+- [x] Rules: "when status becomes Done → notify the manager", "when an expense is added → …", "when a task is late → …"
+- [x] Simple rule builder (when … then …), on/off per rule, run history
 
 ## Phase 16 — AI assistant & integrations *(needs a decision: AI has a small cost per use)*
 - [ ] AI: turn a project brief into weighted tasks

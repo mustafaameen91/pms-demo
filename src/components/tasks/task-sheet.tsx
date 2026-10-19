@@ -587,10 +587,10 @@ function TaskEditor({
           <ol className="grid gap-3">
             {task.activities.map((a) => (
               <li key={a.id} className="flex gap-2.5 text-sm">
-                <UserAvatar name={a.actor?.name ?? "?"} className="size-5" />
+                <UserAvatar name={a.actor?.name ?? (a.data.automation ? "Automation" : "?")} className="size-5" />
                 <p className="min-w-0 flex-1 text-muted-foreground">
                   <span className="font-medium text-foreground">
-                    {a.actor?.name ?? (a.type === "task.created_from_form" ? "Request" : "Someone")}
+                    {a.actor?.name ?? (a.data.automation ? "Automation" : a.type === "task.created_from_form" ? "Request" : "Someone")}
                   </span>{" "}
                   {describeActivity(a.type, a.data, { statusName, memberName, currency, projectKey })}
                   <time

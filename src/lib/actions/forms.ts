@@ -13,6 +13,7 @@ import { POSITION_STEP } from "@/lib/constants";
 import { appUrl, sendEmail } from "@/lib/email";
 import { MIN_FILL_MS, createRateLimiter, describeSubmission, formConfigSchema, submissionSchema } from "@/lib/forms";
 import { notify, projectContext } from "@/lib/notifications";
+import { runAutomations } from "@/lib/automation-runner";
 import { canManageProject } from "@/lib/permissions";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; fieldErrors?: Record<string, string> };
@@ -201,7 +202,7 @@ export async function submitRequest(token: string, input: SubmitInput): Promise<
     statuses.find((s) => s.category === "todo") ??
     statuses[0];
 
-  const number = await db.transaction(async (tx) => {
+  const created = await db.transaction(async (tx) => {
     const [{ taskCounter }] = await tx
       .update(projects)
       .set({ taskCounter: sql`${projects.taskCounter} + 1` })
@@ -244,11 +245,12 @@ export async function submitRequest(token: string, input: SubmitInput): Promise<
       type: "task.created_from_form",
       data: { form: form.title, requester: d.name ?? d.email ?? null },
     });
-    return taskCounter;
+    return { id: task.id, number: taskCounter };
   });
 
   submitLimiter.record(limitKey);
-  const reference = `${project.key}-${number}`;
+  await runAutomations({ type: "task.created", projectId: form.projectId, taskId: created.id }, null);
+  const reference = `${project.key}-${created.number}`;
   const ctx = await projectContext(form.projectId);
   if (ctx) {
     await notify({

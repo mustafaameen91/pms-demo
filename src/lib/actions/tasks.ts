@@ -1,18 +1,17 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { and, asc, eq, isNull, max, or, sql } from "drizzle-orm";
+import { and, eq, isNull, max, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { activities, member, projects, taskDependencies, taskStatuses, tasks } from "@/lib/db/schema";
 import { isFinished, startsTooEarly, wouldCreateCycle } from "@/lib/dependencies";
-import { nextOccurrence, type Recurrence } from "@/lib/recurrence";
-import { todayISO } from "@/lib/accomplishment";
-import { formatDate } from "@/lib/utils";
+import { defaultStatus, spawnNextOccurrence } from "@/lib/task-recurrence";
 import { POSITION_STEP, PRIORITIES } from "@/lib/constants";
 import { MAX_MONEY, optionalDecimal } from "@/lib/validation";
 import { notify, projectContext } from "@/lib/notifications";
+import { runAutomations } from "@/lib/automation-runner";
 
 /** `warning`: the change was saved, but the user should know something (e.g. started while blocked). */
 type Result<T = undefined> =
@@ -40,16 +39,6 @@ async function statusInProject(statusId: string, projectId: string) {
   return status ?? null;
 }
 
-/** First "To do"-type status, falling back to the first column. */
-async function defaultStatus(projectId: string) {
-  const statuses = await db
-    .select()
-    .from(taskStatuses)
-    .where(eq(taskStatuses.projectId, projectId))
-    .orderBy(asc(taskStatuses.position));
-  return statuses.find((s) => s.category === "todo") ?? statuses[0] ?? null;
-}
-
 const isDone = (category: string) => category === "done" || category === "canceled";
 
 /** Unfinished predecessors of a task, and the latest end date among all its predecessors. */
@@ -64,88 +53,6 @@ async function predecessorState(taskId: string) {
 }
 
 const listTitles = (rows: { title: string }[]) => rows.map((r) => `“${r.title}”`).join(", ");
-
-/**
- * When a repeating task is finished, create its next occurrence (once).
- * Copies title, description, priority, assignee, budget and sub-tasks;
- * progress starts at 0 and weight is left empty (it would exceed 100%).
- */
-async function spawnNextOccurrence(taskId: string, actorId: string): Promise<string | undefined> {
-  const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
-  if (!task?.recurrence || task.recurrenceNextId || task.deletedAt) return;
-  const status = await defaultStatus(task.projectId);
-  if (!status) return;
-  const dates = nextOccurrence(task, task.recurrence as Recurrence, todayISO());
-  const subtasks = await db
-    .select({ title: tasks.title })
-    .from(tasks)
-    .where(and(eq(tasks.parentId, taskId), isNull(tasks.deletedAt)))
-    .orderBy(asc(tasks.position));
-
-  const result = await db.transaction(async (tx) => {
-    // Claim the spawn first so two quick "done" clicks can't create two copies.
-    const claimed = await tx
-      .update(tasks)
-      .set({ recurrenceNextId: "pending" })
-      .where(and(eq(tasks.id, taskId), isNull(tasks.recurrenceNextId)))
-      .returning({ id: tasks.id });
-    if (claimed.length === 0) return null;
-    const [{ taskCounter }] = await tx
-      .update(projects)
-      .set({ taskCounter: sql`${projects.taskCounter} + ${1 + subtasks.length}` })
-      .where(eq(projects.id, task.projectId))
-      .returning({ taskCounter: projects.taskCounter });
-    const firstNumber = taskCounter - subtasks.length;
-    const [{ maxPos }] = await tx
-      .select({ maxPos: max(tasks.position) })
-      .from(tasks)
-      .where(and(eq(tasks.projectId, task.projectId), eq(tasks.statusId, status.id)));
-    const [next] = await tx
-      .insert(tasks)
-      .values({
-        workspaceId: task.workspaceId,
-        projectId: task.projectId,
-        number: firstNumber,
-        statusId: status.id,
-        title: task.title,
-        description: task.description,
-        priority: task.priority,
-        assigneeId: task.assigneeId,
-        reporterId: actorId,
-        budget: task.budget,
-        isMilestone: task.isMilestone,
-        recurrence: task.recurrence,
-        position: (maxPos ?? 0) + POSITION_STEP,
-        ...dates,
-      })
-      .returning({ id: tasks.id, number: tasks.number });
-    for (const [i, sub] of subtasks.entries()) {
-      await tx.insert(tasks).values({
-        workspaceId: task.workspaceId,
-        projectId: task.projectId,
-        parentId: next.id,
-        number: firstNumber + 1 + i,
-        statusId: status.id,
-        title: sub.title,
-        reporterId: actorId,
-        position: (i + 1) * POSITION_STEP,
-      });
-    }
-    await tx.update(tasks).set({ recurrenceNextId: next.id }).where(eq(tasks.id, taskId));
-    await tx.insert(activities).values({
-      workspaceId: task.workspaceId,
-      projectId: task.projectId,
-      taskId,
-      actorId,
-      type: "task.recurred",
-      data: { number: next.number, dueDate: dates.dueDate },
-    });
-    return next;
-  });
-  if (!result) return;
-  const [project] = await db.select({ key: projects.key }).from(projects).where(eq(projects.id, task.projectId)).limit(1);
-  return `Repeats: ${project.key}-${result.number} created, due ${formatDate(dates.dueDate)}`;
-}
 
 
 const createSchema = z.object({
@@ -179,7 +86,7 @@ export async function createTask(input: z.input<typeof createSchema>): Promise<R
     : await defaultStatus(projectId);
   if (!status) return { ok: false, error: "Invalid status" };
 
-  const number = await db.transaction(async (tx) => {
+  const created = await db.transaction(async (tx) => {
     // Atomic counter: concurrent creates can't get the same task number.
     const [{ taskCounter }] = await tx
       .update(projects)
@@ -217,11 +124,12 @@ export async function createTask(input: z.input<typeof createSchema>): Promise<R
       type: parentId ? "subtask.created" : "task.created",
       data: { title, number: taskCounter },
     });
-    return taskCounter;
+    return { id: task.id, number: taskCounter };
   });
 
+  const notes = parentId ? [] : await runAutomations({ type: "task.created", projectId, taskId: created.id }, user.id);
   refresh();
-  return { ok: true, data: { number } };
+  return { ok: true, data: { number: created.number }, ...(notes.length && { info: notes.join(" · ") }) };
 }
 
 /** Drag & drop: move to a status and/or a new position (fractional index). */
@@ -259,7 +167,11 @@ export async function moveTask(taskId: string, statusId: string, position: numbe
     }
   });
 
-  const info = statusChanged && status.category === "done" ? await spawnNextOccurrence(taskId, user.id) : undefined;
+  const notes = statusChanged && !task.parentId
+    ? await runAutomations({ type: "task.status_changed", projectId: task.projectId, taskId, statusId }, user.id)
+    : [];
+  const repeat = statusChanged && status.category === "done" ? await spawnNextOccurrence(taskId, user.id) : undefined;
+  const info = [repeat, ...notes].filter(Boolean).join(" · ");
   refresh();
   if (info) return { ok: true, info };
   if (statusChanged && status.category !== "todo" && status.category !== "backlog") {
@@ -425,8 +337,12 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
 
   let info: string | undefined;
   if (set.statusId) {
+    const notes = task.parentId
+      ? []
+      : await runAutomations({ type: "task.status_changed", projectId: task.projectId, taskId, statusId: set.statusId }, user.id);
     const [st] = await db.select({ category: taskStatuses.category }).from(taskStatuses).where(eq(taskStatuses.id, set.statusId));
-    if (st?.category === "done") info = await spawnNextOccurrence(taskId, user.id);
+    const repeat = st?.category === "done" ? await spawnNextOccurrence(taskId, user.id) : undefined;
+    info = [repeat, ...notes].filter(Boolean).join(" · ") || undefined;
   }
   refresh();
   if (info) return { ok: true, info };

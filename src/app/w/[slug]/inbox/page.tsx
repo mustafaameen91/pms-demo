@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AlertTriangle, AtSign, BadgeCheck, Bell, ClipboardList, CalendarClock, MessageSquare, UserPlus, XCircle } from "lucide-react";
+import { AlertTriangle, AtSign, BadgeCheck, Bell, ClipboardList, CalendarClock, MessageSquare, UserPlus, Workflow, XCircle } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { listNotifications } from "@/lib/data/notifications";
 import { markAllNotificationsRead } from "@/lib/actions/notifications";
@@ -19,6 +19,7 @@ const ICONS: Record<string, typeof Bell> = {
   "expense.approved": BadgeCheck,
   "expense.rejected": XCircle,
   "request.received": ClipboardList,
+  automation: Workflow,
 };
 const ALERT_TYPES = new Set(["task.late", "project.over_budget", "expense.rejected"]);
 
