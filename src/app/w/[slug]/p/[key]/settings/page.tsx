@@ -7,6 +7,8 @@ import { ClientShare } from "@/components/projects/client-share";
 import { SaveAsTemplate } from "@/components/projects/save-as-template";
 import { ApprovalThreshold } from "@/components/projects/approval-threshold";
 import { RequestForms } from "@/components/projects/request-forms";
+import { CustomFieldsManager } from "@/components/projects/custom-fields-manager";
+import { getProjectFields } from "@/lib/data/custom-fields";
 import { formSubmissions, requestForms, taskStatuses } from "@/lib/db/schema";
 import { asc, count, max } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -45,6 +47,7 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
           .orderBy(asc(taskStatuses.position)),
       ])
     : [[], []];
+  const fields = canManage ? await getProjectFields(project.id) : [];
   const [share] = canManage
     ? await db
         .select({ token: projectShares.token, showBudget: projectShares.showBudget, lastViewedAt: projectShares.lastViewedAt })
@@ -62,6 +65,7 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
           appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
         />
       )}
+      {canManage && <CustomFieldsManager projectId={project.id} fields={fields} />}
       {canManage && (
         <RequestForms
           projectId={project.id}

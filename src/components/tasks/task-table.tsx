@@ -2,8 +2,9 @@ import Link from "next/link";
 import { ListTree } from "lucide-react";
 import type { BoardStatus, BoardTask } from "@/lib/data/projects";
 import { cn, formatMoney } from "@/lib/utils";
+import { formatFieldValue, type FieldDef } from "@/lib/custom-fields";
 import { QuickAddTask } from "./quick-add-task";
-import { BlockedBadge, MilestoneIcon, ProgressBar, StatusDot, UserAvatar, formatDue } from "./task-bits";
+import { BlockedBadge, MilestoneIcon, RepeatIcon, ProgressBar, StatusDot, UserAvatar, formatDue } from "./task-bits";
 
 export function TaskTable({
   projectId,
@@ -12,6 +13,7 @@ export function TaskTable({
   statuses,
   tasks,
   accomplishment,
+  fields,
 }: {
   projectId: string;
   projectKey: string;
@@ -20,6 +22,7 @@ export function TaskTable({
   tasks: BoardTask[];
   /** Project accomplishment % (see lib/accomplishment). */
   accomplishment: number | null;
+  fields: FieldDef[];
 }) {
   const statusById = new Map(statuses.map((s) => [s.id, s]));
   const ordered = [...tasks].sort(
@@ -33,7 +36,7 @@ export function TaskTable({
 
   return (
     <div className="flex-1 overflow-auto pb-10">
-      <table className="w-full min-w-[1040px] border-collapse text-sm">
+      <table className="w-full border-collapse text-sm" style={{ minWidth: 1040 + fields.length * 140 }}>
         <thead className="sticky top-0 z-10 bg-muted/80 text-left text-xs text-muted-foreground backdrop-blur">
           <tr className="border-b">
             <th scope="col" className="w-[34%] py-2 pr-3 pl-4 font-medium sm:pl-6">Task</th>
@@ -43,6 +46,11 @@ export function TaskTable({
             <th scope="col" className="px-3 py-2 font-medium">Start</th>
             <th scope="col" className="px-3 py-2 font-medium">End</th>
             <th scope="col" className="px-3 py-2 text-right font-medium">Budget</th>
+            {fields.map((f) => (
+              <th key={f.id} scope="col" className="max-w-40 truncate px-3 py-2 font-medium" title={f.name}>
+                {f.name}
+              </th>
+            ))}
             <th scope="col" className="py-2 pr-4 pl-3 font-medium sm:pr-6">
               <span className="sr-only">Assignee</span>
             </th>
@@ -69,6 +77,7 @@ export function TaskTable({
                     <span className={cn("truncate font-medium", done && "text-muted-foreground line-through")}>
                       {task.title}
                     </span>
+                    {task.recurrence && <RepeatIcon rule={task.recurrence} />}
                     {!done && task.blockedBy > 0 && <BlockedBadge count={task.blockedBy} />}
                     {task.subtaskCount > 0 && (
                       <span
@@ -114,6 +123,11 @@ export function TaskTable({
                 <td className="px-3 py-2.5 text-right whitespace-nowrap tabular-nums">
                   {task.budget ? formatMoney(task.budget, currency) : <span className="text-muted-foreground">—</span>}
                 </td>
+                {fields.map((f) => (
+                  <td key={f.id} className="max-w-40 truncate px-3 py-2.5 text-muted-foreground">
+                    {formatFieldValue(f, task.customFields?.[f.id]) || "—"}
+                  </td>
+                ))}
                 <td className="py-2.5 pr-4 pl-3 sm:pr-6">
                   {task.assigneeName && <UserAvatar name={task.assigneeName} image={task.assigneeImage} />}
                 </td>
@@ -147,6 +161,9 @@ export function TaskTable({
               <td className="px-3 py-2 text-right font-medium whitespace-nowrap text-foreground tabular-nums">
                 {formatMoney(totalBudget, currency)}
               </td>
+              {fields.map((f) => (
+                <td key={f.id} />
+              ))}
               <td />
             </tr>
           </tfoot>

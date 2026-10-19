@@ -5,6 +5,7 @@ import { lateTasks } from "@/lib/schedule";
 import { getBoard, getProjectByKey, type Project } from "./projects";
 import { getProjectResources } from "./resources";
 import { getProjectExpenses } from "./expenses";
+import { getProjectFields } from "./custom-fields";
 
 /** Everything a project report (Excel or PDF) shows. Caller must authorize the workspace. */
 export async function getProjectReport(workspaceId: string, key: string) {
@@ -14,10 +15,11 @@ export async function getProjectReport(workspaceId: string, key: string) {
 }
 
 async function buildReport(project: Project) {
-  const [board, usages, expenses] = await Promise.all([
+  const [board, usages, expenses, fields] = await Promise.all([
     getBoard(project.id),
     getProjectResources(project.id),
     getProjectExpenses(project.id),
+    getProjectFields(project.id),
   ]);
   const today = todayISO();
   const statusById = new Map(board.statuses.map((s) => [s.id, s]));
@@ -41,6 +43,7 @@ async function buildReport(project: Project) {
     late: lateTasks(tasks, today),
     usages,
     expenses,
+    fields,
     accomplishment,
     budget,
   };

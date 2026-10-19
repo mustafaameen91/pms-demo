@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarRange, Columns3, List, Table2 } from "lucide-react";
+import { CalendarDays, CalendarRange, Columns3, List, Table2 } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { computeAccomplishment } from "@/lib/accomplishment";
 import { getBoard, getDependencies, getProjectByKey, getTaskDetail, getTaskLinks, listMembers } from "@/lib/data/projects";
 import { getProjectResources } from "@/lib/data/resources";
+import { getProjectFields } from "@/lib/data/custom-fields";
 import { db } from "@/lib/db";
 import { formSubmissions, requestForms } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -13,6 +14,8 @@ import { Board } from "@/components/tasks/board";
 import { TaskList } from "@/components/tasks/task-list";
 import { TaskTable } from "@/components/tasks/task-table";
 import { TaskTimeline } from "@/components/tasks/task-timeline";
+import { TaskCalendar } from "@/components/tasks/task-calendar";
+import { todayISO } from "@/lib/accomplishment";
 import { TaskSheet } from "@/components/tasks/task-sheet";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]">) {
@@ -27,16 +30,21 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   if (!project) notFound();
 
   const view =
-    query.view === "board" || query.view === "list" || query.view === "timeline" ? query.view : "table";
+    query.view === "board" || query.view === "list" || query.view === "timeline" || query.view === "calendar"
+      ? query.view
+      : "table";
+  const month =
+    typeof query.month === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(query.month) ? query.month : todayISO().slice(0, 7);
   const taskParam = typeof query.task === "string" ? query.task : null;
   const taskNumber = taskParam?.match(/^[A-Z0-9]+-(\d+)$/i)?.[1];
 
-  const [board, members, selectedTask, projectResources, dependencies] = await Promise.all([
+  const [board, members, selectedTask, projectResources, dependencies, fields] = await Promise.all([
     getBoard(project.id),
     listMembers(workspace.id),
     taskNumber ? getTaskDetail(project.id, Number(taskNumber)) : null,
     taskNumber ? getProjectResources(project.id) : [],
     view === "timeline" ? getDependencies(project.id) : [],
+    getProjectFields(project.id),
   ]);
   const [links, [request]] = selectedTask
     ? await Promise.all([
@@ -66,6 +74,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
             [
               { id: "table", label: "Table", icon: Table2 },
               { id: "timeline", label: "Timeline", icon: CalendarRange },
+              { id: "calendar", label: "Calendar", icon: CalendarDays },
               { id: "board", label: "Board", icon: Columns3 },
               { id: "list", label: "List", icon: List },
             ] as const
@@ -93,6 +102,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           currency={project.currency}
           statuses={board.statuses}
           tasks={board.tasks}
+          fields={fields}
           accomplishment={
             computeAccomplishment(
               board.tasks.map((t) => ({
@@ -113,6 +123,9 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           tasks={board.tasks}
           dependencies={dependencies}
         />
+      )}
+      {view === "calendar" && (
+        <TaskCalendar projectKey={project.key} month={month} statuses={board.statuses} tasks={board.tasks} />
       )}
       {view === "board" && (
         <Board projectId={project.id} projectKey={project.key} statuses={board.statuses} tasks={board.tasks} />
@@ -136,6 +149,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           currentUserId={user.id}
           links={links}
           request={request ?? null}
+          fields={fields}
           mainTasks={board.tasks.map((t) => ({ id: t.id, number: t.number, title: t.title }))}
           isAdmin={workspace.role === "owner" || workspace.role === "admin"}
           // Weight already given to the other main tasks, to show what's left of 100%.

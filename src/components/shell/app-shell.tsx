@@ -12,8 +12,10 @@ import {
   ScrollText,
   ShieldCheck,
   Check,
+  CheckSquare,
   ChevronsUpDown,
   FolderKanban,
+  Gauge,
   LayoutDashboard,
   LayoutTemplate,
   LogOut,
@@ -43,6 +45,7 @@ import {
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { NewProjectDialog } from "@/components/projects/new-project-dialog";
 import type { AccessState } from "@/lib/access";
+import { CommandPalette, SearchButton } from "./command-palette";
 
 type ShellProps = {
   user: { name: string; email: string; image: string | null };
@@ -59,17 +62,22 @@ type ShellProps = {
 
 export function AppShell(props: ShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const openSearch = () => {
+    setMobileOpen(false);
+    setSearchOpen(true);
+  };
 
   return (
     <div className="flex min-h-dvh">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 border-r bg-sidebar text-sidebar-foreground lg:flex">
-        <SidebarContent {...props} />
+        <SidebarContent {...props} onSearch={openSearch} />
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-64 bg-sidebar p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <SidebarContent {...props} onNavigate={() => setMobileOpen(false)} />
+          <SidebarContent {...props} onNavigate={() => setMobileOpen(false)} onSearch={openSearch} />
         </SheetContent>
       </Sheet>
 
@@ -91,6 +99,14 @@ export function AppShell(props: ShellProps) {
         <main id="main" className="flex min-w-0 flex-1 flex-col">
           {props.children}
         </main>
+        {props.access.allowed && (
+          <CommandPalette
+            slug={props.workspace.slug}
+            open={searchOpen}
+            onOpenChange={setSearchOpen}
+            isAdmin={props.workspace.role === "owner" || props.workspace.role === "admin"}
+          />
+        )}
       </div>
     </div>
   );
@@ -106,15 +122,18 @@ function SidebarContent({
   access,
   isPlatformAdmin,
   onNavigate,
-}: Omit<ShellProps, "children"> & { onNavigate?: () => void }) {
+  onSearch,
+}: Omit<ShellProps, "children"> & { onNavigate?: () => void; onSearch: () => void }) {
   const pathname = usePathname();
   const base = `/w/${workspace.slug}`;
   const [newProjectOpen, setNewProjectOpen] = useState(false);
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="p-2">
+      {/* grid-cols-1 = minmax(0,1fr): a long workspace name truncates instead of widening the sidebar. */}
+      <div className="grid grid-cols-1 gap-2 p-2">
         <WorkspaceSwitcher workspace={workspace} workspaces={workspaces} />
+        {access.allowed && <SearchButton onClick={onSearch} />}
       </div>
 
       <nav aria-label="Main" className="flex-1 overflow-y-auto px-2 pb-2">
@@ -133,6 +152,10 @@ function SidebarContent({
           </>
         ) : (
         <>
+        <NavLink href={`${base}/my-tasks`} active={pathname.startsWith(`${base}/my-tasks`)} onNavigate={onNavigate}>
+          <CheckSquare className="size-4" />
+          My tasks
+        </NavLink>
         <NavLink href={`${base}/inbox`} active={pathname.startsWith(`${base}/inbox`)} onNavigate={onNavigate}>
           <Bell className="size-4" />
           Inbox
@@ -168,6 +191,10 @@ function SidebarContent({
         <NavLink href={`${base}/templates`} active={pathname.startsWith(`${base}/templates`)} onNavigate={onNavigate}>
           <LayoutTemplate className="size-4" />
           Templates
+        </NavLink>
+        <NavLink href={`${base}/workload`} active={pathname.startsWith(`${base}/workload`)} onNavigate={onNavigate}>
+          <Gauge className="size-4" />
+          Workload
         </NavLink>
         <NavLink href={`${base}/members`} active={pathname.startsWith(`${base}/members`)} onNavigate={onNavigate}>
           <Users className="size-4" />

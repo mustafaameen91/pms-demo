@@ -19,6 +19,10 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { PriorityIcon, StatusDot, UserAvatar, formatDue, timeAgo } from "./task-bits";
 import { Comments } from "./comments";
+import { TaskFields } from "./task-fields";
+import type { FieldDef } from "@/lib/custom-fields";
+import { RECURRENCE_LABELS } from "@/lib/recurrence";
+import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { Dependencies } from "./dependencies";
 
 const UNASSIGNED = "__unassigned__";
@@ -39,6 +43,7 @@ type SheetProps = {
   links: TaskLinks | null;
   /** Set when the task came in through a public request form. */
   request: { formTitle: string; name: string | null; email: string | null; phone: string | null; createdAt: Date } | null;
+  fields: FieldDef[];
   /** Main tasks of the project, for picking dependencies. */
   mainTasks: { id: string; number: number; title: string }[];
 };
@@ -48,9 +53,11 @@ function useTaskHref() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const view = searchParams.get("view");
+  const month = searchParams.get("month");
   return (taskKey?: string) => {
     const params = new URLSearchParams();
     if (view) params.set("view", view);
+    if (month) params.set("month", month);
     if (taskKey) params.set("task", taskKey);
     const qs = params.toString();
     return qs ? `${pathname}?${qs}` : pathname;
@@ -95,6 +102,7 @@ function TaskEditor({
   isAdmin,
   links,
   request,
+  fields,
   mainTasks,
   onClose,
 }: SheetProps & { task: TaskDetail; onClose: () => void }) {
@@ -115,6 +123,7 @@ function TaskEditor({
     startTransition(async () => {
       const result = await updateTask(task.id, patch);
       if (!result.ok) toast.error(result.error);
+      else if (result.info) toast.success(result.info);
       else if (result.warning) toast.warning(result.warning);
     });
   }
@@ -411,6 +420,35 @@ function TaskEditor({
           </>
           )}
 
+          {!isSubtask && (
+            <>
+              <dt className="text-muted-foreground">
+                <Label htmlFor="task-repeat">Repeat</Label>
+              </dt>
+              <dd>
+                <select
+                  id="task-repeat"
+                  value={task.recurrence ?? ""}
+                  onChange={(e) => save({ recurrence: (e.target.value || null) as TaskPatch["recurrence"] })}
+                  aria-describedby="task-repeat-help"
+                  className={cn(nativeSelectClass, "w-full sm:w-56")}
+                >
+                  <option value="">Doesn&apos;t repeat</option>
+                  {(Object.keys(RECURRENCE_LABELS) as (keyof typeof RECURRENCE_LABELS)[]).map((r) => (
+                    <option key={r} value={r}>
+                      {RECURRENCE_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+                {task.recurrence && (
+                  <p id="task-repeat-help" className="mt-1 text-xs text-muted-foreground">
+                    When it&apos;s done, the next one is created with its dates moved forward.
+                  </p>
+                )}
+              </dd>
+            </>
+          )}
+
           <dt className="text-muted-foreground">
             <Label htmlFor="task-priority">Priority</Label>
           </dt>
@@ -463,6 +501,8 @@ function TaskEditor({
             </>
           )}
         </dl>
+
+        <TaskFields taskId={task.id} fields={fields} values={task.customFields ?? {}} />
 
         <div className="grid gap-1.5">
           <Label htmlFor="task-description">Description</Label>
@@ -750,6 +790,12 @@ function describeActivity(
       return "commented";
     case "task.created_from_form":
       return `came in through the form “${s(data.form)}”${data.requester ? ` from ${s(data.requester)}` : ""}`;
+    case "task.field_changed":
+      return `updated “${s(data.field)}”`;
+    case "task.recurred":
+      return `finished this occurrence; next one is ${ctx.projectKey}-${data.number}, due ${formatDue(s(data.dueDate), true).label}`;
+    case "task.recurrence_changed":
+      return data.to ? `set it to repeat ${s(data.to)}` : "stopped it repeating";
     case "task.made_milestone":
       return "made it a milestone";
     case "task.unmade_milestone":

@@ -33,7 +33,7 @@ import type { BoardStatus, BoardTask } from "@/lib/data/projects";
 import { POSITION_STEP } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { QuickAddTask } from "./quick-add-task";
-import { BlockedBadge, MilestoneIcon, ProgressBar, PriorityIcon, StatusDot, UserAvatar, formatDue } from "./task-bits";
+import { BlockedBadge, MilestoneIcon, RepeatIcon, ProgressBar, PriorityIcon, StatusDot, UserAvatar, formatDue } from "./task-bits";
 
 type Props = {
   projectId: string;
@@ -153,6 +153,8 @@ export function Board({ projectId, projectKey, statuses, tasks }: Props) {
     if (!result.ok) {
       toast.error(result.error);
       setItems(tasks);
+    } else if (result.info) {
+      toast.success(result.info);
     } else if (result.warning) {
       toast.warning(result.warning);
     }
@@ -314,6 +316,7 @@ function TaskCard({
       <p className={cn("flex items-center gap-1.5 leading-snug font-medium", done && "text-muted-foreground line-through")}>
         {task.isMilestone && <MilestoneIcon />}
         {task.title}
+        {task.recurrence && <RepeatIcon rule={task.recurrence} />}
       </p>
       {!done && task.blockedBy > 0 && <BlockedBadge count={task.blockedBy} className="mt-1.5" />}
       {!task.isMilestone && (task.progress > 0 || task.weight) && (

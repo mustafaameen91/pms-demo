@@ -70,6 +70,8 @@ export async function getBoard(projectId: string) {
         assigneeName: user.name,
         assigneeImage: user.image,
         isMilestone: tasks.isMilestone,
+        recurrence: tasks.recurrence,
+        customFields: tasks.customFields,
         // Predecessors that aren't finished yet ("Blocked" when > 0).
         blockedBy: sql<number>`(
           select count(*) from ${taskDependencies} d

@@ -110,6 +110,8 @@ export const taskStatuses = pgTable(
   (t) => [index("task_statuses_project_idx").on(t.projectId)],
 );
 
+export const recurrence = pgEnum("recurrence", ["daily", "weekly", "monthly", "yearly"]);
+
 export const tasks = pgTable(
   "tasks",
   {
@@ -145,6 +147,9 @@ export const tasks = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }),
     // A key date (one date = dueDate, no weight); excluded from accomplishment %.
     isMilestone: boolean("is_milestone").notNull().default(false),
+    // Repeat rule; finishing the task creates the next occurrence once.
+    recurrence: recurrence("recurrence"),
+    recurrenceNextId: text("recurrence_next_id"),
     // Soft delete, so "Undo" can restore a deleted task.
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     ...timestamps,

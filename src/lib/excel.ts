@@ -2,6 +2,7 @@ import "server-only";
 import ExcelJS from "exceljs";
 import type { ProjectReport } from "@/lib/data/report";
 import { EXPENSE_CATEGORIES, PROJECT_STATUSES, resourceTypeInfo } from "@/lib/constants";
+import { formatFieldValue } from "@/lib/custom-fields";
 
 const isoToDate = (iso: string | null) => {
   if (!iso) return null;
@@ -74,6 +75,12 @@ export async function buildProjectWorkbook(report: ProjectReport) {
     { header: "Budget", key: "budget", width: 16, style: { numFmt: money } },
     { header: "Spent", key: "spent", width: 16, style: { numFmt: money } },
     { header: "Assignee", key: "assignee", width: 20 },
+    ...report.fields.map((f) => ({
+      header: f.name,
+      key: `cf_${f.id}`,
+      width: 18,
+      ...(f.type === "date" && { style: { numFmt: "yyyy-mm-dd" } }),
+    })),
   ];
   header(tasks);
   for (const t of report.tasks) {
@@ -88,6 +95,13 @@ export async function buildProjectWorkbook(report: ProjectReport) {
       budget: num(t.budget),
       spent: t.spent,
       assignee: t.assigneeName ?? "",
+      ...Object.fromEntries(
+        report.fields.map((f) => {
+          const v = t.customFields?.[f.id];
+          // Numbers and dates stay real cells; everything else as text.
+          return [`cf_${f.id}`, f.type === "number" && typeof v === "number" ? v : f.type === "date" && typeof v === "string" ? isoToDate(v) : formatFieldValue(f, v)];
+        }),
+      ),
     });
   }
 

@@ -116,12 +116,12 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Requester gets a reference number (and a confirmation email when SMTP is on); team gets notified; form can be closed or its link replaced
 
 ## Phase 14 — Everyday productivity
-- [ ] "My tasks" across all projects
-- [ ] Global search (⌘K / Ctrl+K)
-- [ ] Workload view: tasks per person per week, who is overloaded
-- [ ] Calendar view
-- [ ] Recurring tasks
-- [ ] Custom fields per project
+- [x] "My tasks" across all projects
+- [x] Global search (⌘K / Ctrl+K)
+- [x] Workload view: tasks per person per week, who is overloaded
+- [x] Calendar view
+- [x] Recurring tasks
+- [x] Custom fields per project
 
 ## Phase 15 — Automations
 - [ ] Rules: "when status becomes Done → notify the manager", "when an expense is added → …", "when a task is late → …"

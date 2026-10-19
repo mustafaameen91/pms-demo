@@ -64,6 +64,8 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "expense.approved": return `approved expense “${s(data.description)}” (${s(data.amount)})`;
     case "expense.rejected": return `rejected expense “${s(data.description)}” (${s(data.amount)})${data.note ? ` — ${s(data.note)}` : ""}`;
     case "project.approval_threshold_changed": return data.to ? `set expenses above ${s(data.to)} to need approval` : "turned off expense approvals";
+    case "task.recurred": return `finished a repeating task; created ${s(data.number) ? `#${s(data.number)}` : "the next one"}`;
+    case "task.recurrence_changed": return data.to ? `set ${taskRef ?? "a task"} to repeat ${s(data.to)}` : `stopped ${taskRef ?? "a task"} repeating`;
     case "task.made_milestone": return `made ${taskRef ?? "a task"} a milestone`;
     case "task.unmade_milestone": return `turned ${taskRef ?? "a task"} back into a normal task`;
     case "task.dependency_added": return `made ${taskRef ?? "a task"} wait on “${s(data.title)}”`;

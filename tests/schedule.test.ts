@@ -19,3 +19,15 @@ test("daysBetween", () => {
   assert.equal(daysBetween("2026-10-20", "2026-10-17"), -3);
   assert.equal(daysBetween("2026-12-31", "2027-01-01"), 1);
 });
+
+import { dueGroup } from "../src/lib/my-tasks-groups";
+
+test("my-tasks grouping", () => {
+  const today = "2026-10-19";
+  assert.equal(dueGroup({ dueDate: "2026-10-18", category: "todo" }, today), "overdue");
+  assert.equal(dueGroup({ dueDate: "2026-10-19", category: "in_progress" }, today), "today");
+  assert.equal(dueGroup({ dueDate: "2026-10-26", category: "todo" }, today), "week");
+  assert.equal(dueGroup({ dueDate: "2026-10-27", category: "todo" }, today), "later");
+  assert.equal(dueGroup({ dueDate: null, category: "todo" }, today), "none");
+  assert.equal(dueGroup({ dueDate: "2026-10-01", category: "done" }, today), "done");
+});

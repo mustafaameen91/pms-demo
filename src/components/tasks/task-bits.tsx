@@ -1,4 +1,4 @@
-import { AlertTriangle, Diamond, Lock, Minus, SignalHigh, SignalLow, SignalMedium } from "lucide-react";
+import { AlertTriangle, Diamond, Lock, Minus, Repeat, SignalHigh, SignalLow, SignalMedium } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { PRIORITIES, type Priority } from "@/lib/constants";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -124,6 +124,16 @@ export function BlockedBadge({ count, className }: { count: number; className?: 
     >
       <Lock className="size-3" aria-hidden />
       Blocked
+    </span>
+  );
+}
+
+/** 🔁 marker for repeating tasks (with a text alternative). */
+export function RepeatIcon({ rule, className }: { rule: string; className?: string }) {
+  return (
+    <span title={`Repeats ${rule}`} className={cn("inline-flex shrink-0 text-muted-foreground", className)}>
+      <Repeat className="size-3.5" aria-hidden />
+      <span className="sr-only">Repeats {rule}</span>
     </span>
   );
 }
