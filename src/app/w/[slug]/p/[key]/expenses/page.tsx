@@ -6,10 +6,11 @@ import { getProjectExpenses } from "@/lib/data/expenses";
 import { computeBudget } from "@/lib/budget";
 import { canManageProject } from "@/lib/permissions";
 import { ExpensesView } from "@/components/expenses/expenses-view";
+import { getT } from "@/i18n/server";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/expenses">) {
-  const { key } = await params;
-  return { title: `Expenses · ${key.toUpperCase()}` };
+  const [{ key }, t] = await Promise.all([params, getT()]);
+  return { title: t("Expenses · {key}", { key: key.toUpperCase() }) };
 }
 
 export default async function ExpensesPage({ params }: PageProps<"/w/[slug]/p/[key]/expenses">) {

@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { member, organization } from "@/lib/db/schema";
 import { getWorkspaceAccess } from "@/lib/billing";
+import { getT } from "@/i18n/server";
 
 export type WorkspaceRole = "owner" | "admin" | "member";
 
@@ -74,6 +75,7 @@ export const requireWorkspace = cache(async (slug: string) => {
   return ctx;
 });
 
+/** English text (the translation key); thrown in the requester's language. */
 export const SUBSCRIPTION_INACTIVE = "This workspace's subscription isn't active. Open Billing to renew it.";
 
 /** Like requireWorkspace, but by id — for server actions that receive ids. */
@@ -85,7 +87,13 @@ export async function requireWorkspaceById(workspaceId: string) {
     .innerJoin(organization, eq(member.organizationId, organization.id))
     .where(and(eq(member.organizationId, workspaceId), eq(member.userId, user.id)))
     .limit(1);
-  if (!row) throw new Error("Not a member of this workspace");
-  if (!(await getWorkspaceAccess(workspaceId)).allowed) throw new Error(SUBSCRIPTION_INACTIVE);
+  if (!row) {
+    const t = await getT();
+    throw new Error(t("Not a member of this workspace"));
+  }
+  if (!(await getWorkspaceAccess(workspaceId)).allowed) {
+    const t = await getT();
+    throw new Error(t(SUBSCRIPTION_INACTIVE));
+  }
   return { user, role: row.role as WorkspaceRole, slug: row.slug };
 }

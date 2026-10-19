@@ -7,6 +7,7 @@ import { requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { activities, comments, member, tasks, user } from "@/lib/db/schema";
 import { notify, projectContext } from "@/lib/notifications";
+import { getT } from "@/i18n/server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -27,14 +28,15 @@ async function validMentions(workspaceId: string, body: string, ids: string[]) {
 }
 
 export async function addComment(taskId: string, input: z.input<typeof commentSchema>): Promise<Result> {
+  const t = await getT();
   const parsed = commentSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  if (!parsed.success) return { ok: false, error: t(parsed.error.issues[0].message) };
   const [task] = await db
     .select()
     .from(tasks)
     .where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)))
     .limit(1);
-  if (!task) return { ok: false, error: "Task not found" };
+  if (!task) return { ok: false, error: t("Task not found") };
   const { user: author } = await requireWorkspaceById(task.workspaceId);
   const mentions = await validMentions(task.workspaceId, parsed.data.body, parsed.data.mentions);
 
@@ -66,7 +68,7 @@ export async function addComment(taskId: string, input: z.input<typeof commentSc
       userIds: mentions,
       actorId: author.id,
       type: "comment.mentioned",
-      title: `${author.name} mentioned you on ${ref}`,
+      title: (tr) => tr("{name} mentioned you on {ref}", { name: author.name, ref }),
       body: excerpt,
       link,
       email: true,
@@ -77,7 +79,7 @@ export async function addComment(taskId: string, input: z.input<typeof commentSc
       userIds: [task.assigneeId, task.reporterId].filter((id) => id && !mentions.includes(id)),
       actorId: author.id,
       type: "comment.added",
-      title: `${author.name} commented on ${ref}`,
+      title: (tr) => tr("{name} commented on {ref}", { name: author.name, ref }),
       body: excerpt,
       link,
     });
@@ -96,11 +98,12 @@ async function authorizeComment(commentId: string) {
 }
 
 export async function editComment(commentId: string, input: z.input<typeof commentSchema>): Promise<Result> {
+  const t = await getT();
   const parsed = commentSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  if (!parsed.success) return { ok: false, error: t(parsed.error.issues[0].message) };
   const auth = await authorizeComment(commentId);
-  if (!auth) return { ok: false, error: "Comment not found" };
-  if (!auth.isAuthor) return { ok: false, error: "You can only edit your own comments." };
+  if (!auth) return { ok: false, error: t("Comment not found") };
+  if (!auth.isAuthor) return { ok: false, error: t("You can only edit your own comments.") };
   const mentions = await validMentions(auth.comment.workspaceId, parsed.data.body, parsed.data.mentions);
   await db
     .update(comments)
@@ -111,9 +114,10 @@ export async function editComment(commentId: string, input: z.input<typeof comme
 }
 
 export async function deleteComment(commentId: string): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeComment(commentId);
-  if (!auth) return { ok: false, error: "Comment not found" };
-  if (!auth.isAuthor && !auth.isAdmin) return { ok: false, error: "You can only delete your own comments." };
+  if (!auth) return { ok: false, error: t("Comment not found") };
+  if (!auth.isAuthor && !auth.isAdmin) return { ok: false, error: t("You can only delete your own comments.") };
   await db.delete(comments).where(eq(comments.id, commentId));
   refresh();
   return { ok: true };

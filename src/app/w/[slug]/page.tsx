@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { Archive, Building2, Calendar, FolderKanban, Wallet } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getWorkspaceAccomplishmentTasks, listProjects } from "@/lib/data/projects";
@@ -8,12 +7,17 @@ import { AccomplishmentMeter, AccomplishmentSummary } from "@/components/project
 import { cn, formatDate, formatMoney } from "@/lib/utils";
 import { NewProjectButton } from "@/components/projects/new-project-button";
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Projects" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: t("Projects") };
+}
 
 export default async function ProjectsPage({ params, searchParams }: PageProps<"/w/[slug]">) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const { workspace } = await requireWorkspace(slug);
+  const t = await getT();
   const showArchived = query.archived === "1";
   const [projects, tasksByProject] = await Promise.all([
     listProjects(workspace.id, { archived: showArchived }),
@@ -26,10 +30,12 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
-            {showArchived ? "Archived projects" : "Projects"}
+            {showArchived ? t("Archived projects") : t("Projects")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {projects.length} {projects.length === 1 ? "project" : "projects"} in {workspace.name}
+            {t.plural(projects.length, "{count} project in {workspace}", "{count} projects in {workspace}", {
+              workspace: workspace.name,
+            })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -38,7 +44,7 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
             className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             {showArchived ? <FolderKanban className="size-4" /> : <Archive className="size-4" />}
-            {showArchived ? "Active projects" : "Archived"}
+            {showArchived ? t("Active projects") : t("Archived")}
           </Link>
           {!showArchived && projects.length > 0 && <NewProjectButton workspaceSlug={workspace.slug} />}
         </div>
@@ -47,17 +53,18 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
       {projects.length === 0 ? (
         showArchived ? (
           <p className="rounded-xl border border-dashed px-6 py-12 text-center text-sm text-muted-foreground">
-            No archived projects.
+            {t("No archived projects.")}
           </p>
         ) : (
           <div className="flex flex-col items-center rounded-xl border border-dashed px-6 py-16 text-center">
             <div className="mb-4 grid size-12 place-items-center rounded-full bg-accent text-primary">
               <FolderKanban className="size-6" />
             </div>
-            <h2 className="font-semibold">Create your first project</h2>
+            <h2 className="font-semibold">{t("Create your first project")}</h2>
             <p className="mt-1 mb-6 max-w-sm text-sm text-muted-foreground">
-              A project holds its tasks, budget, resources and expenses — for example a new branch, a
-              building, an event or a client contract.
+              {t(
+                "A project holds its tasks, budget, resources and expenses — for example a new branch, a building, an event or a client contract.",
+              )}
             </p>
             <NewProjectButton workspaceSlug={workspace.slug} />
           </div>
@@ -88,7 +95,7 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
                     {p.client && (
                       <div className="flex items-center gap-1.5">
                         <dt>
-                          <Building2 className="size-3.5" aria-label="Client" />
+                          <Building2 className="size-3.5" aria-label={t("Client")} />
                         </dt>
                         <dd className="truncate">{p.client}</dd>
                       </div>
@@ -96,19 +103,19 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
                     {(p.startDate || p.endDate) && (
                       <div className="flex items-center gap-1.5">
                         <dt>
-                          <Calendar className="size-3.5" aria-label="Dates" />
+                          <Calendar className="size-3.5" aria-label={t("Dates")} />
                         </dt>
                         <dd className="tabular-nums">
-                          {formatDate(p.startDate)} → {formatDate(p.endDate)}
+                          {formatDate(p.startDate, t.intl)} {t("→")} {formatDate(p.endDate, t.intl)}
                         </dd>
                       </div>
                     )}
                     {p.budget && (
                       <div className="flex items-center gap-1.5">
                         <dt>
-                          <Wallet className="size-3.5" aria-label="Budget" />
+                          <Wallet className="size-3.5" aria-label={t("Budget")} />
                         </dt>
-                        <dd className="tabular-nums">{formatMoney(p.budget, p.currency)}</dd>
+                        <dd className="tabular-nums">{formatMoney(p.budget, p.currency, t.intl)}</dd>
                       </div>
                     )}
                   </dl>
@@ -119,7 +126,7 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
                       <AccomplishmentMeter
                         actual={accomplishment.actual}
                         planned={accomplishment.planned}
-                        label={`${p.name} accomplishment`}
+                        label={t("{name} accomplishment", { name: p.name })}
                       />
                     )}
                   </div>

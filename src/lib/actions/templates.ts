@@ -9,6 +9,7 @@ import { projectTemplates, projects, taskDependencies, taskStatuses, tasks } fro
 import { canManageProject } from "@/lib/permissions";
 import { daysBetween } from "@/lib/schedule";
 import { templateDataSchema, templateLengthDays, type TemplateData } from "@/lib/templates";
+import { getT } from "@/i18n/server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -55,13 +56,14 @@ const saveSchema = z.object({
  * timing relative to the project start). People, progress and money are not copied.
  */
 export async function saveProjectAsTemplate(projectId: string, input: z.input<typeof saveSchema>): Promise<Result> {
+  const t = await getT();
   const parsed = saveSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  if (!parsed.success) return { ok: false, error: t(parsed.error.issues[0].message) };
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
-  if (!project) return { ok: false, error: "Project not found" };
+  if (!project) return { ok: false, error: t("Project not found") };
   const { user, role } = await requireWorkspaceById(project.workspaceId);
   if (!canManageProject(role, user.id, project)) {
-    return { ok: false, error: "Only admins or the project manager can save templates." };
+    return { ok: false, error: t("Only admins or the project manager can save templates.") };
   }
 
   const [statuses, rows, edges] = await Promise.all([
@@ -74,7 +76,7 @@ export async function saveProjectAsTemplate(projectId: string, input: z.input<ty
     db.select().from(taskDependencies).where(eq(taskDependencies.projectId, projectId)),
   ]);
   const main = rows.filter((t) => !t.parentId);
-  if (main.length === 0) return { ok: false, error: "Add some tasks to the project first." };
+  if (main.length === 0) return { ok: false, error: t("Add some tasks to the project first.") };
 
   // Offsets are measured from the project start, or from the earliest task start.
   const starts = main.map((t) => t.startDate).filter(Boolean) as string[];
@@ -106,7 +108,7 @@ export async function saveProjectAsTemplate(projectId: string, input: z.input<ty
     }),
   };
   const valid = templateDataSchema.safeParse(data);
-  if (!valid.success) return { ok: false, error: "This project can't be saved as a template (too many tasks or columns)." };
+  if (!valid.success) return { ok: false, error: t("This project can't be saved as a template (too many tasks or columns).") };
 
   await db.insert(projectTemplates).values({
     workspaceId: project.workspaceId,
@@ -120,15 +122,16 @@ export async function saveProjectAsTemplate(projectId: string, input: z.input<ty
 }
 
 export async function deleteTemplate(slug: string, templateId: string): Promise<Result> {
+  const t = await getT();
   const { user, workspace } = await requireWorkspace(slug);
   const [row] = await db
     .select()
     .from(projectTemplates)
     .where(and(eq(projectTemplates.id, templateId), eq(projectTemplates.workspaceId, workspace.id)))
     .limit(1);
-  if (!row) return { ok: false, error: "Template not found" };
+  if (!row) return { ok: false, error: t("Template not found") };
   if (row.createdById !== user.id && workspace.role !== "owner" && workspace.role !== "admin") {
-    return { ok: false, error: "Only the person who saved it or an admin can delete this template." };
+    return { ok: false, error: t("Only the person who saved it or an admin can delete this template.") };
   }
   await db.delete(projectTemplates).where(eq(projectTemplates.id, templateId));
   refresh();

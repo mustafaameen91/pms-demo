@@ -13,20 +13,46 @@ import {
   computeAccomplishment,
   plannedProgress,
   todayISO,
-  weightWarnings,
+  type Accomplishment,
 } from "@/lib/accomplishment";
 import { cn, formatDate } from "@/lib/utils";
 import { AccomplishmentMeter, ScheduleBadge, fmtPct } from "@/components/projects/accomplishment";
 import { StatusDot } from "@/components/tasks/task-bits";
+import { getT } from "@/i18n/server";
+import type { T } from "@/i18n/translate";
+
+/** Same checks as weightWarnings() in lib/accomplishment, in the reader's language. */
+function weightWarnings(a: Accomplishment, t: T): string[] {
+  if (a.mode === "empty") return [];
+  if (a.mode === "equal") {
+    return [t("No task has a weight yet, so every task counts equally. Give tasks weights that add up to 100%.")];
+  }
+  const warnings: string[] = [];
+  const diff = Math.round((a.totalWeight - 100) * 10) / 10;
+  const total = String(a.totalWeight);
+  if (diff < 0) warnings.push(t("Task weights add up to {total}%. Assign the remaining {rest}%.", { total, rest: String(-diff) }));
+  if (diff > 0) warnings.push(t("Task weights add up to {total}%, which is {over}% over 100%.", { total, over: String(diff) }));
+  if (a.unweightedCount > 0) {
+    warnings.push(
+      t.plural(
+        a.unweightedCount,
+        "{count} task has no weight and doesn't count toward the project %.",
+        "{count} tasks have no weight and don't count toward the project %.",
+      ),
+    );
+  }
+  return warnings;
+}
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/overview">) {
-  const { key } = await params;
-  return { title: `Overview · ${key.toUpperCase()}` };
+  const [{ key }, t] = await Promise.all([params, getT()]);
+  return { title: t("Overview · {key}", { key: key.toUpperCase() }) };
 }
 
 export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[key]/overview">) {
   const { slug, key } = await params;
   const { workspace } = await requireWorkspace(slug);
+  const t = await getT();
   const project = await getProjectByKey(workspace.id, key);
   if (!project) notFound();
 
@@ -40,7 +66,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
   const money = computeBudget(project.budget, usages, expenseRows, board.tasks);
   const overPlanCount = usages.filter((u) => Number(u.plannedQty) > 0 && Number(u.usedQty) > Number(u.plannedQty)).length;
   const a = computeAccomplishment(rows, project, today);
-  const warnings = weightWarnings(a);
+  const warnings = weightWarnings(a, t);
   const tasksHref = `/w/${workspace.slug}/p/${project.key}`;
 
   const weightOf = (w: string | null) => (a.mode === "weighted" ? (w ? Number(w) : 0) : 1);
@@ -53,35 +79,37 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 id="accomplishment-heading" className="text-sm font-medium text-muted-foreground">
-              Accomplishment
+              {t("Accomplishment")}
             </h2>
             <p className="mt-1 text-5xl font-semibold tracking-tight">{fmtPct(a.actual)}</p>
           </div>
           <ScheduleBadge state={a.schedule} className="text-sm" />
         </div>
 
-        <AccomplishmentMeter actual={a.actual} planned={a.planned} size="lg" label="Project accomplishment" className="mt-5" />
+        <AccomplishmentMeter actual={a.actual} planned={a.planned} size="lg" label={t("Project accomplishment")} className="mt-5" />
         <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <span aria-hidden className="h-2 w-4 rounded-full bg-primary" /> Done
+            <span aria-hidden className="h-2 w-4 rounded-full bg-primary" /> {t("Done")}
           </span>
           {a.planned !== null && (
             <span className="flex items-center gap-1.5">
-              <span aria-hidden className="h-3 w-0.5 rounded-full bg-foreground/70" /> Planned by today
+              <span aria-hidden className="h-3 w-0.5 rounded-full bg-foreground/70" /> {t("Planned by today")}
             </span>
           )}
         </div>
 
         <dl className="mt-6 grid gap-4 border-t pt-5 sm:grid-cols-3">
           <div>
-            <dt className="text-sm text-muted-foreground">Planned by today</dt>
+            <dt className="text-sm text-muted-foreground">{t("Planned by today")}</dt>
             <dd className="mt-1 text-2xl font-semibold">{fmtPct(a.planned)}</dd>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {a.planned === null ? "Add start and end dates to tasks or the project" : `As of ${formatDate(today)}`}
+              {a.planned === null
+                ? t("Add start and end dates to tasks or the project")
+                : t("As of {date}", { date: formatDate(today, t.intl) })}
             </p>
           </div>
           <div>
-            <dt className="text-sm text-muted-foreground">Difference</dt>
+            <dt className="text-sm text-muted-foreground">{t("Difference")}</dt>
             <dd
               className={cn(
                 "mt-1 text-2xl font-semibold",
@@ -92,11 +120,11 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
               {a.variance === null ? "—" : `${a.variance > 0 ? "+" : ""}${fmtPct(a.variance)}`}
             </dd>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Done minus planned · ±{SCHEDULE_TOLERANCE}% counts as on track
+              {t("Done minus planned · ±{tolerance}% counts as on track", { tolerance: String(SCHEDULE_TOLERANCE) })}
             </p>
           </div>
           <div>
-            <dt className="text-sm text-muted-foreground">Total task weight</dt>
+            <dt className="text-sm text-muted-foreground">{t("Total task weight")}</dt>
             <dd
               className={cn(
                 "mt-1 text-2xl font-semibold",
@@ -106,9 +134,9 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
               {a.mode === "weighted" ? fmtPct(a.totalWeight) : "—"}
             </dd>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {a.taskCount} {a.taskCount === 1 ? "task" : "tasks"}
+              {t.plural(a.taskCount, "{count} task", "{count} tasks")}
               {project.startDate || project.endDate
-                ? ` · ${formatDate(project.startDate)} → ${formatDate(project.endDate)}`
+                ? ` · ${formatDate(project.startDate, t.intl)} ${t("→")} ${formatDate(project.endDate, t.intl)}`
                 : ""}
             </p>
           </div>
@@ -123,7 +151,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
               <span>
                 {w}{" "}
                 <Link href={tasksHref} className="font-medium text-primary underline-offset-4 hover:underline">
-                  Edit weights
+                  {t("Edit weights")}
                 </Link>
               </span>
             </p>
@@ -156,34 +184,34 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
       <section aria-labelledby="breakdown-heading" className="rounded-xl border bg-card">
         <div className="flex items-center justify-between gap-4 px-5 pt-5 sm:px-6">
           <h2 id="breakdown-heading" className="font-semibold">
-            How each task contributes
+            {t("How each task contributes")}
           </h2>
           {a.mode !== "empty" && (
             <p className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
               <Info className="size-3.5" aria-hidden />
-              Contribution = weight × progress
+              {t("Contribution = weight × progress")}
             </p>
           )}
         </div>
 
         {rows.length === 0 ? (
           <p className="px-5 py-10 text-center text-sm text-muted-foreground sm:px-6">
-            No tasks yet.{" "}
+            {t("No tasks yet.")}{" "}
             <Link href={tasksHref} className="font-medium text-primary underline-offset-4 hover:underline">
-              Add tasks
+              {t("Add tasks")}
             </Link>{" "}
-            to start tracking accomplishment.
+            {t("to start tracking accomplishment.")}
           </p>
         ) : (
           <div className="relative mt-3 overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="text-start text-xs text-muted-foreground">
                 <tr className="border-y bg-muted/40">
-                  <th scope="col" className="w-2/5 py-2 pe-3 ps-5 font-medium sm:ps-6">Task</th>
-                  <th scope="col" className="px-3 py-2 text-end font-medium">Weight</th>
-                  <th scope="col" className="w-64 px-3 py-2 font-medium">Progress vs planned</th>
-                  <th scope="col" className="px-3 py-2 text-end font-medium">Contributes</th>
-                  <th scope="col" className="py-2 pe-5 ps-3 font-medium sm:pe-6">Schedule</th>
+                  <th scope="col" className="w-2/5 py-2 pe-3 ps-5 font-medium sm:ps-6">{t("Task")}</th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">{t("Weight")}</th>
+                  <th scope="col" className="w-64 px-3 py-2 font-medium">{t("Progress vs planned")}</th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">{t("Contributes")}</th>
+                  <th scope="col" className="py-2 pe-5 ps-3 font-medium sm:pe-6">{t("Schedule")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,7 +254,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
                             actual={r.progress}
                             planned={r.cancelled ? null : planned === null ? null : Math.round(planned)}
                             size="sm"
-                            label={`${r.title} progress`}
+                            label={t("{title} progress", { title: r.title })}
                             className="flex-1"
                           />
                           <span className="w-20 text-end text-xs text-muted-foreground tabular-nums">
@@ -235,7 +263,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
                         </div>
                       </td>
                       <td className="px-3 py-2.5 text-end font-medium tabular-nums">
-                        {r.cancelled ? "Cancelled" : contributes === null ? "—" : fmtPct(Math.round(contributes * 10) / 10)}
+                        {r.cancelled ? t("Cancelled") : contributes === null ? "—" : fmtPct(Math.round(contributes * 10) / 10)}
                       </td>
                       <td className="py-2.5 pe-5 ps-3 sm:pe-6">
                         {!r.cancelled && <ScheduleBadge state={state} short />}
@@ -247,7 +275,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
               <tfoot>
                 <tr className="border-t bg-muted/40 text-xs">
                   <th scope="row" className="py-2 pe-3 ps-5 text-start font-medium sm:ps-6">
-                    Project
+                    {t("Project")}
                   </th>
                   <td className="px-3 py-2 text-end font-medium tabular-nums">
                     {a.mode === "weighted" ? fmtPct(a.totalWeight) : "—"}

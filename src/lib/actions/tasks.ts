@@ -12,6 +12,8 @@ import { POSITION_STEP, PRIORITIES } from "@/lib/constants";
 import { MAX_MONEY, optionalDecimal } from "@/lib/validation";
 import { notify, projectContext } from "@/lib/notifications";
 import { runAutomations } from "@/lib/automation-runner";
+import { getT } from "@/i18n/server";
+import type { T } from "@/i18n/translate";
 
 /** `warning`: the change was saved, but the user should know something (e.g. started while blocked). */
 type Result<T = undefined> =
@@ -52,7 +54,13 @@ async function predecessorState(taskId: string) {
   return { open: rows.filter((r) => !isFinished(r.category)), all: rows };
 }
 
-const listTitles = (rows: { title: string }[]) => rows.map((r) => `“${r.title}”`).join(", ");
+const listTitles = (rows: { title: string }[], t: T) => rows.map((r) => `“${r.title}”`).join(t(", "));
+
+/** "Started before “A” is finished." — saved, but a predecessor isn't done yet. */
+const startedEarly = (open: { title: string }[], t: T) =>
+  open.length === 1
+    ? t("Started before {titles} is finished.", { titles: listTitles(open, t) })
+    : t("Started before {titles} are finished.", { titles: listTitles(open, t) });
 
 
 const createSchema = z.object({
@@ -63,12 +71,13 @@ const createSchema = z.object({
 });
 
 export async function createTask(input: z.input<typeof createSchema>): Promise<Result<{ number: number }>> {
+  const t = await getT();
   const parsed = createSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  if (!parsed.success) return { ok: false, error: t(parsed.error.issues[0].message) };
   const { projectId, parentId, title } = parsed.data;
 
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
-  if (!project) return { ok: false, error: "Project not found" };
+  if (!project) return { ok: false, error: t("Project not found") };
   const { user } = await requireWorkspaceById(project.workspaceId);
 
   if (parentId) {
@@ -77,14 +86,14 @@ export async function createTask(input: z.input<typeof createSchema>): Promise<R
       .from(tasks)
       .where(and(eq(tasks.id, parentId), eq(tasks.projectId, projectId), isNull(tasks.deletedAt)))
       .limit(1);
-    if (!parent) return { ok: false, error: "Parent task not found" };
-    if (parent.parentId) return { ok: false, error: "Sub-tasks can't have their own sub-tasks" };
+    if (!parent) return { ok: false, error: t("Parent task not found") };
+    if (parent.parentId) return { ok: false, error: t("Sub-tasks can't have their own sub-tasks") };
   }
 
   const status = parsed.data.statusId
     ? await statusInProject(parsed.data.statusId, projectId)
     : await defaultStatus(projectId);
-  if (!status) return { ok: false, error: "Invalid status" };
+  if (!status) return { ok: false, error: t("Invalid status") };
 
   const created = await db.transaction(async (tx) => {
     // Atomic counter: concurrent creates can't get the same task number.
@@ -127,19 +136,20 @@ export async function createTask(input: z.input<typeof createSchema>): Promise<R
     return { id: task.id, number: taskCounter };
   });
 
-  const notes = parentId ? [] : await runAutomations({ type: "task.created", projectId, taskId: created.id }, user.id);
+  const notes = parentId ? [] : await runAutomations({ type: "task.created", projectId, taskId: created.id }, user.id, t);
   refresh();
   return { ok: true, data: { number: created.number }, ...(notes.length && { info: notes.join(" · ") }) };
 }
 
 /** Drag & drop: move to a status and/or a new position (fractional index). */
 export async function moveTask(taskId: string, statusId: string, position: number): Promise<Result> {
-  if (!Number.isFinite(position)) return { ok: false, error: "Invalid position" };
+  const t = await getT();
+  if (!Number.isFinite(position)) return { ok: false, error: t("Invalid position") };
   const auth = await authorizeTask(taskId);
-  if (!auth) return { ok: false, error: "Task not found" };
+  if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
   const status = await statusInProject(statusId, task.projectId);
-  if (!status) return { ok: false, error: "Invalid status" };
+  if (!status) return { ok: false, error: t("Invalid status") };
 
   const statusChanged = task.statusId !== statusId;
   await db.transaction(async (tx) => {
@@ -168,15 +178,15 @@ export async function moveTask(taskId: string, statusId: string, position: numbe
   });
 
   const notes = statusChanged && !task.parentId
-    ? await runAutomations({ type: "task.status_changed", projectId: task.projectId, taskId, statusId }, user.id)
+    ? await runAutomations({ type: "task.status_changed", projectId: task.projectId, taskId, statusId }, user.id, t)
     : [];
-  const repeat = statusChanged && status.category === "done" ? await spawnNextOccurrence(taskId, user.id) : undefined;
+  const repeat = statusChanged && status.category === "done" ? await spawnNextOccurrence(taskId, user.id, t) : undefined;
   const info = [repeat, ...notes].filter(Boolean).join(" · ");
   refresh();
   if (info) return { ok: true, info };
   if (statusChanged && status.category !== "todo" && status.category !== "backlog") {
     const { open } = await predecessorState(taskId);
-    if (open.length) return { ok: true, warning: `Started before ${listTitles(open)} ${open.length === 1 ? "is" : "are"} finished.` };
+    if (open.length) return { ok: true, warning: startedEarly(open, t) };
   }
   return { ok: true };
 }
@@ -209,11 +219,12 @@ const sameNumber = (a: string | null, b: string | null) =>
   (a === null ? null : Number(a)) === (b === null ? null : Number(b));
 
 export async function updateTask(taskId: string, patch: TaskPatch): Promise<Result> {
+  const t = await getT();
   const parsed = updateSchema.safeParse(patch);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  if (!parsed.success) return { ok: false, error: t(parsed.error.issues[0].message) };
   const changes = parsed.data;
   const auth = await authorizeTask(taskId);
-  if (!auth) return { ok: false, error: "Task not found" };
+  if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
 
   const set: Partial<typeof tasks.$inferInsert> = {};
@@ -229,7 +240,7 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
   }
   if (changes.statusId !== undefined && changes.statusId !== task.statusId) {
     const status = await statusInProject(changes.statusId, task.projectId);
-    if (!status) return { ok: false, error: "Invalid status" };
+    if (!status) return { ok: false, error: t("Invalid status") };
     const [{ maxPos }] = await db
       .select({ maxPos: max(tasks.position) })
       .from(tasks)
@@ -252,7 +263,7 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
         .from(member)
         .where(and(eq(member.organizationId, task.workspaceId), eq(member.userId, changes.assigneeId)))
         .limit(1);
-      if (!isMember) return { ok: false, error: "Assignee is not a member of this workspace" };
+      if (!isMember) return { ok: false, error: t("Assignee is not a member of this workspace") };
     }
     set.assigneeId = changes.assigneeId;
     log.push({ type: "task.assignee_changed", data: { from: task.assigneeId, to: changes.assigneeId } });
@@ -267,10 +278,10 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
   }
   const start = set.startDate !== undefined ? set.startDate : task.startDate;
   const end = set.dueDate !== undefined ? set.dueDate : task.dueDate;
-  if (start && end && end < start) return { ok: false, error: "End date must be on or after the start date" };
+  if (start && end && end < start) return { ok: false, error: t("End date must be on or after the start date") };
 
   if (changes.weight !== undefined && !sameNumber(changes.weight, task.weight)) {
-    if (task.parentId) return { ok: false, error: "Weight is set on main tasks, not sub-tasks" };
+    if (task.parentId) return { ok: false, error: t("Weight is set on main tasks, not sub-tasks") };
     set.weight = changes.weight;
     log.push({ type: "task.weight_changed", data: { from: task.weight, to: changes.weight } });
   }
@@ -284,12 +295,12 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
   }
 
   if (changes.recurrence !== undefined && changes.recurrence !== task.recurrence) {
-    if (task.parentId) return { ok: false, error: "Sub-tasks can't repeat; set it on the main task" };
+    if (task.parentId) return { ok: false, error: t("Sub-tasks can't repeat; set it on the main task") };
     set.recurrence = changes.recurrence;
     log.push({ type: "task.recurrence_changed", data: { to: changes.recurrence } });
   }
   if (changes.isMilestone !== undefined && changes.isMilestone !== task.isMilestone) {
-    if (task.parentId) return { ok: false, error: "Only main tasks can be milestones" };
+    if (task.parentId) return { ok: false, error: t("Only main tasks can be milestones") };
     set.isMilestone = changes.isMilestone;
     if (changes.isMilestone) {
       // A milestone is a single date with no weight: keep the end date, drop the rest.
@@ -327,8 +338,8 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
         userIds: [newAssignee],
         actorId: user.id,
         type: "task.assigned",
-        title: `${user.name} assigned you ${ctx.key}-${task.number} ${set.title ?? task.title}`,
-        body: `Project: ${ctx.name}`,
+        title: (tr) => tr("{name} assigned you {ref} {title}", { name: user.name, ref: `${ctx.key}-${task.number}`, title: set.title ?? task.title }),
+        body: (tr) => tr("Project: {name}", { name: ctx.name }),
         link: `/w/${ctx.slug}/p/${ctx.key}?task=${ctx.key}-${task.number}`,
         email: true,
       });
@@ -339,9 +350,9 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
   if (set.statusId) {
     const notes = task.parentId
       ? []
-      : await runAutomations({ type: "task.status_changed", projectId: task.projectId, taskId, statusId: set.statusId }, user.id);
+      : await runAutomations({ type: "task.status_changed", projectId: task.projectId, taskId, statusId: set.statusId }, user.id, t);
     const [st] = await db.select({ category: taskStatuses.category }).from(taskStatuses).where(eq(taskStatuses.id, set.statusId));
-    const repeat = st?.category === "done" ? await spawnNextOccurrence(taskId, user.id) : undefined;
+    const repeat = st?.category === "done" ? await spawnNextOccurrence(taskId, user.id, t) : undefined;
     info = [repeat, ...notes].filter(Boolean).join(" · ") || undefined;
   }
   refresh();
@@ -358,13 +369,19 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
         ? await db.select({ category: taskStatuses.category }).from(taskStatuses).where(eq(taskStatuses.id, set.statusId))
         : [null];
       if (!newStatus || (newStatus.category !== "todo" && newStatus.category !== "backlog")) {
-        return { ok: true, warning: `Started before ${listTitles(open)} ${open.length === 1 ? "is" : "are"} finished.` };
+        return { ok: true, warning: startedEarly(open, t) };
       }
     }
     const start = set.startDate ?? task.startDate;
     const clash = all.filter((p) => startsTooEarly(start, p.dueDate));
     if (set.startDate && clash.length) {
-      return { ok: true, warning: `Starts before ${listTitles(clash)} ${clash.length === 1 ? "ends" : "end"}.` };
+      return {
+        ok: true,
+        warning:
+          clash.length === 1
+            ? t("Starts before {titles} ends.", { titles: listTitles(clash, t) })
+            : t("Starts before {titles} end.", { titles: listTitles(clash, t) }),
+      };
     }
   }
   return { ok: true };
@@ -372,22 +389,23 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
 
 /** "taskId can't start before dependsOnId is finished." Same project, no loops. */
 export async function addDependency(taskId: string, dependsOnId: string): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeTask(taskId);
-  if (!auth) return { ok: false, error: "Task not found" };
+  if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
   const [other] = await db
     .select()
     .from(tasks)
     .where(and(eq(tasks.id, dependsOnId), eq(tasks.projectId, task.projectId), isNull(tasks.deletedAt)))
     .limit(1);
-  if (!other) return { ok: false, error: "That task isn't in this project." };
+  if (!other) return { ok: false, error: t("That task isn't in this project.") };
   const edges = await db
     .select({ taskId: taskDependencies.taskId, dependsOnId: taskDependencies.dependsOnId })
     .from(taskDependencies)
     .where(eq(taskDependencies.projectId, task.projectId));
   if (edges.some((e) => e.taskId === taskId && e.dependsOnId === dependsOnId)) return { ok: true };
   if (wouldCreateCycle(edges, taskId, dependsOnId)) {
-    return { ok: false, error: `That would make a loop: “${other.title}” already waits on this task.` };
+    return { ok: false, error: t("That would make a loop: “{title}” already waits on this task.", { title: other.title }) };
   }
   await db.transaction(async (tx) => {
     await tx.insert(taskDependencies).values({ workspaceId: task.workspaceId, projectId: task.projectId, taskId, dependsOnId });
@@ -402,13 +420,14 @@ export async function addDependency(taskId: string, dependsOnId: string): Promis
   });
   refresh();
   return startsTooEarly(task.startDate, other.dueDate)
-    ? { ok: true, warning: `This task starts before “${other.title}” ends. Consider moving its start date.` }
+    ? { ok: true, warning: t("This task starts before “{title}” ends. Consider moving its start date.", { title: other.title }) }
     : { ok: true };
 }
 
 export async function removeDependency(taskId: string, dependsOnId: string): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeTask(taskId);
-  if (!auth) return { ok: false, error: "Task not found" };
+  if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
   const [other] = await db.select({ number: tasks.number, title: tasks.title }).from(tasks).where(eq(tasks.id, dependsOnId)).limit(1);
   await db.transaction(async (tx) => {
@@ -430,8 +449,9 @@ export async function removeDependency(taskId: string, dependsOnId: string): Pro
 
 /** Soft-deletes a task and its sub-tasks; restoreTask() undoes it. */
 export async function deleteTask(taskId: string): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeTask(taskId);
-  if (!auth) return { ok: false, error: "Task not found" };
+  if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
   const now = new Date();
 
@@ -455,8 +475,9 @@ export async function deleteTask(taskId: string): Promise<Result> {
 }
 
 export async function restoreTask(taskId: string): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeTask(taskId, { includeDeleted: true });
-  if (!auth) return { ok: false, error: "Task not found" };
+  if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
   if (!task.deletedAt) return { ok: true };
 

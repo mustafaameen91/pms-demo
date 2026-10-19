@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import { getT } from "@/i18n/server";
 import { ResetPasswordForm } from "@/components/auth/password-forms";
 
-export const metadata: Metadata = { title: "Choose a new password" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Choose a new password") };
+}
 
 export default async function ResetPasswordPage({ searchParams }: PageProps<"/reset-password">) {
   const query = await searchParams;

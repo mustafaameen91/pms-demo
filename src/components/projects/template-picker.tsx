@@ -12,9 +12,16 @@ import {
   Rocket,
   Server,
 } from "lucide-react";
-import { BUILTIN_TEMPLATES, describeLength, templateLengthDays, type BuiltinTemplate } from "@/lib/templates";
+import {
+  BUILTIN_TEMPLATES,
+  describeLength,
+  localizeBuiltinTemplate,
+  templateLengthDays,
+  type BuiltinTemplate,
+} from "@/lib/templates";
 import type { CustomTemplateSummary } from "@/lib/actions/templates";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/client";
 
 export const TEMPLATE_ICONS: Record<BuiltinTemplate["icon"], typeof Building2> = {
   building: Building2,
@@ -36,7 +43,6 @@ export type PickedTemplate = {
   tasks: { title: string; weight?: number }[];
 };
 
-export const BLANK: PickedTemplate = { value: "", name: "Blank project", taskCount: 0, lengthDays: 0, tasks: [] };
 
 export function builtinPick(tpl: BuiltinTemplate): PickedTemplate {
   return {
@@ -44,7 +50,7 @@ export function builtinPick(tpl: BuiltinTemplate): PickedTemplate {
     name: tpl.name,
     taskCount: tpl.data.tasks.length,
     lengthDays: templateLengthDays(tpl.data),
-    tasks: tpl.data.tasks.map((t) => ({ title: t.title, weight: t.weight })),
+    tasks: tpl.data.tasks.map((task) => ({ title: task.title, weight: task.weight })),
   };
 }
 
@@ -98,20 +104,24 @@ export function TemplatePicker({
   loadingCustom: boolean;
   onPick: (pick: PickedTemplate) => void;
 }) {
-  const meta = (count: number, days: number) => `${count} tasks · ${describeLength(days)}`;
+  const t = useT();
+  const meta = (count: number, days: number) =>
+    `${t.plural(count, "{count} tasks", "{count} tasks")} · ${describeLength(days, t)}`;
+  const blank: PickedTemplate = { value: "", name: t("Blank project"), taskCount: 0, lengthDays: 0, tasks: [] };
+  const builtins = BUILTIN_TEMPLATES.map((tpl) => localizeBuiltinTemplate(tpl, t));
   return (
     <div className="grid gap-5">
       <div className="grid gap-2 sm:grid-cols-3">
-        <Card icon={FilePlus2} title="Blank project" meta="Start from scratch" onClick={() => onPick(BLANK)} />
+        <Card icon={FilePlus2} title={t("Blank project")} meta={t("Start from scratch")} onClick={() => onPick(blank)} />
       </div>
 
       {(loadingCustom || custom.length > 0) && (
         <section aria-labelledby="your-templates" className="grid gap-2">
           <h3 id="your-templates" className="text-xs font-medium text-muted-foreground">
-            Your templates
+            {t("Your templates")}
           </h3>
           {loadingCustom ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <p className="text-sm text-muted-foreground">{t("Loading…")}</p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-3">
               {custom.map((tpl) => (
@@ -131,10 +141,10 @@ export function TemplatePicker({
 
       <section aria-labelledby="industry-templates" className="grid gap-2">
         <h3 id="industry-templates" className="text-xs font-medium text-muted-foreground">
-          Industry templates
+          {t("Industry templates")}
         </h3>
         <div className="grid gap-2 sm:grid-cols-3">
-          {BUILTIN_TEMPLATES.map((tpl) => (
+          {builtins.map((tpl) => (
             <Card
               key={tpl.id}
               icon={TEMPLATE_ICONS[tpl.icon]}

@@ -3,10 +3,11 @@ import { requireWorkspace } from "@/lib/auth/session";
 import { getAccomplishmentTasks, getProjectByKey } from "@/lib/data/projects";
 import { getProjectResources, listResources } from "@/lib/data/resources";
 import { ProjectResourcesView } from "@/components/resources/project-resources";
+import { getT } from "@/i18n/server";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/resources">) {
-  const { key } = await params;
-  return { title: `Resources · ${key.toUpperCase()}` };
+  const [{ key }, t] = await Promise.all([params, getT()]);
+  return { title: t("Resources · {key}", { key: key.toUpperCase() }) };
 }
 
 export default async function ProjectResourcesPage({ params }: PageProps<"/w/[slug]/p/[key]/resources">) {

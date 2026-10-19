@@ -9,13 +9,15 @@ import { activities, projectResources, projects, resources, tasks } from "@/lib/
 import { CURRENCIES, RESOURCE_TYPES } from "@/lib/constants";
 import { MAX_MONEY, MAX_QTY, decimalOrZero, optionalDecimal } from "@/lib/validation";
 import { checkOverBudget } from "@/lib/budget-alerts";
+import { getT } from "@/i18n/server";
+import type { T } from "@/i18n/translate";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
-function fail(error: z.ZodError): Result<never> {
+function fail(error: z.ZodError, t: T): Result<never> {
   const fieldErrors: Record<string, string> = {};
-  for (const issue of error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
-  return { ok: false, error: error.issues[0].message, fieldErrors };
+  for (const issue of error.issues) fieldErrors[String(issue.path[0])] ??= t(issue.message);
+  return { ok: false, error: t(error.issues[0].message), fieldErrors };
 }
 
 const optionalText = (max: number) =>
@@ -43,8 +45,9 @@ type ResourceTypeValue = (typeof resources.$inferInsert)["type"];
 // --- Library ---
 
 export async function createResource(workspaceSlug: string, input: ResourceInput): Promise<Result<{ id: string }>> {
+  const t = await getT();
   const parsed = resourceSchema.safeParse(input);
-  if (!parsed.success) return fail(parsed.error);
+  if (!parsed.success) return fail(parsed.error, t);
   const { user, workspace } = await requireWorkspace(workspaceSlug);
   const [row] = await db
     .insert(resources)
@@ -67,10 +70,11 @@ async function authorizeResource(resourceId: string) {
 }
 
 export async function updateResource(resourceId: string, input: ResourceInput): Promise<Result> {
+  const t = await getT();
   const parsed = resourceSchema.safeParse(input);
-  if (!parsed.success) return fail(parsed.error);
+  if (!parsed.success) return fail(parsed.error, t);
   const auth = await authorizeResource(resourceId);
-  if (!auth) return { ok: false, error: "Resource not found" };
+  if (!auth) return { ok: false, error: t("Resource not found") };
   await db
     .update(resources)
     .set({ ...parsed.data, type: parsed.data.type as ResourceTypeValue })
@@ -81,10 +85,11 @@ export async function updateResource(resourceId: string, input: ResourceInput): 
 
 /** Archiving hides it from the library and pickers; projects already using it keep it. */
 export async function setResourceArchived(resourceId: string, archived: boolean): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeResource(resourceId);
-  if (!auth) return { ok: false, error: "Resource not found" };
+  if (!auth) return { ok: false, error: t("Resource not found") };
   if (auth.role !== "owner" && auth.role !== "admin") {
-    return { ok: false, error: "Only workspace owners and admins can archive resources." };
+    return { ok: false, error: t("Only workspace owners and admins can archive resources.") };
   }
   await db
     .update(resources)
@@ -131,14 +136,15 @@ export async function addProjectResource(
   source: { resourceId: string } | { newResource: ResourceInput },
   usage: UsageInput,
 ): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeProject(projectId);
-  if (!auth) return { ok: false, error: "Project not found" };
+  if (!auth) return { ok: false, error: t("Project not found") };
   const { project, user } = auth;
 
   const parsedUsage = usageSchema.safeParse(usage);
-  if (!parsedUsage.success) return fail(parsedUsage.error);
+  if (!parsedUsage.success) return fail(parsedUsage.error, t);
   if (parsedUsage.data.taskId && !(await taskBelongsToProject(parsedUsage.data.taskId, projectId))) {
-    return { ok: false, error: "Task not found in this project", fieldErrors: { taskId: "Task not found" } };
+    return { ok: false, error: t("Task not found in this project"), fieldErrors: { taskId: t("Task not found") } };
   }
 
   let resourceId: string;
@@ -149,12 +155,12 @@ export async function addProjectResource(
       .from(resources)
       .where(and(eq(resources.id, source.resourceId), eq(resources.workspaceId, project.workspaceId)))
       .limit(1);
-    if (!resource) return { ok: false, error: "Resource not found" };
+    if (!resource) return { ok: false, error: t("Resource not found") };
     resourceId = resource.id;
     resourceName = resource.name;
   } else {
     const parsed = resourceSchema.safeParse(source.newResource);
-    if (!parsed.success) return fail(parsed.error);
+    if (!parsed.success) return fail(parsed.error, t);
     const [row] = await db
       .insert(resources)
       .values({
@@ -197,12 +203,13 @@ async function authorizeUsage(usageId: string) {
 }
 
 export async function updateProjectResource(usageId: string, input: UsageInput): Promise<Result> {
+  const t = await getT();
   const parsed = usageSchema.safeParse(input);
-  if (!parsed.success) return fail(parsed.error);
+  if (!parsed.success) return fail(parsed.error, t);
   const auth = await authorizeUsage(usageId);
-  if (!auth) return { ok: false, error: "Not found" };
+  if (!auth) return { ok: false, error: t("Not found") };
   if (parsed.data.taskId && !(await taskBelongsToProject(parsed.data.taskId, auth.usage.projectId))) {
-    return { ok: false, error: "Task not found in this project", fieldErrors: { taskId: "Task not found" } };
+    return { ok: false, error: t("Task not found in this project"), fieldErrors: { taskId: t("Task not found") } };
   }
   await db.update(projectResources).set(parsed.data).where(eq(projectResources.id, usageId));
   await checkOverBudget(auth.usage.projectId, auth.user.id);
@@ -211,8 +218,9 @@ export async function updateProjectResource(usageId: string, input: UsageInput):
 }
 
 export async function removeProjectResource(usageId: string): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeUsage(usageId);
-  if (!auth) return { ok: false, error: "Not found" };
+  if (!auth) return { ok: false, error: t("Not found") };
   const [resource] = await db
     .select({ name: resources.name })
     .from(resources)

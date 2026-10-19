@@ -1,12 +1,15 @@
-import type { Metadata } from "next";
 import { asc, eq } from "drizzle-orm";
 import { requireWorkspace } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { projectTemplates, user } from "@/lib/db/schema";
 import { BUILTIN_TEMPLATES, templateDataSchema } from "@/lib/templates";
 import { TemplatesView } from "@/components/projects/templates-view";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Templates" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: t("Templates") };
+}
 
 export default async function TemplatesPage({ params }: PageProps<"/w/[slug]/templates">) {
   const { slug } = await params;

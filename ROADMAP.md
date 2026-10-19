@@ -128,12 +128,12 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Simple rule builder (when … then …), on/off per rule, run history
 
 ## Phase 16 — Arabic & English
-- [ ] Language switch (English / العربية) on every page incl. login; each person's choice is remembered
-- [ ] Right-to-left layout for Arabic (sidebar, panels, tables, board, icons) + Arabic font
-- [ ] All screens translated: sign-in, workspace, projects, tasks, resources, expenses, approvals, automations, settings, billing, admin, public forms and client page
-- [ ] Notifications, emails, activity history and audit log in each person's language
-- [ ] Dates, money and numbers formatted per language; Excel export in your language
-- [ ] Tests: everything still passes in English, plus an Arabic check
+- [x] Language switch (English / العربية) on every page incl. login; each person's choice is remembered
+- [x] Right-to-left layout for Arabic (sidebar, panels, tables, board, icons) + Arabic font
+- [x] All screens translated: sign-in, workspace, projects, tasks, resources, expenses, approvals, automations, settings, billing, admin, public forms and client page
+- [x] Notifications, emails, activity history and audit log in each person's language
+- [x] Dates, money and numbers formatted per language; Excel export in your language
+- [x] Tests: everything still passes in English, plus an Arabic check
 
 ## Phase 17 — AI assistant & integrations *(needs a decision: free AI services vs paid vs own server — discussed, to decide later)*
 - [ ] AI: turn a project brief into weighted tasks

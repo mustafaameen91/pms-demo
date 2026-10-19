@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import { getInvitation } from "@/lib/data/members";
 import { getSession } from "@/lib/auth/session";
+import { getT } from "@/i18n/server";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { AcceptInvitation } from "./accept-invitation";
 
-export const metadata: Metadata = { title: "Invitation" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Invitation") };
+}
 
 export default async function InvitePage({ params }: PageProps<"/invite/[id]">) {
   const { id } = await params;

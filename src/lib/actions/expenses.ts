@@ -14,6 +14,8 @@ import { checkOverBudget } from "@/lib/budget-alerts";
 import { notify, projectManagers } from "@/lib/notifications";
 import { runAutomations } from "@/lib/automation-runner";
 import { formatMoney } from "@/lib/utils";
+import { getT } from "@/i18n/server";
+import type { T } from "@/i18n/translate";
 
 export type ExpenseResult =
   | { ok: true; pending?: boolean }
@@ -38,10 +40,10 @@ const expenseSchema = z.object({
 
 type Category = (typeof expenses.$inferInsert)["category"];
 
-function fieldErrorsOf(error: z.ZodError): ExpenseResult {
+function fieldErrorsOf(error: z.ZodError, t: T): ExpenseResult {
   const fieldErrors: Record<string, string> = {};
-  for (const issue of error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
-  return { ok: false, error: error.issues[0].message, fieldErrors };
+  for (const issue of error.issues) fieldErrors[String(issue.path[0])] ??= t(issue.message);
+  return { ok: false, error: t(error.issues[0].message), fieldErrors };
 }
 
 async function loadProject(projectId: string) {
@@ -52,10 +54,11 @@ async function loadProject(projectId: string) {
 
 /** Create (no expenseId) or update an expense. Accepts an optional receipt file. */
 export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
+  const t = await getT();
   const projectId = String(formData.get("projectId") ?? "");
   const expenseId = String(formData.get("expenseId") ?? "") || null;
   const auth = await loadProject(projectId);
-  if (!auth) return { ok: false, error: "Project not found" };
+  if (!auth) return { ok: false, error: t("Project not found") };
   const { project, user, role } = auth;
 
   const parsed = expenseSchema.safeParse({
@@ -67,7 +70,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
     taskId: formData.get("taskId"),
     projectResourceId: formData.get("projectResourceId"),
   });
-  if (!parsed.success) return fieldErrorsOf(parsed.error);
+  if (!parsed.success) return fieldErrorsOf(parsed.error, t);
   const data = parsed.data;
 
   // Linked task / resource must belong to this project.
@@ -77,7 +80,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
       .from(tasks)
       .where(and(eq(tasks.id, data.taskId), eq(tasks.projectId, projectId), isNull(tasks.deletedAt)))
       .limit(1);
-    if (!task) return { ok: false, error: "Task not found", fieldErrors: { taskId: "Task not found" } };
+    if (!task) return { ok: false, error: t("Task not found"), fieldErrors: { taskId: t("Task not found") } };
   }
   if (data.projectResourceId) {
     const [usage] = await db
@@ -86,7 +89,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
       .where(and(eq(projectResources.id, data.projectResourceId), eq(projectResources.projectId, projectId)))
       .limit(1);
     if (!usage) {
-      return { ok: false, error: "Resource not found", fieldErrors: { projectResourceId: "Resource not found" } };
+      return { ok: false, error: t("Resource not found"), fieldErrors: { projectResourceId: t("Resource not found") } };
     }
   }
 
@@ -97,9 +100,9 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
       .from(expenses)
       .where(and(eq(expenses.id, expenseId), eq(expenses.projectId, projectId)))
       .limit(1);
-    if (!existing) return { ok: false, error: "Expense not found" };
+    if (!existing) return { ok: false, error: t("Expense not found") };
     if (existing.createdById !== user.id && !canManageProject(role, user.id, project)) {
-      return { ok: false, error: "Only the person who added it, the project manager or admins can edit this expense." };
+      return { ok: false, error: t("Only the person who added it, the project manager or admins can edit this expense.") };
     }
   }
 
@@ -107,7 +110,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
   const file = formData.get("receipt");
   let receipt: { receiptPath: string | null; receiptName: string | null; receiptType: string | null } | undefined;
   if (file instanceof File && file.size > 0) {
-    const saved = await saveReceipt(project.workspaceId, file);
+    const saved = await saveReceipt(project.workspaceId, file, t);
     if ("error" in saved) return { ok: false, error: saved.error, fieldErrors: { receipt: saved.error } };
     receipt = { receiptPath: saved.path, receiptName: saved.name, receiptType: saved.type };
   } else if (formData.get("removeReceipt") === "1") {
@@ -164,7 +167,12 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
       userIds: await projectManagers(project.workspaceId, project.leadId),
       actorId: user.id,
       type: "expense.approval_requested",
-      title: `${user.name} asks you to approve ${formatMoney(values.amount, project.currency)} on ${project.name}`,
+      title: (tr) =>
+        tr("{name} asks you to approve {amount} on {project}", {
+          name: user.name,
+          amount: formatMoney(values.amount, project.currency, tr.intl),
+          project: project.name,
+        }),
       body: data.description,
       link: `/w/${auth.slug}/approvals`,
       email: true,
@@ -176,6 +184,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
     await runAutomations(
       { type: "expense.added", projectId, expenseId: newExpenseId, amount: values.amount, description: data.description },
       user.id,
+      t,
     );
   }
 
@@ -192,19 +201,20 @@ const decisionSchema = z.object({
 
 /** Approve or reject a pending expense (owners, admins, or the project manager). */
 export async function decideExpense(expenseId: string, input: z.input<typeof decisionSchema>): Promise<ExpenseResult> {
+  const t = await getT();
   const parsed = decisionSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  if (!parsed.success) return { ok: false, error: t(parsed.error.issues[0].message) };
   const [expense] = await db.select().from(expenses).where(eq(expenses.id, expenseId)).limit(1);
-  if (!expense) return { ok: false, error: "Expense not found" };
+  if (!expense) return { ok: false, error: t("Expense not found") };
   const auth = await loadProject(expense.projectId);
-  if (!auth) return { ok: false, error: "Project not found" };
+  if (!auth) return { ok: false, error: t("Project not found") };
   const { project, user, role, slug } = auth;
   if (!canManageProject(role, user.id, project)) {
-    return { ok: false, error: "Only workspace admins or the project manager can approve expenses." };
+    return { ok: false, error: t("Only workspace admins or the project manager can approve expenses.") };
   }
-  if (expense.approvalStatus !== "pending") return { ok: false, error: "This expense was already decided." };
+  if (expense.approvalStatus !== "pending") return { ok: false, error: t("This expense was already decided.") };
   if (parsed.data.decision === "rejected" && !parsed.data.note) {
-    return { ok: false, error: "Say why it's rejected, so the person can fix it." };
+    return { ok: false, error: t("Say why it's rejected, so the person can fix it.") };
   }
 
   await db.transaction(async (tx) => {
@@ -231,7 +241,12 @@ export async function decideExpense(expenseId: string, input: z.input<typeof dec
     userIds: [expense.createdById],
     actorId: user.id,
     type: parsed.data.decision === "approved" ? "expense.approved" : "expense.rejected",
-    title: `${user.name} ${parsed.data.decision} your expense “${expense.description}” (${formatMoney(expense.amount, project.currency)})`,
+    title: (tr) => {
+      const vars = { name: user.name, description: expense.description, amount: formatMoney(expense.amount, project.currency, tr.intl) };
+      return parsed.data.decision === "approved"
+        ? tr("{name} approved your expense “{description}” ({amount})", vars)
+        : tr("{name} rejected your expense “{description}” ({amount})", vars);
+    },
     body: parsed.data.note || null,
     link: `/w/${slug}/p/${project.key}/expenses`,
     email: true,
@@ -243,14 +258,15 @@ export async function decideExpense(expenseId: string, input: z.input<typeof dec
 
 /** Per-project limit above which non-approvers' expenses need approval (null = off). */
 export async function setApprovalThreshold(projectId: string, value: string): Promise<ExpenseResult> {
+  const t = await getT();
   const auth = await loadProject(projectId);
-  if (!auth) return { ok: false, error: "Project not found" };
+  if (!auth) return { ok: false, error: t("Project not found") };
   const { project, user, role } = auth;
   if (!canManageProject(role, user.id, project)) {
-    return { ok: false, error: "Only workspace admins or the project manager can change this." };
+    return { ok: false, error: t("Only workspace admins or the project manager can change this.") };
   }
   const parsed = optionalDecimal(MAX_MONEY, "Enter a valid amount").safeParse(value.trim() || null);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  if (!parsed.success) return { ok: false, error: t(parsed.error.issues[0].message) };
   await db.transaction(async (tx) => {
     await tx.update(projects).set({ approvalThreshold: parsed.data }).where(eq(projects.id, projectId));
     await tx.insert(activities).values({
@@ -266,13 +282,14 @@ export async function setApprovalThreshold(projectId: string, value: string): Pr
 }
 
 export async function deleteExpense(expenseId: string): Promise<ExpenseResult> {
+  const t = await getT();
   const [expense] = await db.select().from(expenses).where(eq(expenses.id, expenseId)).limit(1);
-  if (!expense) return { ok: false, error: "Expense not found" };
+  if (!expense) return { ok: false, error: t("Expense not found") };
   const auth = await loadProject(expense.projectId);
-  if (!auth) return { ok: false, error: "Project not found" };
+  if (!auth) return { ok: false, error: t("Project not found") };
   const { project, user, role } = auth;
   if (expense.createdById !== user.id && !canManageProject(role, user.id, project)) {
-    return { ok: false, error: "Only the person who added it, the project manager or admins can delete this expense." };
+    return { ok: false, error: t("Only the person who added it, the project manager or admins can delete this expense.") };
   }
 
   await db.transaction(async (tx) => {

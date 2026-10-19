@@ -1,10 +1,13 @@
-import type { Metadata } from "next";
 import { requireWorkspace } from "@/lib/auth/session";
 import { listPendingInvitations, listWorkspaceMembers } from "@/lib/data/members";
 import { emailDeliveryEnabled } from "@/lib/email";
 import { MembersView } from "@/components/members/members-view";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Members" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: t("Members") };
+}
 
 export default async function MembersPage({ params }: PageProps<"/w/[slug]/members">) {
   const { slug } = await params;

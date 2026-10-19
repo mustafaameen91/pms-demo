@@ -13,10 +13,12 @@ import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
 import { ProjectTabs } from "@/components/projects/project-tabs";
 import { ArchivedBanner } from "@/components/projects/archived-banner";
 import { ExportMenu } from "@/components/projects/export-menu";
+import { getT } from "@/i18n/server";
 
 export default async function ProjectLayout({ children, params }: LayoutProps<"/w/[slug]/p/[key]">) {
   const { slug, key } = await params;
   const { user, workspace } = await requireWorkspace(slug);
+  const t = await getT();
   const project = await getProjectByKey(workspace.id, key);
   if (!project) notFound();
 
@@ -51,7 +53,7 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
               className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
             >
               <AlertTriangle className="size-3.5" aria-hidden />
-              Over budget
+              {t("Over budget")}
             </a>
           )}
           <div className="ms-auto flex items-center gap-3">
@@ -60,7 +62,7 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
               <AccomplishmentMeter
                 actual={accomplishment.actual}
                 planned={accomplishment.planned}
-                label="Project accomplishment"
+                label={t("Project accomplishment")}
                 className="hidden w-32 sm:block"
               />
             )}
@@ -71,7 +73,7 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
           {project.client && (
             <div className="flex items-center gap-1.5">
               <dt>
-                <Building2 className="size-4" aria-label="Client" />
+                <Building2 className="size-4" aria-label={t("Client")} />
               </dt>
               <dd>{project.client}</dd>
             </div>
@@ -79,27 +81,30 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
           {hasDates && (
             <div className="flex items-center gap-1.5">
               <dt>
-                <Calendar className="size-4" aria-label="Dates" />
+                <Calendar className="size-4" aria-label={t("Dates")} />
               </dt>
               <dd className="tabular-nums">
-                {formatDate(project.startDate)} → {formatDate(project.endDate)}
+                {formatDate(project.startDate, t.intl)} {t("→")} {formatDate(project.endDate, t.intl)}
               </dd>
             </div>
           )}
           {project.budget && (
             <div className="flex items-center gap-1.5">
               <dt>
-                <Wallet className="size-4" aria-label="Budget" />
+                <Wallet className="size-4" aria-label={t("Budget")} />
               </dt>
               <dd className="tabular-nums">
-                {formatMoney(budget.actual, project.currency)} of {formatMoney(project.budget, project.currency)} spent
+                {t("{spent} of {budget} spent", {
+                  spent: formatMoney(budget.actual, project.currency, t.intl),
+                  budget: formatMoney(project.budget, project.currency, t.intl),
+                })}
               </dd>
             </div>
           )}
           {project.leadName && (
             <div className="flex items-center gap-1.5">
               <dt>
-                <User className="size-4" aria-label="Project manager" />
+                <User className="size-4" aria-label={t("Project manager")} />
               </dt>
               <dd>{project.leadName}</dd>
             </div>

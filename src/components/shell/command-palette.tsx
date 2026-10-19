@@ -26,6 +26,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { useT } from "@/i18n/client";
 
 const EMPTY: SearchResults = { tasks: [], projects: [], resources: [], people: [] };
 
@@ -41,6 +42,7 @@ export function CommandPalette({
   onOpenChange: (open: boolean) => void;
   isAdmin: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults>(EMPTY);
@@ -84,18 +86,18 @@ export function CommandPalette({
   };
 
   const pages = [
-    { label: "My tasks", href: `${base}/my-tasks`, icon: CheckSquare },
-    { label: "Inbox", href: `${base}/inbox`, icon: Bell },
-    { label: "Dashboard", href: `${base}/dashboard`, icon: LayoutDashboard },
-    { label: "Projects", href: base, icon: FolderKanban },
-    { label: "Workload", href: `${base}/workload`, icon: Users },
-    { label: "Resources", href: `${base}/resources`, icon: Package },
-    { label: "Templates", href: `${base}/templates`, icon: LayoutTemplate },
-    { label: "Members", href: `${base}/members`, icon: Users },
+    { label: t("My tasks"), href: `${base}/my-tasks`, icon: CheckSquare },
+    { label: t("Inbox"), href: `${base}/inbox`, icon: Bell },
+    { label: t("Dashboard"), href: `${base}/dashboard`, icon: LayoutDashboard },
+    { label: t("Projects"), href: base, icon: FolderKanban },
+    { label: t("Workload"), href: `${base}/workload`, icon: Users },
+    { label: t("Resources"), href: `${base}/resources`, icon: Package },
+    { label: t("Templates"), href: `${base}/templates`, icon: LayoutTemplate },
+    { label: t("Members"), href: `${base}/members`, icon: Users },
     ...(isAdmin
       ? [
-          { label: "Approvals", href: `${base}/approvals`, icon: BadgeCheck },
-          { label: "Audit log", href: `${base}/audit`, icon: ScrollText },
+          { label: t("Approvals"), href: `${base}/approvals`, icon: BadgeCheck },
+          { label: t("Audit log"), href: `${base}/audit`, icon: ScrollText },
         ]
       : []),
   ].filter((p) => !query.trim() || p.label.toLowerCase().includes(query.trim().toLowerCase()));
@@ -105,18 +107,18 @@ export function CommandPalette({
   const nothing = has && !loading && !results.tasks.length && !results.projects.length && !results.resources.length && !results.people.length && !pages.length;
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange} title="Search" description="Search tasks, projects, resources and people">
+    <CommandDialog open={open} onOpenChange={onOpenChange} title={t("Search")} description={t("Search tasks, projects, resources and people")}>
       <Command shouldFilter={false}>
-        <CommandInput value={query} onValueChange={(v) => { setQuery(v); if (v.trim().length < 2) setResults(EMPTY); }} placeholder="Search tasks (e.g. HD-12), projects, people…" />
+        <CommandInput value={query} onValueChange={(v) => { setQuery(v); if (v.trim().length < 2) setResults(EMPTY); }} placeholder={t("Search tasks (e.g. HD-12), projects, people…")} />
         <CommandList className="max-h-[60vh]">
           {loading && (
             <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground" role="status">
-              <Loader2 className="size-3.5 animate-spin" /> Searching…
+              <Loader2 className="size-3.5 animate-spin" /> {t("Searching…")}
             </div>
           )}
-          {nothing && <CommandEmpty>No results for “{q}”.</CommandEmpty>}
+          {nothing && <CommandEmpty>{t("No results for “{query}”.", { query: q })}</CommandEmpty>}
           {has && results.tasks.length > 0 && (
-            <CommandGroup heading="Tasks">
+            <CommandGroup heading={t("Tasks")}>
               {results.tasks.map((t) => (
                 <CommandItem key={t.key} value={`task-${t.key}`} onSelect={() => go(`${base}/p/${t.projectKey}?task=${t.key}`)}>
                   <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">{t.key}</span>
@@ -129,7 +131,7 @@ export function CommandPalette({
             </CommandGroup>
           )}
           {has && results.projects.length > 0 && (
-            <CommandGroup heading="Projects">
+            <CommandGroup heading={t("Projects")}>
               {results.projects.map((p) => (
                 <CommandItem key={p.key} value={`project-${p.key}`} onSelect={() => go(`${base}/p/${p.key}/overview`)}>
                   <span aria-hidden className="size-2.5 shrink-0 rounded-sm" style={{ backgroundColor: p.color }} />
@@ -140,7 +142,7 @@ export function CommandPalette({
             </CommandGroup>
           )}
           {has && results.resources.length > 0 && (
-            <CommandGroup heading="Resources">
+            <CommandGroup heading={t("Resources")}>
               {results.resources.map((r, i) => (
                 <CommandItem key={`${r.name}-${i}`} value={`resource-${i}-${r.name}`} onSelect={() => go(`${base}/resources`)}>
                   <Package className="size-4" />
@@ -151,7 +153,7 @@ export function CommandPalette({
             </CommandGroup>
           )}
           {has && results.people.length > 0 && (
-            <CommandGroup heading="People">
+            <CommandGroup heading={t("People")}>
               {results.people.map((p) => (
                 <CommandItem key={p.email} value={`person-${p.email}`} onSelect={() => go(`${base}/members`)}>
                   <User className="size-4" />
@@ -162,7 +164,7 @@ export function CommandPalette({
             </CommandGroup>
           )}
           {pages.length > 0 && (
-            <CommandGroup heading="Go to">
+            <CommandGroup heading={t("Go to")}>
               {pages.map((p) => (
                 <CommandItem key={p.href} value={`page-${p.label}`} onSelect={() => go(p.href)}>
                   <p.icon className="size-4" />
@@ -179,6 +181,7 @@ export function CommandPalette({
 
 /** Sidebar button that opens the palette (and shows the shortcut). */
 export function SearchButton({ onClick }: { onClick: () => void }) {
+  const t = useT();
   const [mac, setMac] = useState(true);
   useEffect(() => {
     // Shortcut label only; defaults to ⌘ until the platform is known.
@@ -192,7 +195,7 @@ export function SearchButton({ onClick }: { onClick: () => void }) {
       className="flex h-8 w-full items-center gap-2 rounded-md border bg-background px-2.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
     >
       <Search className="size-4" />
-      Search
+      {t("Search")}
       <kbd className="ms-auto rounded border bg-muted px-1.5 font-sans text-[11px]">{mac ? "⌘K" : "Ctrl K"}</kbd>
     </button>
   );

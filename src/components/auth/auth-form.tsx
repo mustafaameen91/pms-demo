@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useT } from "@/i18n/client";
 
 type Mode = "login" | "signup";
 
 export function AuthForm({ mode }: { mode: Mode }) {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       : await authClient.signIn.email({ email, password });
 
     if (error) {
-      setError(error.message ?? "Something went wrong. Please try again.");
+      setError(error.message ?? t("Something went wrong. Please try again."));
       setPending(false);
       return;
     }
@@ -52,22 +54,22 @@ export function AuthForm({ mode }: { mode: Mode }) {
     <Card>
       <CardHeader className="text-center">
         <CardTitle className="text-xl">
-          <h1>{isSignup ? "Create your account" : "Welcome back"}</h1>
+          <h1>{isSignup ? t("Create your account") : t("Welcome back")}</h1>
         </CardTitle>
         <CardDescription>
-          {isSignup ? "Start organizing your team's work." : "Log in to continue to your workspace."}
+          {isSignup ? t("Start organizing your team's work.") : t("Log in to continue to your workspace.")}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="grid gap-4">
           {isSignup && (
             <div className="grid gap-1.5">
-              <Label htmlFor="name">Full name</Label>
+              <Label htmlFor="name">{t("Full name")}</Label>
               <Input id="name" name="name" autoComplete="name" className="h-10" required minLength={2} autoFocus />
             </div>
           )}
           <div className="grid gap-1.5">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("Email")}</Label>
             <Input
               id="email"
               name="email"
@@ -80,10 +82,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </div>
           <div className="grid gap-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("Password")}</Label>
               {!isSignup && (
                 <Link href="/forgot-password" className="text-xs text-primary underline-offset-4 hover:underline">
-                  Forgot password?
+                  {t("Forgot password?")}
                 </Link>
               )}
             </div>
@@ -102,14 +104,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 className="absolute inset-y-0 inset-e-0 grid w-10 place-items-center text-muted-foreground hover:text-foreground"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t("Hide password") : t("Show password")}
               >
                 {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
             </div>
             {isSignup && (
               <p id="password-help" className="text-xs text-muted-foreground">
-                At least 8 characters.
+                {t("At least 8 characters.")}
               </p>
             )}
           </div>
@@ -122,17 +124,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
           <Button type="submit" disabled={pending} className="h-10 w-full">
             {pending && <Loader2 className="size-4 animate-spin" />}
-            {isSignup ? "Create account" : "Log in"}
+            {isSignup ? t("Create account") : t("Log in")}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          {isSignup ? "Already have an account? " : "New here? "}
+          {isSignup ? t("Already have an account?") : t("New here?")}{" "}
           <Link
             href={`${isSignup ? "/login" : "/signup"}${safeNext !== "/" ? `?next=${encodeURIComponent(safeNext)}` : ""}`}
             className="font-medium text-primary underline-offset-4 hover:underline"
           >
-            {isSignup ? "Log in" : "Create an account"}
+            {isSignup ? t("Log in") : t("Create an account")}
           </Link>
         </p>
       </CardContent>

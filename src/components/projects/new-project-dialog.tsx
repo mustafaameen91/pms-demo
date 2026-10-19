@@ -19,9 +19,11 @@ import { TemplatePicker, type PickedTemplate } from "./template-picker";
 import { listWorkspaceTemplates, type CustomTemplateSummary } from "@/lib/actions/templates";
 import { describeLength } from "@/lib/templates";
 import { cn } from "@/lib/utils";
+import { toLatin } from "@/lib/transliterate";
+import { useT } from "@/i18n/client";
 
 function suggestKey(name: string) {
-  const words = name.toUpperCase().replace(/[^A-Z0-9 ]/g, "").split(/\s+/).filter(Boolean);
+  const words = toLatin(name).toUpperCase().replace(/[^A-Z0-9 ]/g, "").split(/\s+/).filter(Boolean);
   if (words.length === 0) return "";
   const key = words.length > 1 ? words.map((w) => w[0]).join("") : words[0];
   return key.replace(/^[0-9]+/, "").slice(0, 4);
@@ -45,6 +47,7 @@ export function NewProjectDialog({
 }
 
 function NewProjectFlow({ workspaceSlug, onCancel }: { workspaceSlug: string; onCancel: () => void }) {
+  const t = useT();
   const [picked, setPicked] = useState<PickedTemplate | null>(null);
   const [custom, setCustom] = useState<CustomTemplateSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,11 +66,11 @@ function NewProjectFlow({ workspaceSlug, onCancel }: { workspaceSlug: string; on
   return (
     <DialogContent className={cn("max-h-[90dvh] overflow-y-auto", picked ? "sm:max-w-lg" : "sm:max-w-3xl")}>
       <DialogHeader>
-        <DialogTitle>New project</DialogTitle>
+        <DialogTitle>{t("New project")}</DialogTitle>
         <DialogDescription>
           {picked
-            ? "You can change any of this later in the project's settings."
-            : "Start from a template made for your field, or from a blank project."}
+            ? t("You can change any of this later in the project's settings.")
+            : t("Start from a template made for your field, or from a blank project.")}
         </DialogDescription>
       </DialogHeader>
       {picked ? (
@@ -90,6 +93,7 @@ function NewProjectForm({
   onChangeTemplate: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   const [state, action, pending] = useActionState(createProject, undefined);
   const [key, setKey] = useState("");
   const [keyEdited, setKeyEdited] = useState(false);
@@ -111,27 +115,27 @@ function NewProjectForm({
       <div className="rounded-lg border bg-muted/40 px-3 py-2.5 text-sm">
         <div className="flex items-center gap-2">
           <span className="min-w-0 flex-1">
-            <span className="text-muted-foreground">Template: </span>
+            <span className="text-muted-foreground">{t("Template: ")}</span>
             <span className="font-medium">{template.name}</span>
             {template.taskCount > 0 && (
               <span className="text-muted-foreground">
                 {" "}
-                · {template.taskCount} tasks · {describeLength(template.lengthDays)}
+                · {t.plural(template.taskCount, "{count} tasks", "{count} tasks")} · {describeLength(template.lengthDays, t)}
               </span>
             )}
           </span>
           <Button type="button" variant="ghost" size="sm" onClick={onChangeTemplate}>
-            Change
+            {t("Change")}
           </Button>
         </div>
         {template.tasks.length > 0 && (
           <details className="mt-1">
-            <summary className="cursor-pointer text-xs text-primary">Show tasks</summary>
+            <summary className="cursor-pointer text-xs text-primary">{t("Show tasks")}</summary>
             <ol className="mt-2 grid gap-0.5 text-xs">
-              {template.tasks.map((t, i) => (
+              {template.tasks.map((task, i) => (
                 <li key={i} className="flex justify-between gap-3">
-                  <span className="truncate">{t.title}</span>
-                  {t.weight !== undefined && <span className="text-muted-foreground tabular-nums">{t.weight}%</span>}
+                  <span className="truncate">{task.title}</span>
+                  {task.weight !== undefined && <span className="text-muted-foreground tabular-nums">{task.weight}%</span>}
                 </li>
               ))}
             </ol>
@@ -139,7 +143,7 @@ function NewProjectForm({
         )}
         {template.lengthDays > 0 && (
           <p className="mt-1 text-xs text-muted-foreground">
-            Set a start date and the tasks get their dates automatically (and the end date, if you leave it empty).
+            {t("Set a start date and the tasks get their dates automatically (and the end date, if you leave it empty).")}
           </p>
         )}
       </div>
@@ -152,7 +156,7 @@ function NewProjectForm({
 
       <div className="grid gap-1.5">
         <Label htmlFor="project-key">
-          Project key <span aria-hidden className="text-destructive">*</span>
+          {t("Project key")} <span aria-hidden className="text-destructive">*</span>
         </Label>
         <Input
           id="project-key"
@@ -169,7 +173,7 @@ function NewProjectForm({
           aria-describedby="project-key-help"
         />
         <p id="project-key-help" className="text-xs text-muted-foreground">
-          Short code used in task IDs, e.g. {key || "WEB"}-12.
+          {t("Short code used in task IDs, e.g. {key}-12.", { key: key || "WEB" })}
         </p>
         <FieldError message={errors.key} />
       </div>
@@ -178,11 +182,11 @@ function NewProjectForm({
 
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button type="submit" disabled={pending}>
           {pending && <Loader2 className="size-4 animate-spin" />}
-          Create project
+          {t("Create project")}
         </Button>
       </DialogFooter>
     </form>

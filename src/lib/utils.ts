@@ -20,13 +20,16 @@ export function formatMoney(amount: string | number | null | undefined, currency
   if (amount === null || amount === undefined || amount === "") return "—";
   const value = typeof amount === "string" ? Number(amount) : amount;
   try {
-    return new Intl.NumberFormat(locale, {
+    const text = new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       // Whole amounts without decimals; otherwise always two (75,000.50, not 75,000.5).
       minimumFractionDigits: value % 1 === 0 ? 0 : 2,
       maximumFractionDigits: value % 1 === 0 ? 0 : 2,
     }).format(value);
+    // Arabic: a Latin symbol (US$) would be split by the text direction ("$US 0"), so keep that amount
+    // left-to-right in one piece; Arabic symbols (د.ع.) already read correctly.
+    return locale.startsWith("ar") && !/[\u0600-\u06FF]/.test(text) ? `\u2066${text.replace(/\u200F/g, "")}\u2069` : text;
   } catch {
     return `${value.toLocaleString(locale)} ${currency}`;
   }

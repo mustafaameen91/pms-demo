@@ -4,6 +4,7 @@ import { startsTooEarly } from "@/lib/dependencies";
 import type { BoardStatus, BoardTask } from "@/lib/data/projects";
 import { todayISO } from "@/lib/accomplishment";
 import { cn, formatDate } from "@/lib/utils";
+import { getT } from "@/i18n/server";
 import { StatusDot } from "./task-bits";
 
 const DAY = 86_400_000;
@@ -20,7 +21,7 @@ const ROW_H = 41;
  * Gantt-style view: one bar per main task from its start to its end date, filled
  * by its progress, with a "today" line. Scale adapts to the project's length.
  */
-export function TaskTimeline({
+export async function TaskTimeline({
   projectKey,
   projectStart,
   projectEnd,
@@ -35,32 +36,34 @@ export function TaskTimeline({
   tasks: BoardTask[];
   dependencies?: { taskId: string; dependsOnId: string }[];
 }) {
+  const t = await getT();
+  const fmt = (iso: string) => formatDate(iso, t.intl);
   const today = todayISO();
   const statusById = new Map(statuses.map((s) => [s.id, s]));
   const scheduled = tasks
-    .filter((t) => t.startDate || t.dueDate)
-    .map((t) => {
-      const start = t.startDate ?? t.dueDate!;
-      const end = t.dueDate ?? t.startDate!;
-      return { ...t, start: start <= end ? start : end, end: start <= end ? end : start };
+    .filter((task) => task.startDate || task.dueDate)
+    .map((task) => {
+      const start = task.startDate ?? task.dueDate!;
+      const end = task.dueDate ?? task.startDate!;
+      return { ...task, start: start <= end ? start : end, end: start <= end ? end : start };
     })
     .sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
-  const unscheduled = tasks.filter((t) => !t.startDate && !t.dueDate);
+  const unscheduled = tasks.filter((task) => !task.startDate && !task.dueDate);
 
   if (scheduled.length === 0) {
     return (
       <div className="flex-1 px-4 py-12 text-center sm:px-6">
         <CalendarOff className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
-        <p className="font-medium">No tasks on the timeline yet</p>
+        <p className="font-medium">{t("No tasks on the timeline yet")}</p>
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-          Give tasks a start and end date (open a task in the Table view) and they&apos;ll appear here as bars.
+          {t("Give tasks a start and end date (open a task in the Table view) and they'll appear here as bars.")}
         </p>
       </div>
     );
   }
 
   // Visible range: all task dates, the project dates and today, with a little padding.
-  const dates = [...scheduled.flatMap((t) => [t.start, t.end]), today, projectStart, projectEnd].filter(Boolean) as string[];
+  const dates = [...scheduled.flatMap((task) => [task.start, task.end]), today, projectStart, projectEnd].filter(Boolean) as string[];
   const rangeStart = Math.min(...dates.map(toMs)) - 3 * DAY;
   const rangeEnd = Math.max(...dates.map(toMs)) + 4 * DAY;
   const days = Math.round((rangeEnd - rangeStart) / DAY);
@@ -78,7 +81,7 @@ export function TaskTimeline({
     if (d.getUTCDate() === 1 || ms === rangeStart) {
       const nextMonth = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
       months.push({
-        label: d.toLocaleDateString(undefined, { month: "short", year: "numeric", timeZone: "UTC" }),
+        label: d.toLocaleDateString(t.intl, { month: "short", year: "numeric", timeZone: "UTC" }),
         left: x(iso),
         width: ((Math.min(nextMonth, rangeEnd) - ms) / DAY) * pxPerDay,
       });
@@ -88,10 +91,10 @@ export function TaskTimeline({
   }
 
   // Dependency arrows: from the end of the predecessor to the start of the task.
-  const byId = new Map(tasks.map((t) => [t.id, t]));
+  const byId = new Map(tasks.map((task) => [task.id, task]));
   const waitsOn = new Map<string, string[]>();
   for (const d of dependencies) waitsOn.set(d.taskId, [...(waitsOn.get(d.taskId) ?? []), d.dependsOnId]);
-  const rowOf = new Map(scheduled.map((t, i) => [t.id, i]));
+  const rowOf = new Map(scheduled.map((task, i) => [task.id, i]));
   const arrows = dependencies.flatMap((d) => {
     const from = rowOf.get(d.dependsOnId);
     const to = rowOf.get(d.taskId);
@@ -119,7 +122,7 @@ export function TaskTimeline({
           {/* Header */}
           <div className="sticky top-0 z-20 flex border-b bg-background">
             <div className="sticky left-0 z-10 shrink-0 border-r bg-background px-4 py-2 text-xs font-medium text-muted-foreground sm:px-6" style={{ width: LABEL_WIDTH }}>
-              Task
+              {t("Task")}
             </div>
             <div className="relative" style={{ width }}>
               <div className="relative h-6 border-b">
@@ -130,13 +133,13 @@ export function TaskTimeline({
                 ))}
               </div>
               <div className="relative h-6">
-                {ticks.map((t) => (
+                {ticks.map((tick) => (
                   <div
-                    key={t.left}
-                    className={cn("absolute top-0 h-full text-center text-[11px] leading-6 text-muted-foreground tabular-nums", t.strong && "font-medium text-foreground")}
-                    style={{ left: t.left, width: scale === "day" ? pxPerDay : undefined }}
+                    key={tick.left}
+                    className={cn("absolute top-0 h-full text-center text-[11px] leading-6 text-muted-foreground tabular-nums", tick.strong && "font-medium text-foreground")}
+                    style={{ left: tick.left, width: scale === "day" ? pxPerDay : undefined }}
                   >
-                    {t.label}
+                    {tick.label}
                   </div>
                 ))}
               </div>
@@ -144,7 +147,7 @@ export function TaskTimeline({
           </div>
 
           {/* Rows */}
-          <ul aria-label="Scheduled tasks" className="relative">
+          <ul aria-label={t("Scheduled tasks")} className="relative">
             {arrows.length > 0 && (
               <svg
                 aria-hidden
@@ -172,23 +175,29 @@ export function TaskTimeline({
                 ))}
               </svg>
             )}
-            {scheduled.map((t) => {
-              const status = statusById.get(t.statusId);
+            {scheduled.map((task) => {
+              const status = statusById.get(task.statusId);
               const done = status?.category === "done" || status?.category === "canceled";
-              const late = !done && t.end < today;
-              const left = x(t.start);
-              const barWidth = Math.max(pxPerDay, x(t.end) + pxPerDay - left);
-              const key = `${projectKey}-${t.number}`;
-              const waits = (waitsOn.get(t.id) ?? []).map((id) => byId.get(id)?.title).filter(Boolean);
-              const description = t.isMilestone
-                ? `Milestone ${t.title}: ${formatDate(t.end)}${done ? ", reached" : late ? ", missed" : ""}`
-                : `${t.title}: ${formatDate(t.start)} to ${formatDate(t.end)}, ${t.progress}% done${late ? ", late" : ""}${
-                    waits.length ? `, waits on ${waits.join(", ")}` : ""
-                  }`;
-              if (t.isMilestone) {
-                const cx = x(t.end) + pxPerDay / 2;
+              const late = !done && task.end < today;
+              const left = x(task.start);
+              const barWidth = Math.max(pxPerDay, x(task.end) + pxPerDay - left);
+              const key = `${projectKey}-${task.number}`;
+              const waits = (waitsOn.get(task.id) ?? []).map((id) => byId.get(id)?.title).filter(Boolean);
+              const description = task.isMilestone
+                ? t("Milestone {title}: {date}", { title: task.title, date: fmt(task.end) }) +
+                  (done ? t(", reached") : late ? t(", missed") : "")
+                : t("{title}: {start} to {end}, {progress}% done", {
+                    title: task.title,
+                    start: fmt(task.start),
+                    end: fmt(task.end),
+                    progress: task.progress,
+                  }) +
+                  (late ? t(", late") : "") +
+                  (waits.length ? t(", waits on {tasks}", { tasks: waits.join(t(", ")) }) : "");
+              if (task.isMilestone) {
+                const cx = x(task.end) + pxPerDay / 2;
                 return (
-                  <li key={t.id} className="group flex border-b hover:bg-accent/40" style={{ height: ROW_H }}>
+                  <li key={task.id} className="group flex border-b hover:bg-accent/40" style={{ height: ROW_H }}>
                     <Link
                       href={`?view=timeline&task=${key}`}
                       scroll={false}
@@ -198,7 +207,7 @@ export function TaskTimeline({
                     >
                       <Diamond className="size-3.5 shrink-0 fill-current text-brand-accent" aria-hidden />
                       <span className="shrink-0 font-mono text-xs whitespace-nowrap text-muted-foreground">{key}</span>
-                      <span className={cn("truncate font-medium", done && "text-muted-foreground line-through")}>{t.title}</span>
+                      <span className={cn("truncate font-medium", done && "text-muted-foreground line-through")}>{task.title}</span>
                     </Link>
                     <div className="relative" style={{ width }}>
                       <span
@@ -211,14 +220,14 @@ export function TaskTimeline({
                         style={{ left: cx }}
                       />
                       <span aria-hidden className="absolute top-1/2 -translate-y-1/2 text-xs whitespace-nowrap text-muted-foreground" style={{ left: cx + 12 }}>
-                        {formatDate(t.end)}
+                        {fmt(task.end)}
                       </span>
                     </div>
                   </li>
                 );
               }
               return (
-                <li key={t.id} className="group flex border-b hover:bg-accent/40" style={{ height: ROW_H }}>
+                <li key={task.id} className="group flex border-b hover:bg-accent/40" style={{ height: ROW_H }}>
                   <Link
                     href={`?view=timeline&task=${key}`}
                     scroll={false}
@@ -228,7 +237,7 @@ export function TaskTimeline({
                   >
                     {status && <StatusDot color={status.color} />}
                     <span className="shrink-0 font-mono text-xs whitespace-nowrap text-muted-foreground">{key}</span>
-                    <span className={cn("truncate", done && "text-muted-foreground line-through")}>{t.title}</span>
+                    <span className={cn("truncate", done && "text-muted-foreground line-through")}>{task.title}</span>
                   </Link>
                   <div className="relative" style={{ width }}>
                     <Link
@@ -247,12 +256,12 @@ export function TaskTimeline({
                       <span
                         aria-hidden
                         className={cn("absolute inset-y-0 left-0", done ? "bg-green-600 dark:bg-green-500" : late ? "bg-destructive" : "bg-primary")}
-                        style={{ width: `${t.progress}%` }}
+                        style={{ width: `${task.progress}%` }}
                       />
                       {barWidth > 44 && (
                         <span className="relative z-10 flex items-center gap-1 px-2 text-xs font-medium text-foreground mix-blend-normal">
                           {late && <AlertTriangle className="size-3 text-destructive" aria-hidden />}
-                          <span className="rounded bg-background/80 px-1 tabular-nums">{t.progress}%</span>
+                          <span className="rounded bg-background/80 px-1 tabular-nums">{task.progress}%</span>
                         </span>
                       )}
                     </Link>
@@ -267,29 +276,29 @@ export function TaskTimeline({
           <div aria-hidden className="pointer-events-none absolute top-0 bottom-0 z-30" style={{ left: LABEL_WIDTH + todayX }}>
             <div className="h-full w-0.5 bg-brand-accent" />
             <span className="absolute top-1 left-1 rounded border border-brand-accent bg-background px-1 text-[10px] leading-4 font-medium text-foreground">
-              Today
+              {t("Today")}
             </span>
           </div>
           {endX !== null && (
             <div aria-hidden className="pointer-events-none absolute top-12 bottom-0 z-10 border-l-2 border-dashed border-foreground/40" style={{ left: LABEL_WIDTH + endX }}>
-              <span className="absolute top-0 left-1 text-[10px] whitespace-nowrap text-muted-foreground">Project end</span>
+              <span className="absolute top-0 left-1 text-[10px] whitespace-nowrap text-muted-foreground">{t("Project end")}</span>
             </div>
           )}
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-t px-4 py-2 text-xs text-muted-foreground sm:px-6">
-        <span className="flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-4 rounded-sm bg-primary" /> Done part of a task</span>
-        <span className="flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-4 rounded-sm bg-destructive/40 ring-1 ring-destructive" /> Late</span>
-        <span className="flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-4 rounded-sm bg-green-600" /> Finished</span>
-        <span className="flex items-center gap-1.5"><span aria-hidden className="h-3 w-0.5 bg-brand-accent" /> Today</span>
-        <span className="flex items-center gap-1.5"><span aria-hidden className="size-2.5 rotate-45 rounded-[1px] bg-brand-accent" /> Milestone</span>
+        <span className="flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-4 rounded-sm bg-primary" /> {t("Done part of a task")}</span>
+        <span className="flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-4 rounded-sm bg-destructive/40 ring-1 ring-destructive" /> {t("Late")}</span>
+        <span className="flex items-center gap-1.5"><span aria-hidden className="h-2.5 w-4 rounded-sm bg-green-600" /> {t("Finished")}</span>
+        <span className="flex items-center gap-1.5"><span aria-hidden className="h-3 w-0.5 bg-brand-accent" /> {t("Today")}</span>
+        <span className="flex items-center gap-1.5"><span aria-hidden className="size-2.5 rotate-45 rounded-[1px] bg-brand-accent" /> {t("Milestone")}</span>
         {arrows.length > 0 && (
-          <span className="flex items-center gap-1.5"><span aria-hidden className="h-px w-4 bg-muted-foreground" />→ waits on · <span className="text-destructive">red = starts too early</span></span>
+          <span className="flex items-center gap-1.5"><span aria-hidden className="h-px w-4 bg-muted-foreground" />{t("→ waits on")} · <span className="text-destructive">{t("red = starts too early")}</span></span>
         )}
         {unscheduled.length > 0 && (
-          <span className="ml-auto">
-            {unscheduled.length} {unscheduled.length === 1 ? "task has" : "tasks have"} no dates and {unscheduled.length === 1 ? "isn't" : "aren't"} shown
+          <span className="ms-auto">
+            {t.plural(unscheduled.length, "{count} task has no dates and isn't shown", "{count} tasks have no dates and aren't shown")}
           </span>
         )}
       </div>

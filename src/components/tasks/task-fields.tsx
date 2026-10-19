@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/client";
 
 /** Inputs for a task's custom field values; each saves on change/blur. */
 export function TaskFields({
@@ -19,6 +20,7 @@ export function TaskFields({
   fields: FieldDef[];
   values: Record<string, unknown>;
 }) {
+  const t = useT();
   const [, startTransition] = useTransition();
   if (fields.length === 0) return null;
   const save = (fieldId: string, value: unknown) =>
@@ -30,7 +32,7 @@ export function TaskFields({
   return (
     <section aria-labelledby="task-fields-heading" className="grid gap-2">
       <h3 id="task-fields-heading" className="text-sm font-medium">
-        Fields
+        {t("Fields")}
       </h3>
       <dl className="grid grid-cols-[7rem_1fr] items-center gap-x-3 gap-y-2 text-sm">
         {fields.map((f) => {

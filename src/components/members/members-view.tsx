@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { UserAvatar } from "@/components/tasks/task-bits";
+import { useT } from "@/i18n/client";
 
 type Member = {
   memberId: string;
@@ -24,6 +25,7 @@ type Member = {
 type Invite = { id: string; email: string; role: string | null; expiresAt: Date; inviterName: string | null };
 
 const ROLE_LABEL: Record<string, string> = { owner: "Owner", admin: "Admin", member: "Member" };
+/** English; translated at render. */
 const ROLE_HELP: Record<string, string> = {
   owner: "Full control, including other owners and deleting the workspace",
   admin: "Manage members, all projects and settings",
@@ -47,6 +49,8 @@ export function MembersView({
   emailEnabled: boolean;
   appOrigin: string;
 }) {
+  const t = useT();
+  const role = (r: string) => t(ROLE_LABEL[r] ?? r);
   const [pending, startTransition] = useTransition();
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const isOwner = workspace.role === "owner";
@@ -62,18 +66,18 @@ export function MembersView({
     const link = `${appOrigin}/invite/${id}`;
     try {
       await navigator.clipboard.writeText(link);
-      toast.success("Invite link copied");
+      toast.success(t("Invite link copied"));
     } catch {
-      toast(link, { description: "Copy this link and send it to the person you invited." });
+      toast(link, { description: t("Copy this link and send it to the person you invited.") });
     }
   }
 
   return (
     <div className="grid grid-cols-1 gap-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Members</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("Members")}</h1>
         <p className="text-sm text-muted-foreground">
-          {members.length} {members.length === 1 ? "person" : "people"} in {workspace.name}.
+          {t.plural(members.length, "{count} person in {workspace}.", "{count} people in {workspace}.", { workspace: workspace.name })}
         </p>
       </div>
 
@@ -82,7 +86,7 @@ export function MembersView({
       {canManage && invitations.length > 0 && (
         <section aria-labelledby="pending-heading" className="overflow-hidden rounded-xl border bg-card">
           <h2 id="pending-heading" className="border-b px-4 py-3 font-semibold">
-            Pending invitations <span className="text-xs font-normal text-muted-foreground">{invitations.length}</span>
+            {t("Pending invitations")} <span className="text-xs font-normal text-muted-foreground">{invitations.length}</span>
           </h2>
           <ul className="divide-y">
             {invitations.map((inv) => (
@@ -91,23 +95,26 @@ export function MembersView({
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{inv.email}</p>
                   <p className="text-xs text-muted-foreground">
-                    {ROLE_LABEL[inv.role ?? "member"]} · invited by {inv.inviterName ?? "someone"} · expires{" "}
-                    {formatDate(new Date(inv.expiresAt).toISOString().slice(0, 10))}
+                    {t("{role} · invited by {name} · expires {date}", {
+                      role: role(inv.role ?? "member"),
+                      name: inv.inviterName ?? t("someone"),
+                      date: formatDate(new Date(inv.expiresAt).toISOString().slice(0, 10), t.intl),
+                    })}
                   </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => copyLink(inv.id)}>
                   <Copy className="size-4" />
-                  Copy invite link
+                  {t("Copy invite link")}
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   disabled={pending}
-                  onClick={() => run(() => cancelInvitation(workspace.slug, inv.id), "Invitation cancelled")}
-                  aria-label={`Cancel invitation for ${inv.email}`}
+                  onClick={() => run(() => cancelInvitation(workspace.slug, inv.id), t("Invitation cancelled"))}
+                  aria-label={t("Cancel invitation for {email}", { email: inv.email })}
                 >
                   <X className="size-4" />
-                  Cancel
+                  {t("Cancel")}
                 </Button>
               </li>
             ))}
@@ -117,7 +124,7 @@ export function MembersView({
 
       <section aria-labelledby="members-heading" className="overflow-hidden rounded-xl border bg-card">
         <h2 id="members-heading" className="border-b px-4 py-3 font-semibold">
-          People
+          {t("People")}
         </h2>
         <ul className="divide-y">
           {members.map((m) => {
@@ -129,30 +136,30 @@ export function MembersView({
                 <UserAvatar name={m.name} image={m.image} className="size-8" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">
-                    {m.name} {isSelf && <span className="font-normal text-muted-foreground">(you)</span>}
+                    {m.name} {isSelf && <span className="font-normal text-muted-foreground">{t("(you)")}</span>}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {m.email} · joined {formatDate(new Date(m.joinedAt).toISOString().slice(0, 10))}
+                    {m.email} · {t("joined {date}", { date: formatDate(new Date(m.joinedAt).toISOString().slice(0, 10), t.intl) })}
                   </p>
                 </div>
                 {canEdit ? (
                   <>
                     <label htmlFor={`role-${m.memberId}`} className="sr-only">
-                      Role for {m.name}
+                      {t("Role for {name}", { name: m.name })}
                     </label>
                     <select
                       id={`role-${m.memberId}`}
                       value={m.role}
                       disabled={pending}
                       onChange={(e) =>
-                        run(() => changeMemberRole(workspace.slug, m.memberId, e.target.value), `${m.name} is now ${ROLE_LABEL[e.target.value]}`)
+                        run(() => changeMemberRole(workspace.slug, m.memberId, e.target.value), t("{name} is now {role}", { name: m.name, role: role(e.target.value) }))
                       }
                       className={cn(nativeSelectClass, "w-32")}
-                      title={ROLE_HELP[m.role]}
+                      title={ROLE_HELP[m.role] && t(ROLE_HELP[m.role])}
                     >
                       {(isOwner ? ["owner", "admin", "member"] : ["admin", "member"]).map((r) => (
                         <option key={r} value={r}>
-                          {ROLE_LABEL[r]}
+                          {role(r)}
                         </option>
                       ))}
                     </select>
@@ -166,17 +173,17 @@ export function MembersView({
                           return;
                         }
                         setConfirmRemove(null);
-                        run(() => removeMember(workspace.slug, m.memberId), `${m.name} removed`);
+                        run(() => removeMember(workspace.slug, m.memberId), t("{name} removed", { name: m.name }));
                       }}
-                      aria-label={confirmRemove === m.memberId ? `Confirm removing ${m.name}` : `Remove ${m.name}`}
+                      aria-label={confirmRemove === m.memberId ? t("Confirm removing {name}", { name: m.name }) : t("Remove {name}", { name: m.name })}
                     >
                       <Trash2 className="size-4" />
-                      {confirmRemove === m.memberId ? "Click again to remove" : "Remove"}
+                      {confirmRemove === m.memberId ? t("Click again to remove") : t("Remove")}
                     </Button>
                   </>
                 ) : (
-                  <span className="rounded-full border px-2 py-0.5 text-xs" title={ROLE_HELP[m.role]}>
-                    {ROLE_LABEL[m.role] ?? m.role}
+                  <span className="rounded-full border px-2 py-0.5 text-xs" title={ROLE_HELP[m.role] && t(ROLE_HELP[m.role])}>
+                    {role(m.role)}
                   </span>
                 )}
               </li>
@@ -186,10 +193,10 @@ export function MembersView({
       </section>
 
       <dl className="grid gap-2 rounded-xl border p-4 text-sm sm:grid-cols-3">
-        {Object.entries(ROLE_HELP).map(([role, help]) => (
-          <div key={role}>
-            <dt className="font-medium">{ROLE_LABEL[role]}</dt>
-            <dd className="text-xs text-muted-foreground">{help}</dd>
+        {Object.entries(ROLE_HELP).map(([r, help]) => (
+          <div key={r}>
+            <dt className="font-medium">{role(r)}</dt>
+            <dd className="text-xs text-muted-foreground">{t(help)}</dd>
           </div>
         ))}
       </dl>
@@ -198,6 +205,7 @@ export function MembersView({
 }
 
 function InviteForm({ slug, emailEnabled }: { slug: string; emailEnabled: boolean }) {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"member" | "admin">("member");
   const [error, setError] = useState<string>();
@@ -207,7 +215,7 @@ function InviteForm({ slug, emailEnabled }: { slug: string; emailEnabled: boolea
     <section aria-labelledby="invite-heading" className="rounded-xl border bg-card p-5">
       <h2 id="invite-heading" className="flex items-center gap-2 font-semibold">
         <UserPlus className="size-4 text-muted-foreground" aria-hidden />
-        Invite someone
+        {t("Invite someone")}
       </h2>
       <form
         className="mt-4 flex flex-wrap items-start gap-3"
@@ -220,13 +228,17 @@ function InviteForm({ slug, emailEnabled }: { slug: string; emailEnabled: boolea
               setError(result.error);
               return;
             }
-            toast.success(emailEnabled ? `Invitation emailed to ${email}` : `Invitation created for ${email} — copy the link below`);
+            toast.success(
+              emailEnabled
+                ? t("Invitation emailed to {email}", { email })
+                : t("Invitation created for {email} — copy the link below", { email }),
+            );
             setEmail("");
           });
         }}
       >
         <div className="grid min-w-56 flex-1 gap-1.5">
-          <Label htmlFor="invite-email">Email</Label>
+          <Label htmlFor="invite-email">{t("Email")}</Label>
           <Input
             id="invite-email"
             type="email"
@@ -239,22 +251,23 @@ function InviteForm({ slug, emailEnabled }: { slug: string; emailEnabled: boolea
           <FieldError message={error} />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="invite-role">Role</Label>
+          <Label htmlFor="invite-role">{t("Role")}</Label>
           <select id="invite-role" value={role} onChange={(e) => setRole(e.target.value as "member" | "admin")} className={cn(nativeSelectClass, "w-32")}>
-            <option value="member">Member</option>
-            <option value="admin">Admin</option>
+            <option value="member">{t("Member")}</option>
+            <option value="admin">{t("Admin")}</option>
           </select>
         </div>
         <Button type="submit" disabled={pending} className="sm:mt-6">
           {pending && <Loader2 className="size-4 animate-spin" />}
-          Invite
+          {t("Invite")}
         </Button>
       </form>
       {!emailEnabled && (
         <p className="mt-3 flex gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
           <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          Email sending isn&apos;t set up yet, so invitations are not emailed. After inviting, use “Copy invite link”
-          and send the link yourself (e.g. by WhatsApp). The invited person must sign up or log in with the same email.
+          {t(
+            "Email sending isn't set up yet, so invitations are not emailed. After inviting, use “Copy invite link” and send the link yourself (e.g. by WhatsApp). The invited person must sign up or log in with the same email.",
+          )}
         </p>
       )}
     </section>

@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { BoardStatus, BoardTask } from "@/lib/data/projects";
 import { cn } from "@/lib/utils";
+import { getT } from "@/i18n/server";
 import { QuickAddTask } from "./quick-add-task";
 import { BlockedBadge, MilestoneIcon, RepeatIcon, PriorityIcon, StatusDot, UserAvatar, formatDue, priorityLabel } from "./task-bits";
 
-export function TaskList({
+export async function TaskList({
   projectId,
   projectKey,
   statuses,
@@ -15,6 +16,7 @@ export function TaskList({
   statuses: BoardStatus[];
   tasks: BoardTask[];
 }) {
+  const t = await getT();
   return (
     <div className="flex-1 overflow-y-auto pb-10">
       {statuses.map((status) => {
@@ -30,7 +32,7 @@ export function TaskList({
             <ul>
               {rows.map((task) => {
                 const key = `${projectKey}-${task.number}`;
-                const due = task.dueDate ? formatDue(task.dueDate, done) : null;
+                const due = task.dueDate ? formatDue(task.dueDate, done, t.intl) : null;
                 return (
                   <li key={task.id} className="border-b">
                     <Link
@@ -46,7 +48,7 @@ export function TaskList({
                       </span>
                       {task.recurrence && <RepeatIcon rule={task.recurrence} />}
                       {!done && task.blockedBy > 0 && <BlockedBadge count={task.blockedBy} />}
-                      <span className="sr-only">Priority: {priorityLabel(task.priority)}</span>
+                      <span className="sr-only">{t("Priority: {priority}", { priority: priorityLabel(task.priority, t) })}</span>
                       {due && (
                         <span
                           className={cn(
@@ -54,7 +56,7 @@ export function TaskList({
                             due.overdue ? "font-medium text-destructive" : "text-muted-foreground",
                           )}
                         >
-                          {due.overdue ? `Overdue · ${due.label}` : due.label}
+                          {due.overdue ? t("Overdue · {date}", { date: due.label }) : due.label}
                         </span>
                       )}
                       <span className="w-6 shrink-0">

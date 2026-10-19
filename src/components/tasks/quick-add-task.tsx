@@ -5,6 +5,7 @@ import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { createTask } from "@/lib/actions/tasks";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/client";
 
 export function QuickAddTask({
   projectId,
@@ -16,6 +17,7 @@ export function QuickAddTask({
   statusId?: string;
   className?: string;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [pending, startTransition] = useTransition();
@@ -50,7 +52,7 @@ export function QuickAddTask({
         )}
       >
         <Plus className="size-4" />
-        Add task
+        {t("Add task")}
       </button>
     );
   }
@@ -64,7 +66,7 @@ export function QuickAddTask({
       }}
     >
       <label htmlFor={`quick-add-${statusId ?? "default"}`} className="sr-only">
-        Task title
+        {t("Task title")}
       </label>
       <input
         ref={inputRef}
@@ -78,7 +80,7 @@ export function QuickAddTask({
           }
         }}
         onBlur={() => !title.trim() && !pending && setOpen(false)}
-        placeholder="Task title — Enter to save, Esc to cancel"
+        placeholder={t("Task title — Enter to save, Esc to cancel")}
         maxLength={300}
         autoFocus
         disabled={pending}

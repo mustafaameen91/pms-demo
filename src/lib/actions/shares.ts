@@ -7,6 +7,7 @@ import { requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { activities, projectShares, projects } from "@/lib/db/schema";
 import { canManageProject } from "@/lib/permissions";
+import { getT } from "@/i18n/server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -20,8 +21,9 @@ async function authorize(projectId: string) {
 
 /** Creates a new client link (any previous link for the project stops working). */
 export async function createShareLink(projectId: string, showBudget: boolean): Promise<Result> {
+  const t = await getT();
   const auth = await authorize(projectId);
-  if (!auth) return { ok: false, error: "Only admins or the project manager can share a project." };
+  if (!auth) return { ok: false, error: t("Only admins or the project manager can share a project.") };
   // 32 random bytes: unguessable, URL-safe.
   const token = randomBytes(32).toString("base64url");
   await db.transaction(async (tx) => {
@@ -49,8 +51,9 @@ export async function createShareLink(projectId: string, showBudget: boolean): P
 }
 
 export async function setShareBudgetVisible(projectId: string, showBudget: boolean): Promise<Result> {
+  const t = await getT();
   const auth = await authorize(projectId);
-  if (!auth) return { ok: false, error: "Not allowed" };
+  if (!auth) return { ok: false, error: t("Not allowed") };
   await db
     .update(projectShares)
     .set({ showBudget })
@@ -60,8 +63,9 @@ export async function setShareBudgetVisible(projectId: string, showBudget: boole
 }
 
 export async function revokeShareLink(projectId: string): Promise<Result> {
+  const t = await getT();
   const auth = await authorize(projectId);
-  if (!auth) return { ok: false, error: "Not allowed" };
+  if (!auth) return { ok: false, error: t("Not allowed") };
   await db.transaction(async (tx) => {
     await tx
       .update(projectShares)

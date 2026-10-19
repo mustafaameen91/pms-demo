@@ -7,7 +7,7 @@ import { z } from "zod";
 import { requireWorkspace, requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { activities, expenses, member, projectTemplates, projects, taskDependencies, taskStatuses, tasks } from "@/lib/db/schema";
-import { addDays, builtinTemplate, templateDataSchema, templateLengthDays } from "@/lib/templates";
+import { addDays, builtinTemplate, localizeBuiltinTemplate, templateDataSchema, templateLengthDays } from "@/lib/templates";
 import { deleteStoredFile } from "@/lib/uploads";
 import {
   CURRENCIES,
@@ -17,6 +17,8 @@ import {
   PROJECT_STATUSES,
 } from "@/lib/constants";
 import { canManageProject } from "@/lib/permissions";
+import { getT } from "@/i18n/server";
+import type { T } from "@/i18n/translate";
 
 export type ProjectFormState =
   | { error?: string; fieldErrors?: Record<string, string>; saved?: boolean }
@@ -78,9 +80,9 @@ function readDetails(formData: FormData) {
   };
 }
 
-function fieldErrorsOf(error: z.ZodError) {
+function fieldErrorsOf(error: z.ZodError, t: T) {
   const fieldErrors: Record<string, string> = {};
-  for (const issue of error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
+  for (const issue of error.issues) fieldErrors[String(issue.path[0])] ??= t(issue.message);
   return { fieldErrors };
 }
 
@@ -88,13 +90,14 @@ export async function createProject(
   _prev: ProjectFormState,
   formData: FormData,
 ): Promise<ProjectFormState> {
+  const t = await getT();
   const details = detailsSchema.safeParse(readDetails(formData));
   const key = keySchema.safeParse(formData.get("key"));
   if (!details.success || !key.success) {
     return {
       fieldErrors: {
-        ...(details.success ? {} : fieldErrorsOf(details.error).fieldErrors),
-        ...(key.success ? {} : { key: key.error.issues[0].message }),
+        ...(details.success ? {} : fieldErrorsOf(details.error, t).fieldErrors),
+        ...(key.success ? {} : { key: t(key.error.issues[0].message) }),
       },
     };
   }
@@ -106,10 +109,10 @@ export async function createProject(
     .from(projects)
     .where(and(eq(projects.workspaceId, workspace.id), eq(projects.key, key.data)))
     .limit(1);
-  if (existing) return { fieldErrors: { key: `Key ${key.data} is already used in this workspace` } };
+  if (existing) return { fieldErrors: { key: t("Key {key} is already used in this workspace", { key: key.data }) } };
 
   const template = await resolveTemplate(String(formData.get("template") ?? ""), workspace.id);
-  if (template === "invalid") return { error: "That template is no longer available. Choose another one." };
+  if (template === "invalid") return { error: t("That template is no longer available. Choose another one.") };
 
   // With a template and a start date but no end date, finish when the template's last task does.
   const length = template ? templateLengthDays(template) : 0;
@@ -135,7 +138,8 @@ export async function createProject(
         (template?.statuses ?? DEFAULT_STATUSES).map((s, i) => ({
           workspaceId: workspace.id,
           projectId: project.id,
-          name: s.name,
+          // Default and built-in columns are named in the creator's language; after that they're the team's data.
+          name: !template || template.builtin ? t(s.name) : s.name,
           category: s.category,
           color: s.color,
           position: (i + 1) * POSITION_STEP,
@@ -211,7 +215,7 @@ export async function createProject(
 /** Loads a project and checks the current user may manage it. */
 async function authorizeProject(projectId: string) {
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
-  if (!project) throw new Error("Project not found");
+  if (!project) throw new Error((await getT())("Project not found"));
   const { user, role, slug } = await requireWorkspaceById(project.workspaceId);
   return { project, user, role, slug, canManage: canManageProject(role, user.id, project) };
 }
@@ -225,16 +229,17 @@ export async function updateProject(
   _prev: ProjectFormState,
   formData: FormData,
 ): Promise<ProjectFormState> {
+  const t = await getT();
   const { project, user, canManage } = await authorizeProject(String(formData.get("projectId")));
-  if (!canManage) return { error: "Only workspace admins or the project manager can edit this project." };
+  if (!canManage) return { error: t("Only workspace admins or the project manager can edit this project.") };
 
   const details = detailsSchema.safeParse(readDetails(formData));
   const extra = updateSchema.safeParse({
     status: formData.get("status"),
     leadId: (formData.get("leadId") as string) || null,
   });
-  if (!details.success) return fieldErrorsOf(details.error);
-  if (!extra.success) return fieldErrorsOf(extra.error);
+  if (!details.success) return fieldErrorsOf(details.error, t);
+  if (!extra.success) return fieldErrorsOf(extra.error, t);
 
   if (extra.data.leadId) {
     const [isMember] = await db
@@ -242,7 +247,7 @@ export async function updateProject(
       .from(member)
       .where(and(eq(member.organizationId, project.workspaceId), eq(member.userId, extra.data.leadId)))
       .limit(1);
-    if (!isMember) return { fieldErrors: { leadId: "Project manager must be a workspace member" } };
+    if (!isMember) return { fieldErrors: { leadId: t("Project manager must be a workspace member") } };
   }
 
   const changes = {
@@ -275,8 +280,9 @@ export async function updateProject(
 }
 
 export async function setProjectArchived(projectId: string, archived: boolean) {
+  const t = await getT();
   const { project, user, canManage, slug } = await authorizeProject(projectId);
-  if (!canManage) return { ok: false as const, error: "You don't have permission to archive this project." };
+  if (!canManage) return { ok: false as const, error: t("You don't have permission to archive this project.") };
 
   await db.transaction(async (tx) => {
     await tx
@@ -298,12 +304,13 @@ export async function setProjectArchived(projectId: string, archived: boolean) {
 }
 
 export async function deleteProject(projectId: string, confirmKey: string) {
+  const t = await getT();
   const { project, role, slug, user } = await authorizeProject(projectId);
   if (role !== "owner" && role !== "admin") {
-    return { ok: false as const, error: "Only workspace owners and admins can delete projects." };
+    return { ok: false as const, error: t("Only workspace owners and admins can delete projects.") };
   }
   if (confirmKey.trim().toUpperCase() !== project.key) {
-    return { ok: false as const, error: `Type ${project.key} to confirm.` };
+    return { ok: false as const, error: t("Type {key} to confirm.", { key: project.key }) };
   }
   // Statuses, tasks, expenses, activity etc. cascade with the project; receipt files don't.
   const receipts = await db
@@ -326,10 +333,11 @@ export async function deleteProject(projectId: string, confirmKey: string) {
 
 /** Changing the key renames every task ID (WEB-12 → SITE-12), so it's a separate, explicit action. */
 export async function changeProjectKey(projectId: string, newKey: string) {
+  const t = await getT();
   const { project, canManage, slug } = await authorizeProject(projectId);
-  if (!canManage) return { ok: false as const, error: "You don't have permission to change the key." };
+  if (!canManage) return { ok: false as const, error: t("You don't have permission to change the key.") };
   const key = keySchema.safeParse(newKey);
-  if (!key.success) return { ok: false as const, error: key.error.issues[0].message };
+  if (!key.success) return { ok: false as const, error: t(key.error.issues[0].message) };
   if (key.data === project.key) return { ok: true as const };
 
   const [taken] = await db
@@ -339,7 +347,7 @@ export async function changeProjectKey(projectId: string, newKey: string) {
       and(eq(projects.workspaceId, project.workspaceId), eq(projects.key, key.data), ne(projects.id, project.id)),
     )
     .limit(1);
-  if (taken) return { ok: false as const, error: `Key ${key.data} is already used in this workspace` };
+  if (taken) return { ok: false as const, error: t("Key {key} is already used in this workspace", { key: key.data }) };
 
   await db.update(projects).set({ key: key.data }).where(eq(projects.id, project.id));
   redirect(`/w/${slug}/p/${key.data}/settings`);
@@ -350,8 +358,10 @@ async function resolveTemplate(value: string, workspaceId: string) {
   if (!value) return null;
   const [kind, id] = value.split(":");
   if (kind === "builtin") {
-    const tpl = builtinTemplate(id);
-    return tpl ? { name: tpl.name, ...tpl.data } : "invalid";
+    const found = builtinTemplate(id);
+    // Built-in templates come in the creator's language (column names, tasks, sub-tasks).
+    const tpl = found && localizeBuiltinTemplate(found, await getT());
+    return tpl ? { name: tpl.name, builtin: true, ...tpl.data } : "invalid";
   }
   if (kind === "custom" && id) {
     const [row] = await db
@@ -360,7 +370,7 @@ async function resolveTemplate(value: string, workspaceId: string) {
       .where(and(eq(projectTemplates.id, id), eq(projectTemplates.workspaceId, workspaceId)))
       .limit(1);
     const parsed = row ? templateDataSchema.safeParse(row.data) : null;
-    return parsed?.success ? { name: row!.name, ...parsed.data } : "invalid";
+    return parsed?.success ? { name: row!.name, builtin: false, ...parsed.data } : "invalid";
   }
   return "invalid";
 }

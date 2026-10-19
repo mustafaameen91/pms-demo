@@ -11,6 +11,8 @@ import { activities, organization, payments, platformSettings, subscriptions } f
 import { CURRENCIES } from "@/lib/constants";
 import { todayISO } from "@/lib/accomplishment";
 import { MAX_MONEY, optionalDecimal } from "@/lib/validation";
+import { getT } from "@/i18n/server";
+import type { T } from "@/i18n/translate";
 
 type Result = { ok: true } | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
@@ -21,10 +23,10 @@ async function requireSuperAdmin() {
   return user;
 }
 
-function fail(error: z.ZodError): Result {
+function fail(error: z.ZodError, t: T): Result {
   const fieldErrors: Record<string, string> = {};
-  for (const issue of error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
-  return { ok: false, error: error.issues[0].message, fieldErrors };
+  for (const issue of error.issues) fieldErrors[String(issue.path[0])] ??= t(issue.message);
+  return { ok: false, error: t(error.issues[0].message), fieldErrors };
 }
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date");
@@ -41,14 +43,15 @@ const paymentSchema = z.object({
 
 /** Records a payment received outside the app and extends the workspace to `coversUntil`. */
 export async function recordPayment(input: z.input<typeof paymentSchema>): Promise<Result> {
+  const t = await getT();
   const admin = await requireSuperAdmin();
   const parsed = paymentSchema.safeParse(input);
-  if (!parsed.success) return fail(parsed.error);
+  if (!parsed.success) return fail(parsed.error, t);
   const d = parsed.data;
-  if (d.coversUntil < todayISO()) return { ok: false, error: "Paid-until date is in the past", fieldErrors: { coversUntil: "Must be today or later" } };
+  if (d.coversUntil < todayISO()) return { ok: false, error: t("Paid-until date is in the past"), fieldErrors: { coversUntil: t("Must be today or later") } };
 
   const [ws] = await db.select({ id: organization.id }).from(organization).where(eq(organization.id, d.workspaceId)).limit(1);
-  if (!ws) return { ok: false, error: "Workspace not found" };
+  if (!ws) return { ok: false, error: t("Workspace not found") };
 
   await db.transaction(async (tx) => {
     await tx.insert(payments).values({ ...d, amount: d.amount!, recordedById: admin.id });
@@ -77,9 +80,10 @@ const statusSchema = z.object({
 
 /** Manual status changes: give free access, lock (cancel), or reset to awaiting payment. */
 export async function setSubscriptionStatus(input: z.input<typeof statusSchema>): Promise<Result> {
+  const t = await getT();
   const admin = await requireSuperAdmin();
   const parsed = statusSchema.safeParse(input);
-  if (!parsed.success) return fail(parsed.error);
+  if (!parsed.success) return fail(parsed.error, t);
   const { workspaceId, action } = parsed.data;
   const values =
     action === "complimentary"
@@ -112,9 +116,10 @@ const settingsSchema = z.object({
 });
 
 export async function savePlatformSettings(input: z.input<typeof settingsSchema>): Promise<Result> {
+  const t = await getT();
   await requireSuperAdmin();
   const parsed = settingsSchema.safeParse(input);
-  if (!parsed.success) return fail(parsed.error);
+  if (!parsed.success) return fail(parsed.error, t);
   await db
     .insert(platformSettings)
     .values({ id: "platform", ...parsed.data })

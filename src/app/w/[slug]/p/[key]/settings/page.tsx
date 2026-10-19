@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth/session";
+import { getT } from "@/i18n/server";
 import { getProjectByKey, listMembers } from "@/lib/data/projects";
 import { canManageProject } from "@/lib/permissions";
 import { ProjectSettings } from "@/components/projects/project-settings";
@@ -16,8 +17,8 @@ import { projectShares } from "@/lib/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/settings">) {
-  const { key } = await params;
-  return { title: `Settings · ${key.toUpperCase()}` };
+  const [{ key }, t] = await Promise.all([params, getT()]);
+  return { title: t("Settings · {key}", { key: key.toUpperCase() }) };
 }
 
 export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slug]/p/[key]/settings">) {

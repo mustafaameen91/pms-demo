@@ -5,12 +5,14 @@ import { db } from "@/lib/db";
 import { expenses, member } from "@/lib/db/schema";
 import { readStoredFile } from "@/lib/uploads";
 import { getWorkspaceAccess } from "@/lib/billing";
+import { getT } from "@/i18n/server";
 
 // Receipts are only served to members of the expense's workspace.
 export async function GET(_request: Request, ctx: RouteContext<"/api/files/receipts/[expenseId]">) {
   const { expenseId } = await ctx.params;
+  const t = await getT();
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response(t("Unauthorized"), { status: 401 });
 
   const [row] = await db
     .select({
@@ -26,13 +28,13 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/files/recei
     )
     .where(eq(expenses.id, expenseId))
     .limit(1);
-  if (!row?.path || !row.type) return new Response("Not found", { status: 404 });
+  if (!row?.path || !row.type) return new Response(t("Not found"), { status: 404 });
   if (!(await getWorkspaceAccess(row.workspaceId)).allowed) {
-    return new Response("This workspace's subscription isn't active.", { status: 402 });
+    return new Response(t("This workspace's subscription isn't active."), { status: 402 });
   }
 
   const file = await readStoredFile(row.path).catch(() => null);
-  if (!file) return new Response("Not found", { status: 404 });
+  if (!file) return new Response(t("Not found"), { status: 404 });
 
   const filename = (row.name ?? "receipt").replace(/["\r\n]/g, "");
   return new Response(new Uint8Array(file), {

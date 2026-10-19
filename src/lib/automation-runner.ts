@@ -12,18 +12,22 @@ import {
   user,
 } from "@/lib/db/schema";
 import { todayISO } from "@/lib/accomplishment";
-import { brokenReason, describeRule, matchesTrigger, type Action, type AutomationEvent, type RuleNames } from "@/lib/automations";
+import { brokenReason, describeRule, matchesTrigger, type Action, type AutomationEvent, type RuleNames, type Trigger } from "@/lib/automations";
 import { POSITION_STEP, PRIORITIES } from "@/lib/constants";
 import { notify, projectContext, projectManagers } from "@/lib/notifications";
 import { spawnNextOccurrence } from "@/lib/task-recurrence";
 import { formatMoney } from "@/lib/utils";
+import { tFor } from "@/i18n/server";
+import type { T } from "@/i18n/translate";
+
+const EN = tFor("en");
 
 type Outcome = { status: "done" | "skipped" | "failed"; message: string; info?: string };
 
 const isDone = (category: string) => category === "done" || category === "canceled";
 
-/** Column and member names for a project, used to describe and check rules. */
-export async function ruleNames(projectId: string, workspaceId: string, currency: string): Promise<RuleNames> {
+/** Column and member names for a project, used to describe and check rules. Amounts formatted for `t` (English by default). */
+export async function ruleNames(projectId: string, workspaceId: string, currency: string, t: T = EN): Promise<RuleNames> {
   const [statuses, people] = await Promise.all([
     db.select({ id: taskStatuses.id, name: taskStatuses.name }).from(taskStatuses).where(eq(taskStatuses.projectId, projectId)),
     db
@@ -35,7 +39,7 @@ export async function ruleNames(projectId: string, workspaceId: string, currency
   return {
     statuses: Object.fromEntries(statuses.map((s) => [s.id, s.name])),
     people: Object.fromEntries(people.map((p) => [p.id, p.name])),
-    money: (amount) => formatMoney(amount, currency),
+    money: (amount) => formatMoney(amount, currency, t.intl),
   };
 }
 
@@ -44,8 +48,15 @@ export async function ruleNames(projectId: string, workspaceId: string, currency
  * not trigger other rules (no loops). Never throws: a failing rule is
  * recorded in the run history and the user's own change still goes through.
  * Returns short notes for the person who caused the event (shown as a toast).
+ *
+ * Language: the run history has one stored message per run (no schema change),
+ * written in the language of the person whose change triggered it — pass their
+ * translator as `t` (server actions pass getT()). Runs with no such person
+ * (the late-task sweep, public request forms) are stored in English. The toast
+ * notes use the same `t`. Notifications sent by a rule are written separately
+ * in each recipient's own language.
  */
-export async function runAutomations(event: AutomationEvent, actorId: string | null): Promise<string[]> {
+export async function runAutomations(event: AutomationEvent, actorId: string | null, t: T = EN): Promise<string[]> {
   try {
     const rules = await db
       .select()
@@ -64,7 +75,7 @@ export async function runAutomations(event: AutomationEvent, actorId: string | n
     const ctx = await projectContext(event.projectId);
     const [project] = await db.select({ currency: projects.currency, archivedAt: projects.archivedAt }).from(projects).where(eq(projects.id, event.projectId));
     if (!ctx || !project || project.archivedAt) return [];
-    const names = await ruleNames(event.projectId, ctx.workspaceId, project.currency);
+    const names = await ruleNames(event.projectId, ctx.workspaceId, project.currency, t);
     const taskId = "taskId" in event ? event.taskId : null;
 
     const notes: string[] = [];
@@ -79,7 +90,7 @@ export async function runAutomations(event: AutomationEvent, actorId: string | n
           ruleId: rule.id,
           taskId,
           status: "skipped",
-          message: "Running…",
+          message: t("Running…"),
           dedupeKey,
         })
         .onConflictDoNothing()
@@ -87,15 +98,15 @@ export async function runAutomations(event: AutomationEvent, actorId: string | n
       if (!run) continue;
 
       let outcome: Outcome;
-      const broken = brokenReason(rule, names);
+      const broken = brokenReason(rule, names, t);
       if (broken) {
-        outcome = { status: "skipped", message: `Didn't run: ${broken}` };
+        outcome = { status: "skipped", message: t("Didn't run: {reason}", { reason: broken }) };
       } else {
         try {
-          outcome = await perform(rule.id, rule.action, event, actorId, ctx, names, describeRule(rule, names));
+          outcome = await perform(rule, event, actorId, ctx, names, project.currency, t);
         } catch (error) {
           console.error("[automation] rule failed", rule.id, error);
-          outcome = { status: "failed", message: "Something went wrong running this rule." };
+          outcome = { status: "failed", message: t("Something went wrong running this rule.") };
         }
       }
       await db.update(automationRuns).set({ status: outcome.status, message: outcome.message }).where(eq(automationRuns.id, run.id));
@@ -110,20 +121,25 @@ export async function runAutomations(event: AutomationEvent, actorId: string | n
 
 type Ctx = NonNullable<Awaited<ReturnType<typeof projectContext>>>;
 
+/** `t` = language of the run message and toast note; notifications use each recipient's. */
 async function perform(
-  ruleId: string,
-  action: Action,
+  rule: { id: string; trigger: Trigger; action: Action },
   event: AutomationEvent,
   actorId: string | null,
   ctx: Ctx,
   names: RuleNames,
-  ruleText: string,
+  currency: string,
+  t: T,
 ): Promise<Outcome> {
+  const ruleId = rule.id;
+  const action = rule.action;
+  // Same names, with amounts formatted for a recipient's language.
+  const namesFor = (tr: T): RuleNames => ({ ...names, money: (amount) => formatMoney(amount, currency, tr.intl) });
   const task =
     "taskId" in event
       ? (await db.select().from(tasks).where(and(eq(tasks.id, event.taskId), isNull(tasks.deletedAt))).limit(1))[0]
       : undefined;
-  if ("taskId" in event && !task) return { status: "skipped", message: "The task was deleted." };
+  if ("taskId" in event && !task) return { status: "skipped", message: t("The task was deleted.") };
   const ref = task ? `${ctx.key}-${task.number}` : "";
   const taskLink = `/w/${ctx.slug}/p/${ctx.key}?task=${ref}`;
   const log = (type: string, data: Record<string, unknown>) =>
@@ -147,39 +163,52 @@ async function perform(
               ? (await projectManagers(ctx.workspaceId, null)).filter(Boolean)
               : [action.userId];
       if (!targets.some(Boolean)) {
-        const missing = { manager: "The project has no manager.", assignee: "The task has no assignee.", admins: "No admins found.", user: "No one to notify." }[action.to];
+        const missing = {
+          manager: t("The project has no manager."),
+          assignee: t("The task has no assignee."),
+          admins: t("No admins found."),
+          user: t("No one to notify."),
+        }[action.to];
         return { status: "skipped", message: missing };
       }
-      const title =
+      // Written per recipient, in their language.
+      const title = (tr: T) =>
         event.type === "task.created"
-          ? `New task ${ref} ${task!.title}`
+          ? tr("New task {ref} {title}", { ref, title: task!.title })
           : event.type === "task.status_changed"
-            ? `${ref} ${task!.title} moved to ${names.statuses[event.statusId] ?? "another column"}`
+            ? tr("{ref} {title} moved to {column}", { ref, title: task!.title, column: names.statuses[event.statusId] ?? tr("another column") })
             : event.type === "task.late"
-              ? `${ref} ${task!.title} is late`
-              : `New expense ${names.money(event.amount)} on ${ctx.name}: ${event.description}`;
+              ? tr("{ref} {title} is late", { ref, title: task!.title })
+              : tr("New expense {amount} on {project}: {description}", {
+                  amount: formatMoney(event.amount, currency, tr.intl),
+                  project: ctx.name,
+                  description: event.description,
+                });
       const sent = await notify({
         workspaceId: ctx.workspaceId,
         userIds: targets,
         actorId,
         type: "automation",
         title,
-        body: action.message || `Automation: ${ruleText}`,
+        // A custom message is sent as written; otherwise the rule, described in the recipient's language.
+        body: action.message || ((tr: T) => tr("Automation: {rule}", { rule: describeRule(rule, namesFor(tr), tr) })),
         link: event.type === "expense.added" ? `/w/${ctx.slug}/p/${ctx.key}/expenses` : taskLink,
         dedupeKey: event.type === "task.late" ? `auto:${ruleId}:${event.taskId}:${event.dueDate}` : undefined,
         email: action.email,
       });
       if (sent.length === 0) {
-        return { status: "skipped", message: "No one to notify — the person who made the change isn't notified about it." };
+        return { status: "skipped", message: t("No one to notify — the person who made the change isn't notified about it.") };
       }
-      const who = sent.length === 1 ? (names.people[sent[0]] ?? "1 person") : `${sent.length} people`;
-      return { status: "done", message: `Notified ${who}${ref ? ` about ${ref}` : ""}` };
+      const who = sent.length === 1 ? (names.people[sent[0]] ?? t("1 person")) : t.plural(sent.length, "{count} person", "{count} people");
+      return { status: "done", message: ref ? t("Notified {who} about {ref}", { who, ref }) : t("Notified {who}", { who }) };
     }
 
     case "set_status": {
-      if (task!.statusId === action.statusId) return { status: "skipped", message: `${ref} was already in “${names.statuses[action.statusId]}”.` };
+      if (task!.statusId === action.statusId) {
+        return { status: "skipped", message: t("{ref} was already in “{column}”.", { ref, column: names.statuses[action.statusId] }) };
+      }
       const [status] = await db.select().from(taskStatuses).where(and(eq(taskStatuses.id, action.statusId), eq(taskStatuses.projectId, ctx.id)));
-      if (!status) return { status: "skipped", message: "Its target column was deleted." };
+      if (!status) return { status: "skipped", message: t("Its target column was deleted.") };
       const [{ maxPos }] = await db
         .select({ maxPos: max(tasks.position) })
         .from(tasks)
@@ -196,11 +225,17 @@ async function perform(
         .where(eq(tasks.id, task!.id));
       await log("task.status_changed", { from: task!.statusId, to: status.id, toName: status.name });
       if (status.category === "done") await spawnNextOccurrence(task!.id, actorId);
-      return { status: "done", message: `Moved ${ref} to “${status.name}”`, info: `Automation moved ${ref} to “${status.name}”` };
+      return {
+        status: "done",
+        message: t("Moved {ref} to “{column}”", { ref, column: status.name }),
+        info: t("Automation moved {ref} to “{column}”", { ref, column: status.name }),
+      };
     }
 
     case "assign": {
-      if (task!.assigneeId === action.userId) return { status: "skipped", message: `${ref} was already assigned to ${names.people[action.userId]}.` };
+      if (task!.assigneeId === action.userId) {
+        return { status: "skipped", message: t("{ref} was already assigned to {name}.", { ref, name: names.people[action.userId] }) };
+      }
       await db.update(tasks).set({ assigneeId: action.userId }).where(eq(tasks.id, task!.id));
       await log("task.assignee_changed", { from: task!.assigneeId, to: action.userId });
       await notify({
@@ -208,21 +243,31 @@ async function perform(
         userIds: [action.userId],
         actorId,
         type: "task.assigned",
-        title: `You were assigned ${ref} ${task!.title}`,
-        body: `Automation on ${ctx.name}`,
+        title: (tr) => tr("You were assigned {ref} {title}", { ref, title: task!.title }),
+        body: (tr) => tr("Automation on {project}", { project: ctx.name }),
         link: taskLink,
         email: true,
       });
       const who = names.people[action.userId];
-      return { status: "done", message: `Assigned ${ref} to ${who}`, info: `Automation assigned ${ref} to ${who}` };
+      return {
+        status: "done",
+        message: t("Assigned {ref} to {name}", { ref, name: who }),
+        info: t("Automation assigned {ref} to {name}", { ref, name: who }),
+      };
     }
 
     case "set_priority": {
-      const label = PRIORITIES.find((p) => p.value === action.priority)?.label ?? action.priority;
-      if (task!.priority === action.priority) return { status: "skipped", message: `${ref} already had priority ${label}.` };
+      const label = t(PRIORITIES.find((p) => p.value === action.priority)?.label ?? action.priority);
+      if (task!.priority === action.priority) {
+        return { status: "skipped", message: t("{ref} already had priority {priority}.", { ref, priority: label }) };
+      }
       await db.update(tasks).set({ priority: action.priority }).where(eq(tasks.id, task!.id));
       await log("task.priority_changed", { from: task!.priority, to: action.priority });
-      return { status: "done", message: `Set ${ref} to ${label}`, info: `Automation set ${ref} to ${label}` };
+      return {
+        status: "done",
+        message: t("Set {ref} to {priority}", { ref, priority: label }),
+        info: t("Automation set {ref} to {priority}", { ref, priority: label }),
+      };
     }
   }
 }

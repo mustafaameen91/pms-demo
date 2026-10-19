@@ -1,5 +1,8 @@
 import { z } from "zod";
 import type { FormConfig, FormQuestion } from "@/lib/db/schema/pm";
+import { createT, type T } from "@/i18n/translate";
+
+const EN = createT("en", {});
 
 /** Request-form rules (pure): config, submission validation, rate limit, task text. */
 
@@ -34,34 +37,34 @@ export const DEFAULT_FORM_CONFIG: FormConfig = {
   questions: [],
 };
 
-const field = (mode: "off" | "optional" | "required", base: z.ZodString, label: string) =>
+const field = (mode: "off" | "optional" | "required", base: z.ZodString, label: string, t: T) =>
   mode === "required"
-    ? base.min(1, `${label} is required`)
+    ? base.min(1, t("{label} is required", { label: t(label) }))
     : base.optional().transform((v) => v || undefined);
 
-/** Zod schema for one submission of a form with this config. */
-export function submissionSchema(config: FormConfig) {
+/** Zod schema for one submission of a form with this config; messages in the visitor's language (English by default). */
+export function submissionSchema(config: FormConfig, t: T = EN) {
   const answers: Record<string, z.ZodType<string | undefined>> = {};
   for (const q of config.questions) {
     let s: z.ZodType<string | undefined> = z.string().trim().max(q.type === "textarea" ? 5000 : 500);
     if (q.type === "choice") {
-      s = z.string().refine((v) => v === "" || (q.options ?? []).includes(v), `Choose an option for “${q.label}”`);
+      s = z.string().refine((v) => v === "" || (q.options ?? []).includes(v), t("Choose an option for “{label}”", { label: q.label }));
     }
     answers[q.id] = q.required
-      ? (s as z.ZodString).refine((v) => Boolean(v && v.trim()), `“${q.label}” is required`)
+      ? (s as z.ZodString).refine((v) => Boolean(v && v.trim()), t("“{label}” is required", { label: q.label }))
       : s.optional().transform((v) => (v ? v : undefined));
   }
   return z.object({
-    subject: z.string().trim().min(3, "Describe the request in a few words").max(200),
+    subject: z.string().trim().min(3, t("Describe the request in a few words")).max(200),
     details: z.string().trim().max(5000).optional().transform((v) => v || undefined),
-    name: config.askName === "off" ? z.undefined().optional() : field(config.askName, z.string().trim().max(120), "Your name"),
+    name: config.askName === "off" ? z.undefined().optional() : field(config.askName, z.string().trim().max(120), "Your name", t),
     email:
       config.askEmail === "off"
         ? z.undefined().optional()
         : config.askEmail === "required"
-          ? z.string().trim().email("Enter a valid email")
-          : z.string().trim().email("Enter a valid email").optional().or(z.literal("").transform(() => undefined)),
-    phone: config.askPhone === "off" ? z.undefined().optional() : field(config.askPhone, z.string().trim().max(40), "Phone"),
+          ? z.string().trim().email(t("Enter a valid email"))
+          : z.string().trim().email(t("Enter a valid email")).optional().or(z.literal("").transform(() => undefined)),
+    phone: config.askPhone === "off" ? z.undefined().optional() : field(config.askPhone, z.string().trim().max(40), "Phone", t),
     priority: config.askPriority ? z.enum(["low", "medium", "high", "urgent"]).optional() : z.undefined().optional(),
     neededBy: config.askNeededBy
       ? z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("").transform(() => undefined))
@@ -70,10 +73,11 @@ export function submissionSchema(config: FormConfig) {
   });
 }
 
-/** Task description built from a submission (shown to the team). */
+/** Task description built from a submission (shown to the team). Labels in `t`'s language (English by default). */
 export function describeSubmission(
   questions: FormQuestion[],
   data: { details?: string; name?: string; email?: string; phone?: string; answers: Record<string, string | undefined> },
+  t: T = EN,
 ) {
   const lines: string[] = [];
   if (data.details) lines.push(data.details, "");
@@ -82,7 +86,7 @@ export function describeSubmission(
     if (a) lines.push(`${q.label}: ${a}`);
   }
   const who = [data.name, data.email, data.phone].filter(Boolean).join(" · ");
-  if (who) lines.push("", `Requested by: ${who}`);
+  if (who) lines.push("", t("Requested by: {who}", { who }));
   return lines.join("\n").trim();
 }
 

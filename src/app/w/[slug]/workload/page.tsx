@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { and, eq, isNull } from "drizzle-orm";
 import { requireWorkspace } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -7,12 +6,17 @@ import { listWorkspaceMembers } from "@/lib/data/members";
 import { todayISO } from "@/lib/accomplishment";
 import { buildWorkload, workloadColumns } from "@/lib/workload";
 import { WorkloadGrid } from "@/components/workload/workload-grid";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Workload" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: t("Workload") };
+}
 
 export default async function WorkloadPage({ params, searchParams }: PageProps<"/w/[slug]/workload">) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const { workspace } = await requireWorkspace(slug);
+  const tr = await getT();
   const limit = Math.min(50, Math.max(1, Number(query.limit) || 5));
   const today = todayISO();
   const columns = workloadColumns(today, 6);
@@ -40,7 +44,7 @@ export default async function WorkloadPage({ params, searchParams }: PageProps<"
   const byId = new Map(rows.map((r) => [r.id, r]));
   const people = [
     ...members.map((m) => ({ id: m.userId, name: m.name, image: m.image })),
-    ...(grid.has("") ? [{ id: "", name: "Unassigned", image: null }] : []),
+    ...(grid.has("") ? [{ id: "", name: tr("Unassigned"), image: null }] : []),
   ];
 
   return (

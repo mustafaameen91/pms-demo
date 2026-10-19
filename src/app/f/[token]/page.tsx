@@ -6,15 +6,21 @@ import { getWorkspaceAccess } from "@/lib/billing";
 import { formConfigSchema } from "@/lib/forms";
 import { LightTheme } from "@/components/light-theme";
 import { Logo } from "@/components/logo";
+import { LanguageSwitcher } from "@/components/shell/language-switcher";
+import { getT } from "@/i18n/server";
 import { RequestForm } from "./request-form";
 
-export const metadata: Metadata = { title: "Send a request", robots: { index: false, follow: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Send a request"), robots: { index: false, follow: false } };
+}
 
 const now = () => Date.now();
 
 /** Public request form: anyone with the link can submit; creates a task. */
 export default async function PublicFormPage({ params }: PageProps<"/f/[token]">) {
   const { token } = await params;
+  const t = await getT();
   const [row] = await db
     .select({ form: requestForms, projectName: projects.name, workspaceName: organization.name })
     .from(requestForms)
@@ -28,14 +34,15 @@ export default async function PublicFormPage({ params }: PageProps<"/f/[token]">
   return (
     <LightTheme>
       <main className="mx-auto w-full max-w-xl px-4 py-10 sm:py-14">
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between gap-2">
           <Logo />
+          <LanguageSwitcher />
         </div>
         {!open ? (
           <div className="rounded-xl border p-6 text-center">
-            <h1 className="text-xl font-semibold">This form is closed</h1>
+            <h1 className="text-xl font-semibold">{t("This form is closed")}</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              It may have been turned off or replaced. Please contact the team that shared it.
+              {t("It may have been turned off or replaced. Please contact the team that shared it.")}
             </p>
           </div>
         ) : (

@@ -30,6 +30,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
+import { useT } from "@/i18n/client";
+import type { T } from "@/i18n/translate";
 
 type Option = { id: string; name: string };
 type Rule = { id: string; trigger: Trigger; action: Action; enabled: boolean; runs: number; lastRunAt: Date | null };
@@ -47,24 +49,26 @@ type Props = {
   runs: Run[];
 };
 
-const TRIGGERS: { value: Trigger["type"]; label: string }[] = [
-  { value: "task.status_changed", label: "a task moves to a column" },
-  { value: "task.created", label: "a task is created" },
-  { value: "task.late", label: "a task becomes late" },
-  { value: "expense.added", label: "an expense is added" },
+const triggerOptions = (t: T): { value: Trigger["type"]; label: string }[] => [
+  { value: "task.status_changed", label: t("a task moves to a column") },
+  { value: "task.created", label: t("a task is created") },
+  { value: "task.late", label: t("a task becomes late") },
+  { value: "expense.added", label: t("an expense is added") },
 ];
-const ACTIONS: { value: Action["type"]; label: string }[] = [
-  { value: "notify", label: "notify someone" },
-  { value: "set_status", label: "move the task to a column" },
-  { value: "assign", label: "assign the task to" },
-  { value: "set_priority", label: "set the task's priority" },
+const actionOptions = (t: T): { value: Action["type"]; label: string }[] => [
+  { value: "notify", label: t("notify someone") },
+  { value: "set_status", label: t("move the task to a column") },
+  { value: "assign", label: t("assign the task to") },
+  { value: "set_priority", label: t("set the task's priority") },
 ];
-const TARGETS = [
-  { value: "manager", label: "the project manager" },
-  { value: "assignee", label: "the assignee" },
-  { value: "admins", label: "workspace admins" },
-  { value: "user", label: "a person…" },
-] as const;
+const TARGETS = ["manager", "assignee", "admins", "user"] as const;
+const targetLabel = (value: (typeof TARGETS)[number], t: T) =>
+  ({
+    manager: t("the project manager"),
+    assignee: t("the assignee"),
+    admins: t("workspace admins"),
+    user: t("a person…"),
+  })[value];
 
 /** Flat form state; turned into a trigger + action on save. */
 type Draft = {
@@ -72,7 +76,7 @@ type Draft = {
   whenStatusId: string; // "" = any column
   minAmount: string;
   action: Action["type"];
-  to: (typeof TARGETS)[number]["value"];
+  to: (typeof TARGETS)[number];
   userId: string;
   message: string;
   email: boolean;
@@ -127,10 +131,11 @@ function fromDraft(d: Draft): { trigger: Trigger; action: Action } {
 
 export function AutomationsView(props: Props) {
   const { statuses, members, rules, runs, canManage, currency } = props;
+  const t = useT();
   const names: RuleNames = {
     statuses: Object.fromEntries(statuses.map((s) => [s.id, s.name])),
     people: Object.fromEntries(members.map((m) => [m.id, m.name])),
-    money: (a) => formatMoney(a, currency),
+    money: (a) => formatMoney(a, currency, t.intl),
   };
   // null = closed, "new" = creating, otherwise the id of the rule being edited.
   const [editing, setEditing] = useState<string | null>(null);
@@ -144,9 +149,9 @@ export function AutomationsView(props: Props) {
   };
 
   const presets: { label: string; draft: Partial<Draft> }[] = [
-    { label: "When a task moves to the last column, notify the project manager", draft: {} },
-    { label: "When a task becomes late, set its priority to Urgent", draft: { trigger: "task.late", action: "set_priority", priority: "urgent" } },
-    { label: "When a task is created, assign it to someone", draft: { trigger: "task.created", action: "assign", userId: members[0]?.id ?? "" } },
+    { label: t("When a task moves to the last column, notify the project manager"), draft: {} },
+    { label: t("When a task becomes late, set its priority to Urgent"), draft: { trigger: "task.late", action: "set_priority", priority: "urgent" } },
+    { label: t("When a task is created, assign it to someone"), draft: { trigger: "task.created", action: "assign", userId: members[0]?.id ?? "" } },
   ];
 
   return (
@@ -155,24 +160,25 @@ export function AutomationsView(props: Props) {
         <div className="min-w-0">
           <h1 className="flex items-center gap-2 text-lg font-semibold">
             <Workflow className="size-5 text-primary" aria-hidden />
-            Automations
+            {t("Automations")}
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Let the project do routine work for you: “when this happens, do that”. Changes made by an automation don&apos;t
-            start other automations, so rules can never loop.
+            {t(
+              "Let the project do routine work for you: “when this happens, do that”. Changes made by an automation don't start other automations, so rules can never loop.",
+            )}
           </p>
         </div>
         {canManage && editing === null && rules.length > 0 && (
           <Button onClick={() => open("new", emptyDraft(statuses))}>
             <Plus className="size-4" />
-            New automation
+            {t("New automation")}
           </Button>
         )}
       </header>
 
       {!canManage && (
         <p className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          Only workspace admins and the project manager can add or change automations.
+          {t("Only workspace admins and the project manager can add or change automations.")}
         </p>
       )}
 
@@ -190,7 +196,7 @@ export function AutomationsView(props: Props) {
             startTransition(async () => {
               const r = editing === "new" ? await createAutomation(props.projectId, rule) : await updateAutomation(editing, rule);
               if (!r.ok) return setError(r.error);
-              toast.success(editing === "new" ? "Automation added" : "Automation saved");
+              toast.success(editing === "new" ? t("Automation added") : t("Automation saved"));
               setEditing(null);
             })
           }
@@ -198,11 +204,11 @@ export function AutomationsView(props: Props) {
       )}
 
       {rules.length === 0 && editing === null ? (
-        <section aria-label="No automations yet" className="rounded-xl border border-dashed p-6 text-center sm:p-8">
+        <section aria-label={t("No automations yet")} className="rounded-xl border border-dashed p-6 text-center sm:p-8">
           <Workflow className="mx-auto size-8 text-muted-foreground" aria-hidden />
-          <p className="mt-3 font-medium">No automations yet</p>
+          <p className="mt-3 font-medium">{t("No automations yet")}</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            {canManage ? "Start from an idea below or build your own." : "When the project manager adds one, it will show here."}
+            {canManage ? t("Start from an idea below or build your own.") : t("When the project manager adds one, it will show here.")}
           </p>
           {canManage && (
             <div className="mx-auto mt-5 grid max-w-lg gap-2 text-start">
@@ -218,7 +224,7 @@ export function AutomationsView(props: Props) {
                 </button>
               ))}
               <Button variant="outline" className="mt-1" onClick={() => open("new", emptyDraft(statuses))}>
-                Build your own
+                {t("Build your own")}
               </Button>
             </div>
           )}
@@ -227,12 +233,14 @@ export function AutomationsView(props: Props) {
         rules.length > 0 && (
           <section aria-labelledby="rules-heading">
             <h2 id="rules-heading" className="sr-only">
-              Rules
+              {t("Rules")}
             </h2>
             <ul className="grid gap-3">
               {rules.map((rule) => {
-                const broken = brokenReason(rule, names);
-                const label = `When ${describeTrigger(rule.trigger, names)}, ${describeAction(rule.action, names)}`;
+                const broken = brokenReason(rule, names, t);
+                const trigger = describeTrigger(rule.trigger, names, t);
+                const action = describeAction(rule.action, names, t);
+                const label = t("When {trigger}, {action}", { trigger, action });
                 return (
                   <li
                     key={rule.id}
@@ -243,30 +251,32 @@ export function AutomationsView(props: Props) {
                       <RuleSwitch
                         checked={rule.enabled}
                         disabled={!canManage || pending}
-                        label={`${rule.enabled ? "Turn off" : "Turn on"}: ${label}`}
+                        label={rule.enabled ? t("Turn off: {rule}", { rule: label }) : t("Turn on: {rule}", { rule: label })}
                         onChange={(on) =>
                           startTransition(async () => {
                             const r = await setAutomationEnabled(rule.id, on);
                             if (!r.ok) return void toast.error(r.error);
-                            toast.success(on ? "Automation turned on" : "Automation turned off");
+                            toast.success(on ? t("Automation turned on") : t("Automation turned off"));
                           })
                         }
                       />
                       <div className="min-w-0 flex-1 text-sm">
                         <p className="leading-6">
-                          <span className="font-semibold text-primary">When</span> {describeTrigger(rule.trigger, names)},{" "}
-                          <span className="font-semibold">then</span> {describeAction(rule.action, names)}
+                          <span className="font-semibold text-primary">{t("When")}</span> {trigger}
+                          {t(", ")}
+                          <span className="font-semibold">{t("then")}</span> {action}
                         </p>
                         {rule.action.type === "notify" && rule.action.message && (
-                          <p className="mt-0.5 text-muted-foreground">Message: “{rule.action.message}”</p>
+                          <p className="mt-0.5 text-muted-foreground">{t("Message: “{message}”", { message: rule.action.message })}</p>
                         )}
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {rule.enabled ? "On" : "Off"} · {rule.runs === 0 ? "Hasn't run yet" : `Ran ${rule.runs} ${rule.runs === 1 ? "time" : "times"}`}
+                          {rule.enabled ? t("On") : t("Off")} ·{" "}
+                          {rule.runs === 0 ? t("Hasn't run yet") : t.plural(rule.runs, "Ran {count} time", "Ran {count} times")}
                           {rule.lastRunAt && (
                             <>
-                              {" "}· last{" "}
+                              {" "}· {t("last")}{" "}
                               <time dateTime={new Date(rule.lastRunAt).toISOString()} suppressHydrationWarning>
-                                {new Date(rule.lastRunAt).toLocaleString()}
+                                {new Date(rule.lastRunAt).toLocaleString(t.intl)}
                               </time>
                             </>
                           )}
@@ -274,22 +284,22 @@ export function AutomationsView(props: Props) {
                         {broken && (
                           <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-destructive">
                             <AlertTriangle className="size-3.5" aria-hidden />
-                            {broken} Edit it to fix.
+                            {broken} {t("Edit it to fix.")}
                           </p>
                         )}
                       </div>
                       {canManage && (
                         // Own row on phones so the rule text keeps its width.
                         <div className="-ms-2 flex w-full gap-1 ps-12 sm:ms-0 sm:w-auto sm:ps-0">
-                          <Button size="sm" variant="ghost" onClick={() => open(rule.id, toDraft(rule, statuses))} aria-label={`Edit: ${label}`}>
+                          <Button size="sm" variant="ghost" onClick={() => open(rule.id, toDraft(rule, statuses))} aria-label={t("Edit: {rule}", { rule: label })}>
                             <Pencil className="size-4" />
-                            Edit
+                            {t("Edit")}
                           </Button>
                           <Button
                             size="sm"
                             variant={confirm === rule.id ? "destructive" : "ghost"}
                             disabled={pending}
-                            aria-label={confirm === rule.id ? `Confirm deleting: ${label}` : `Delete: ${label}`}
+                            aria-label={confirm === rule.id ? t("Confirm deleting: {rule}", { rule: label }) : t("Delete: {rule}", { rule: label })}
                             onBlur={() => setConfirm((c) => (c === rule.id ? null : c))}
                             onClick={() => {
                               if (confirm !== rule.id) return setConfirm(rule.id);
@@ -297,12 +307,12 @@ export function AutomationsView(props: Props) {
                               startTransition(async () => {
                                 const r = await deleteAutomation(rule.id);
                                 if (!r.ok) return void toast.error(r.error);
-                                toast.success("Automation deleted");
+                                toast.success(t("Automation deleted"));
                               });
                             }}
                           >
                             <Trash2 className="size-4" />
-                            {confirm === rule.id ? "Delete it" : "Delete"}
+                            {confirm === rule.id ? t("Delete it") : t("Delete")}
                           </Button>
                         </div>
                       )}
@@ -341,7 +351,7 @@ function RuleSwitch({ checked, disabled, label, onChange }: { checked: boolean; 
         <span
           className={cn(
             "size-5 rounded-full bg-background shadow-sm transition-transform duration-200 motion-reduce:transition-none",
-            checked ? "translate-x-4" : "translate-x-0",
+            checked ? "translate-x-4 rtl:-translate-x-4" : "translate-x-0",
           )}
         />
       </span>
@@ -370,14 +380,16 @@ function RuleBuilder({
   onCancel: () => void;
   onSave: (rule: { trigger: Trigger; action: Action }, setError: (e: string) => void) => void;
 }) {
+  const t = useT();
   const [error, setError] = useState<string>();
   const set = (patch: Partial<Draft>) => {
     setError(undefined);
     setDraft({ ...draft, ...patch });
   };
   const isExpense = draft.trigger === "expense.added";
-  const actions = isExpense ? ACTIONS.filter((a) => a.value === "notify") : ACTIONS;
-  const targets = isExpense ? TARGETS.filter((t) => t.value !== "assignee") : TARGETS;
+  const allActions = actionOptions(t);
+  const actions = isExpense ? allActions.filter((a) => a.value === "notify") : allActions;
+  const targets = isExpense ? TARGETS.filter((v) => v !== "assignee") : TARGETS;
 
   return (
     <form
@@ -389,15 +401,15 @@ function RuleBuilder({
       }}
     >
       <h2 id="builder-heading" className="font-semibold">
-        {isNew ? "New automation" : "Edit automation"}
+        {isNew ? t("New automation") : t("Edit automation")}
       </h2>
 
       <fieldset className="mt-4 grid gap-3 rounded-lg border-s-4 border-primary bg-muted/40 p-4">
-        <legend className="sr-only">When</legend>
-        <p aria-hidden className="text-xs font-semibold tracking-wide text-primary uppercase">When</p>
+        <legend className="sr-only">{t("When")}</legend>
+        <p aria-hidden className="text-xs font-semibold tracking-wide text-primary uppercase">{t("When")}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-1.5">
-            <Label htmlFor="rb-trigger">This happens</Label>
+            <Label htmlFor="rb-trigger">{t("This happens")}</Label>
             <select
               id="rb-trigger"
               value={draft.trigger}
@@ -410,18 +422,18 @@ function RuleBuilder({
                 });
               }}
             >
-              {TRIGGERS.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
+              {triggerOptions(t).map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
                 </option>
               ))}
             </select>
           </div>
           {draft.trigger === "task.status_changed" && (
             <div className="grid gap-1.5">
-              <Label htmlFor="rb-when-status">Column</Label>
+              <Label htmlFor="rb-when-status">{t("Column")}</Label>
               <select id="rb-when-status" value={draft.whenStatusId} onChange={(e) => set({ whenStatusId: e.target.value })} className={nativeSelectClass}>
-                <option value="">Any column</option>
+                <option value="">{t("Any column")}</option>
                 {statuses.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -432,13 +444,13 @@ function RuleBuilder({
           )}
           {isExpense && (
             <div className="grid gap-1.5">
-              <Label htmlFor="rb-min">Only above ({currency})</Label>
+              <Label htmlFor="rb-min">{t("Only above ({currency})", { currency })}</Label>
               <Input
                 id="rb-min"
                 inputMode="decimal"
                 value={draft.minAmount}
                 onChange={(e) => set({ minAmount: e.target.value })}
-                placeholder="Any amount"
+                placeholder={t("Any amount")}
                 className="tabular-nums"
               />
             </div>
@@ -446,20 +458,20 @@ function RuleBuilder({
         </div>
         {draft.trigger === "task.late" && (
           <p className="text-xs text-muted-foreground">
-            Runs once per task when its end date has passed and it isn&apos;t finished. Checked whenever someone opens the app.
+            {t("Runs once per task when its end date has passed and it isn't finished. Checked whenever someone opens the app.")}
           </p>
         )}
         {draft.trigger !== "expense.added" && (
-          <p className="text-xs text-muted-foreground">Applies to main tasks, not sub-tasks.</p>
+          <p className="text-xs text-muted-foreground">{t("Applies to main tasks, not sub-tasks.")}</p>
         )}
       </fieldset>
 
       <fieldset className="mt-3 grid gap-3 rounded-lg border-s-4 border-brand-accent bg-muted/40 p-4">
-        <legend className="sr-only">Then</legend>
-        <p aria-hidden className="text-xs font-semibold tracking-wide uppercase">Then</p>
+        <legend className="sr-only">{t("Then")}</legend>
+        <p aria-hidden className="text-xs font-semibold tracking-wide uppercase">{t("Then")}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-1.5">
-            <Label htmlFor="rb-action">Do this</Label>
+            <Label htmlFor="rb-action">{t("Do this")}</Label>
             <select id="rb-action" value={draft.action} onChange={(e) => set({ action: e.target.value as Draft["action"] })} className={nativeSelectClass}>
               {actions.map((a) => (
                 <option key={a.value} value={a.value}>
@@ -470,11 +482,11 @@ function RuleBuilder({
           </div>
           {draft.action === "notify" && (
             <div className="grid gap-1.5">
-              <Label htmlFor="rb-to">Who</Label>
+              <Label htmlFor="rb-to">{t("Who")}</Label>
               <select id="rb-to" value={draft.to} onChange={(e) => set({ to: e.target.value as Draft["to"] })} className={nativeSelectClass}>
-                {targets.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
+                {targets.map((v) => (
+                  <option key={v} value={v}>
+                    {targetLabel(v, t)}
                   </option>
                 ))}
               </select>
@@ -482,9 +494,9 @@ function RuleBuilder({
           )}
           {((draft.action === "notify" && draft.to === "user") || draft.action === "assign") && (
             <div className="grid gap-1.5">
-              <Label htmlFor="rb-user">Person</Label>
+              <Label htmlFor="rb-user">{t("Person")}</Label>
               <select id="rb-user" value={draft.userId} onChange={(e) => set({ userId: e.target.value })} className={nativeSelectClass}>
-                <option value="">Choose…</option>
+                <option value="">{t("Choose…")}</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
@@ -495,7 +507,7 @@ function RuleBuilder({
           )}
           {draft.action === "set_status" && (
             <div className="grid gap-1.5">
-              <Label htmlFor="rb-status">Column</Label>
+              <Label htmlFor="rb-status">{t("Column")}</Label>
               <select id="rb-status" value={draft.statusId} onChange={(e) => set({ statusId: e.target.value })} className={nativeSelectClass}>
                 {statuses.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -507,11 +519,11 @@ function RuleBuilder({
           )}
           {draft.action === "set_priority" && (
             <div className="grid gap-1.5">
-              <Label htmlFor="rb-priority">Priority</Label>
+              <Label htmlFor="rb-priority">{t("Priority")}</Label>
               <select id="rb-priority" value={draft.priority} onChange={(e) => set({ priority: e.target.value as Priority })} className={nativeSelectClass}>
                 {PRIORITIES.map((p) => (
                   <option key={p.value} value={p.value}>
-                    {p.label}
+                    {t(p.label)}
                   </option>
                 ))}
               </select>
@@ -521,20 +533,20 @@ function RuleBuilder({
         {draft.action === "notify" && (
           <>
             <div className="grid gap-1.5">
-              <Label htmlFor="rb-message">Message (optional)</Label>
+              <Label htmlFor="rb-message">{t("Message (optional)")}</Label>
               <Input
                 id="rb-message"
                 value={draft.message}
                 maxLength={300}
                 onChange={(e) => set({ message: e.target.value })}
-                placeholder="e.g. Please check the work and close the task"
+                placeholder={t("e.g. Please check the work and close the task")}
               />
             </div>
             <label className="flex cursor-pointer items-center gap-2 text-sm">
               <input type="checkbox" checked={draft.email} onChange={(e) => set({ email: e.target.checked })} className="size-4 accent-primary" />
-              Also send an email
+              {t("Also send an email")}
             </label>
-            <p className="text-xs text-muted-foreground">The person who made the change isn&apos;t notified about their own change.</p>
+            <p className="text-xs text-muted-foreground">{t("The person who made the change isn't notified about their own change.")}</p>
           </>
         )}
       </fieldset>
@@ -542,10 +554,10 @@ function RuleBuilder({
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button type="submit" disabled={pending}>
           {pending && <Loader2 className="size-4 animate-spin" />}
-          {isNew ? "Add automation" : "Save automation"}
+          {isNew ? t("Add automation") : t("Save automation")}
         </Button>
         <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <FieldError message={error} />
       </div>
@@ -554,32 +566,41 @@ function RuleBuilder({
 }
 
 const RUN_STATUS = {
-  done: { label: "Done", icon: CheckCircle2, className: "text-primary" },
-  skipped: { label: "Skipped", icon: CircleSlash, className: "text-muted-foreground" },
-  failed: { label: "Failed", icon: XCircle, className: "text-destructive" },
+  done: { icon: CheckCircle2, className: "text-primary" },
+  skipped: { icon: CircleSlash, className: "text-muted-foreground" },
+  failed: { icon: XCircle, className: "text-destructive" },
 } as const;
 
+/** "Done" and "When" mean something else elsewhere, so Arabic looks them up under a "|context" key. */
+const runStatusLabel = (status: Run["status"], t: T) =>
+  ({
+    done: t.locale === "en" ? "Done" : t("Done|run"),
+    skipped: t("Skipped"),
+    failed: t("Failed"),
+  })[status];
+
 function RunHistory({ runs, rules, names, projectKey, basePath }: { runs: Run[]; rules: Rule[]; names: RuleNames; projectKey: string; basePath: string }) {
+  const t = useT();
   const ruleText = (id: string) => {
     const r = rules.find((x) => x.id === id);
-    return r ? `When ${describeTrigger(r.trigger, names)}` : "Deleted rule";
+    return r ? t("When {trigger}", { trigger: describeTrigger(r.trigger, names, t) }) : t("Deleted rule");
   };
   return (
     <section aria-labelledby="runs-heading" className="rounded-xl border bg-card">
       <h2 id="runs-heading" className="border-b px-4 py-3 font-semibold">
-        Run history
+        {t("Run history")}
       </h2>
       {runs.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-muted-foreground">Nothing has run yet. Runs show here as they happen.</p>
+        <p className="px-4 py-6 text-center text-sm text-muted-foreground">{t("Nothing has run yet. Runs show here as they happen.")}</p>
       ) : (
         <div className="relative overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-start text-xs text-muted-foreground">
               <tr className="border-b">
-                <th scope="col" className="px-4 py-2 font-medium">Result</th>
-                <th scope="col" className="px-4 py-2 font-medium">What happened</th>
-                <th scope="col" className="hidden px-4 py-2 font-medium sm:table-cell">Rule</th>
-                <th scope="col" className="px-4 py-2 text-end font-medium">When</th>
+                <th scope="col" className="px-4 py-2 font-medium">{t("Result")}</th>
+                <th scope="col" className="px-4 py-2 font-medium">{t("What happened")}</th>
+                <th scope="col" className="hidden px-4 py-2 font-medium sm:table-cell">{t("Rule")}</th>
+                <th scope="col" className="px-4 py-2 text-end font-medium">{t.locale === "en" ? "When" : t("When|time")}</th>
               </tr>
             </thead>
             <tbody>
@@ -591,21 +612,21 @@ function RunHistory({ runs, rules, names, projectKey, basePath }: { runs: Run[];
                     <td className={cn("px-4 py-2 whitespace-nowrap", s.className)}>
                       <span className="flex items-center gap-1.5 font-medium">
                         <s.icon className="size-4" aria-hidden />
-                        {s.label}
+                        {runStatusLabel(run.status, t)}
                       </span>
                     </td>
                     <td className="px-4 py-2">
                       {run.message}
                       {run.taskNumber !== null && (
                         <Link href={`${basePath}?task=${projectKey}-${run.taskNumber}`} className="ms-1.5 text-xs text-primary underline-offset-2 hover:underline">
-                          Open {projectKey}-{run.taskNumber}
+                          {t("Open {ref}", { ref: `${projectKey}-${run.taskNumber}` })}
                         </Link>
                       )}
                     </td>
                     <td className="hidden px-4 py-2 text-muted-foreground sm:table-cell">{ruleText(run.ruleId)}</td>
                     <td className="px-4 py-2 text-end text-xs whitespace-nowrap text-muted-foreground tabular-nums">
-                      <time dateTime={at.toISOString()} title={at.toLocaleString()} suppressHydrationWarning>
-                        {at.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      <time dateTime={at.toISOString()} title={at.toLocaleString(t.intl)} suppressHydrationWarning>
+                        {at.toLocaleString(t.intl, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </time>
                     </td>
                   </tr>

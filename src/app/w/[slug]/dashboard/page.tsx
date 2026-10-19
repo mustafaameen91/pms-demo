@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { AlertTriangle, CalendarClock, FolderKanban, TrendingDown, Wallet } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getWorkspaceAccomplishmentTasks, listProjects } from "@/lib/data/projects";
@@ -11,12 +10,17 @@ import { daysBetween, lateTasks } from "@/lib/schedule";
 import { cn, formatDate, formatMoney } from "@/lib/utils";
 import { AccomplishmentMeter, ScheduleBadge, fmtPct } from "@/components/projects/accomplishment";
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: t("Dashboard") };
+}
 
 export default async function DashboardPage({ params }: PageProps<"/w/[slug]/dashboard">) {
   const { slug } = await params;
   const { workspace } = await requireWorkspace(slug);
+  const t = await getT();
   const [projects, tasksByProject, usagesByProject, expensesByProject] = await Promise.all([
     listProjects(workspace.id),
     getWorkspaceAccomplishmentTasks(workspace.id),
@@ -54,25 +58,27 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
   // Money can't be added across currencies, so totals are per currency.
   const totals = new Map<string, { budget: number; spent: number }>();
   for (const r of open) {
-    const t = totals.get(r.p.currency) ?? { budget: 0, spent: 0 };
-    t.budget += r.money.budget ?? 0;
-    t.spent += r.money.actual;
-    totals.set(r.p.currency, t);
+    const sum = totals.get(r.p.currency) ?? { budget: 0, spent: 0 };
+    sum.budget += r.money.budget ?? 0;
+    sum.spent += r.money.actual;
+    totals.set(r.p.currency, sum);
   }
 
   const base = `/w/${workspace.slug}`;
   const kpis = [
-    { label: "Open projects", value: open.length, icon: FolderKanban, tone: "default", hint: `${rows.length} in total` },
-    { label: "Behind schedule", value: behind, icon: TrendingDown, tone: behind ? "bad" : "default", hint: "Done less than planned" },
-    { label: "Over budget", value: overBudget, icon: AlertTriangle, tone: overBudget ? "bad" : "default", hint: "Spent more than budget" },
-    { label: "Late tasks", value: lateTotal, icon: CalendarClock, tone: lateTotal ? "bad" : "default", hint: "Past their end date" },
+    { label: t("Open projects"), value: open.length, icon: FolderKanban, tone: "default", hint: t("{count} in total", { count: rows.length }) },
+    { label: t("Behind schedule"), value: behind, icon: TrendingDown, tone: behind ? "bad" : "default", hint: t("Done less than planned") },
+    { label: t("Over budget"), value: overBudget, icon: AlertTriangle, tone: overBudget ? "bad" : "default", hint: t("Spent more than budget") },
+    { label: t("Late tasks"), value: lateTotal, icon: CalendarClock, tone: lateTotal ? "bad" : "default", hint: t("Past their end date") },
   ] as const;
 
   return (
     <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:py-8">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">All projects in {workspace.name} as of {formatDate(today)}.</p>
+        <h1 className="text-xl font-semibold tracking-tight">{t("Dashboard")}</h1>
+        <p className="text-sm text-muted-foreground">
+          {t("All projects in {workspace} as of {date}.", { workspace: workspace.name, date: formatDate(today, t.intl) })}
+        </p>
       </div>
 
       <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -92,23 +98,23 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
         <section aria-labelledby="totals-heading" className="rounded-xl border bg-card p-5">
           <h2 id="totals-heading" className="flex items-center gap-2 font-semibold">
             <Wallet className="size-4 text-muted-foreground" aria-hidden />
-            Money across open projects
+            {t("Money across open projects")}
           </h2>
           <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {[...totals].map(([currency, t]) => {
-              const pct = t.budget > 0 ? Math.round((t.spent / t.budget) * 1000) / 10 : null;
-              const over = t.budget > 0 && t.spent > t.budget;
+            {[...totals].map(([currency, sum]) => {
+              const pct = sum.budget > 0 ? Math.round((sum.spent / sum.budget) * 1000) / 10 : null;
+              const over = sum.budget > 0 && sum.spent > sum.budget;
               return (
                 <li key={currency} className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">{currency}</p>
                   <p className="mt-0.5 text-sm">
-                    <span className={cn("font-semibold", over && "text-destructive")}>{formatMoney(t.spent, currency)}</span>
-                    <span className="text-muted-foreground"> spent of {formatMoney(t.budget, currency)}</span>
+                    <span className={cn("font-semibold", over && "text-destructive")}>{formatMoney(sum.spent, currency, t.intl)}</span>
+                    <span className="text-muted-foreground"> {t("spent of {amount}", { amount: formatMoney(sum.budget, currency, t.intl) })}</span>
                   </p>
                   {pct !== null && (
                     <div
                       role="meter"
-                      aria-label={`${currency} budget used`}
+                      aria-label={t("{currency} budget used", { currency })}
                       aria-valuenow={pct}
                       aria-valuemin={0}
                       aria-valuemax={100}
@@ -127,15 +133,15 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
       <section aria-labelledby="projects-heading" className="overflow-hidden rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h2 id="projects-heading" className="font-semibold">
-            Projects
+            {t("Projects")}
           </h2>
-          <p className="text-xs text-muted-foreground">Projects that need attention are listed first</p>
+          <p className="text-xs text-muted-foreground">{t("Projects that need attention are listed first")}</p>
         </div>
         {rows.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            No projects yet.{" "}
+            {t("No projects yet.")}{" "}
             <Link href={base} className="font-medium text-primary underline-offset-4 hover:underline">
-              Create one
+              {t("Create one")}
             </Link>
             .
           </p>
@@ -144,12 +150,12 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
             <table className="w-full min-w-[980px] text-sm">
               <thead className="text-start text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
-                  <th scope="col" className="py-2 pe-3 ps-4 font-medium">Project</th>
-                  <th scope="col" className="px-3 py-2 font-medium">Status</th>
-                  <th scope="col" className="w-56 px-3 py-2 font-medium">Accomplishment</th>
-                  <th scope="col" className="w-48 px-3 py-2 font-medium">Spent / budget</th>
-                  <th scope="col" className="px-3 py-2 font-medium">End date</th>
-                  <th scope="col" className="py-2 pe-4 ps-3 text-end font-medium">Late tasks</th>
+                  <th scope="col" className="py-2 pe-3 ps-4 font-medium">{t("Project")}</th>
+                  <th scope="col" className="px-3 py-2 font-medium">{t("Status")}</th>
+                  <th scope="col" className="w-56 px-3 py-2 font-medium">{t("Accomplishment")}</th>
+                  <th scope="col" className="w-48 px-3 py-2 font-medium">{t("Spent / budget")}</th>
+                  <th scope="col" className="px-3 py-2 font-medium">{t("End date")}</th>
+                  <th scope="col" className="py-2 pe-4 ps-3 text-end font-medium">{t("Late tasks")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,37 +174,44 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
                     </td>
                     <td className="px-3 py-3">
                       {a.mode === "empty" ? (
-                        <span className="text-xs text-muted-foreground">No tasks yet</span>
+                        <span className="text-xs text-muted-foreground">{t("No tasks yet")}</span>
                       ) : (
                         <div className="grid gap-1">
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-medium tabular-nums">{fmtPct(a.actual)}</span>
                             {!finished && <ScheduleBadge state={a.schedule} short />}
                           </div>
-                          <AccomplishmentMeter actual={a.actual} planned={finished ? null : a.planned} size="sm" label={`${p.name} accomplishment`} />
+                          <AccomplishmentMeter actual={a.actual} planned={finished ? null : a.planned} size="sm" label={t("{name} accomplishment", { name: p.name })} />
                         </div>
                       )}
                     </td>
                     <td className="px-3 py-3">
                       <p className={cn("tabular-nums", money.overBudget && "font-medium text-destructive")}>
-                        {formatMoney(money.actual, p.currency)}
-                        <span className="text-muted-foreground"> / {money.budget === null ? "no budget" : formatMoney(money.budget, p.currency)}</span>
+                        {formatMoney(money.actual, p.currency, t.intl)}
+                        <span className="text-muted-foreground">
+                          {" "}
+                          / {money.budget === null ? t("no budget") : formatMoney(money.budget, p.currency, t.intl)}
+                        </span>
                       </p>
                       {money.overBudget && (
                         <p className="flex items-center gap-1 text-xs text-destructive">
                           <AlertTriangle className="size-3" aria-hidden />
-                          Over budget
+                          {t("Over budget")}
                         </p>
                       )}
                       {!money.overBudget && money.usedPct !== null && (
-                        <p className="text-xs text-muted-foreground">{money.usedPct}% used</p>
+                        <p className="text-xs text-muted-foreground">{t("{pct}% used", { pct: String(money.usedPct) })}</p>
                       )}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
-                      <p className="tabular-nums">{formatDate(p.endDate)}</p>
+                      <p className="tabular-nums">{formatDate(p.endDate, t.intl)}</p>
                       {!finished && daysLeft !== null && (
                         <p className={cn("text-xs", overdue ? "font-medium text-destructive" : "text-muted-foreground")}>
-                          {overdue ? `${-daysLeft} days overdue` : daysLeft === 0 ? "Ends today" : `${daysLeft} days left`}
+                          {overdue
+                            ? t.plural(-daysLeft, "{count} days overdue", "{count} days overdue")
+                            : daysLeft === 0
+                              ? t("Ends today")
+                              : t.plural(daysLeft, "{count} days left", "{count} days left")}
                         </p>
                       )}
                     </td>

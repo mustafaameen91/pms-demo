@@ -9,7 +9,9 @@ import { createTask, deleteTask, restoreTask, updateTask, type TaskPatch } from 
 import type { BoardStatus, TaskDetail, TaskLinks, WorkspaceMember } from "@/lib/data/projects";
 import type { ProjectResource } from "@/lib/data/resources";
 import { PRIORITIES, type Priority } from "@/lib/constants";
-import { cn, formatMoney } from "@/lib/utils";
+import { cn, formatMoney, formatNumber, timeAgo } from "@/lib/utils";
+import { useT } from "@/i18n/client";
+import type { T } from "@/i18n/translate";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { PriorityIcon, StatusDot, UserAvatar, formatDue, timeAgo } from "./task-bits";
+import { PriorityIcon, StatusDot, UserAvatar, formatDue } from "./task-bits";
 import { Comments } from "./comments";
 import { TaskFields } from "./task-fields";
 import type { FieldDef } from "@/lib/custom-fields";
@@ -65,20 +67,21 @@ function useTaskHref() {
 }
 
 export function TaskSheet(props: SheetProps) {
+  const t = useT();
   const router = useRouter();
   const taskHref = useTaskHref();
   const close = () => router.push(taskHref(), { scroll: false });
 
   return (
     <Sheet open onOpenChange={(open) => !open && close()}>
-      <SheetContent className="gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-xl">
+      <SheetContent className="gap-0 overflow-y-auto data-[side=left]:w-full data-[side=left]:sm:max-w-xl data-[side=right]:w-full data-[side=right]:sm:max-w-xl">
         {props.task ? (
           <TaskEditor {...props} task={props.task} onClose={close} />
         ) : (
           <SheetHeader>
-            <SheetTitle>Task not found</SheetTitle>
+            <SheetTitle>{t("Task not found")}</SheetTitle>
             <SheetDescription>
-              {props.taskKey} doesn&apos;t exist in this project, or it was deleted.
+              {t("{key} doesn't exist in this project, or it was deleted.", { key: props.taskKey })}
             </SheetDescription>
           </SheetHeader>
         )}
@@ -106,6 +109,7 @@ function TaskEditor({
   mainTasks,
   onClose,
 }: SheetProps & { task: TaskDetail; onClose: () => void }) {
+  const t = useT();
   const [pending, startTransition] = useTransition();
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
@@ -150,13 +154,13 @@ function TaskEditor({
         return;
       }
       onClose();
-      toast(`${taskKey} deleted`, {
+      toast(t("{key} deleted", { key: taskKey }), {
         description: task.title,
         action: {
-          label: "Undo",
+          label: t("Undo"),
           onClick: async () => {
             const undo = await restoreTask(task.id);
-            if (undo.ok) toast.success(`${taskKey} restored`);
+            if (undo.ok) toast.success(t("{key} restored", { key: taskKey }));
             else toast.error(undo.error);
           },
         },
@@ -179,14 +183,14 @@ function TaskEditor({
             className="flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
           >
             <CornerLeftUp className="size-3.5" />
-            Sub-task of {projectKey}-{task.parent.number} · {task.parent.title}
+            {t("Sub-task of {key} · {title}", { key: `${projectKey}-${task.parent.number}`, title: task.parent.title })}
           </Link>
         )}
         <div className="flex items-center gap-2 pe-8 text-xs text-muted-foreground">
           <span className="font-mono">{taskKey}</span>
           {pending && (
             <span className="flex items-center gap-1" role="status">
-              <Loader2 className="size-3 animate-spin" /> Saving…
+              <Loader2 className="size-3 animate-spin" /> {t("Saving…")}
             </span>
           )}
           <Button
@@ -197,13 +201,13 @@ function TaskEditor({
             disabled={pending}
           >
             <Trash2 className="size-3.5" />
-            Delete
+            {t("Delete")}
           </Button>
         </div>
         <SheetTitle className="sr-only">{task.title}</SheetTitle>
-        <SheetDescription className="sr-only">Edit task details</SheetDescription>
+        <SheetDescription className="sr-only">{t("Edit task details")}</SheetDescription>
         <label htmlFor="task-title" className="sr-only">
-          Title
+          {t("Title")}
         </label>
         <textarea
           id="task-title"
@@ -226,22 +230,22 @@ function TaskEditor({
           <div className="rounded-lg border bg-muted/50 px-3 py-2 text-sm">
             <p className="flex items-center gap-2 font-medium">
               <ClipboardList className="size-4 text-muted-foreground" aria-hidden />
-              Request via “{request.formTitle}”
+              {t("Request via “{form}”", { form: request.formTitle })}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {[request.name, request.email, request.phone].filter(Boolean).join(" · ") || "No contact details given"} ·{" "}
-              <span suppressHydrationWarning>{new Date(request.createdAt).toLocaleString()}</span>
+              {[request.name, request.email, request.phone].filter(Boolean).join(" · ") || t("No contact details given")} ·{" "}
+              <span suppressHydrationWarning>{new Date(request.createdAt).toLocaleString(t.intl)}</span>
             </p>
             {(request.email || request.phone) && (
               <p className="mt-1 flex gap-3 text-xs">
                 {request.email && (
-                  <a href={`mailto:${request.email}?subject=${encodeURIComponent(`Your request ${taskKey}`)}`} className="text-primary underline-offset-4 hover:underline">
-                    Email them
+                  <a href={`mailto:${request.email}?subject=${encodeURIComponent(t("Your request {key}", { key: taskKey }))}`} className="text-primary underline-offset-4 hover:underline">
+                    {t("Email them")}
                   </a>
                 )}
                 {request.phone && (
                   <a href={`tel:${request.phone}`} className="text-primary underline-offset-4 hover:underline">
-                    Call
+                    {t("Call")}
                   </a>
                 )}
               </p>
@@ -252,8 +256,8 @@ function TaskEditor({
           <p role="status" className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
             <Lock className="mt-0.5 size-4 shrink-0" aria-hidden />
             <span>
-              <strong className="font-semibold">Blocked</strong> — waiting on{" "}
-              {waitingOn.map((p) => `${projectKey}-${p.number} ${p.title}`).join(", ")}.
+              <strong className="font-semibold">{t("Blocked")}</strong>{" "}
+              {t("— waiting on {tasks}.", { tasks: waitingOn.map((p) => `${projectKey}-${p.number} ${p.title}`).join(t(", ")) })}
             </span>
           </p>
         )}
@@ -261,7 +265,7 @@ function TaskEditor({
           {!isSubtask && (
             <>
               <dt className="text-muted-foreground">
-                <Label htmlFor="task-milestone">Milestone</Label>
+                <Label htmlFor="task-milestone">{t("Milestone")}</Label>
               </dt>
               <dd className="flex items-center gap-2">
                 <input
@@ -276,13 +280,13 @@ function TaskEditor({
                   className="size-4 cursor-pointer accent-[var(--primary)]"
                 />
                 <span id="task-milestone-help" className="text-xs text-muted-foreground">
-                  A key date (e.g. permit approved). One date, no weight; not counted in the %.
+                  {t("A key date (e.g. permit approved). One date, no weight; not counted in the %.")}
                 </span>
               </dd>
             </>
           )}
           <dt className="text-muted-foreground">
-            <Label htmlFor="task-status">Status</Label>
+            <Label htmlFor="task-status">{t("Status")}</Label>
           </dt>
           <dd>
             <Select value={task.statusId} onValueChange={(statusId) => save({ statusId })}>
@@ -302,7 +306,7 @@ function TaskEditor({
           {!milestone && (
           <>
           <dt className="text-muted-foreground">
-            <Label htmlFor="task-progress">Progress</Label>
+            <Label htmlFor="task-progress">{t("Progress")}</Label>
           </dt>
           <dd className="flex items-center gap-3">
             <input
@@ -314,7 +318,7 @@ function TaskEditor({
               onChange={(e) => setProgress(Number(e.target.value))}
               onPointerUp={(e) => commitProgress(Number(e.currentTarget.value))}
               onKeyUp={(e) => commitProgress(Number(e.currentTarget.value))}
-              aria-label="Progress slider"
+              aria-label={t("Progress slider")}
               className="h-2 w-full cursor-pointer accent-[var(--primary)] sm:w-40"
             />
             <div className="relative">
@@ -338,7 +342,7 @@ function TaskEditor({
           {!isSubtask && !milestone && (
             <>
               <dt className="text-muted-foreground">
-                <Label htmlFor="task-weight">Weight</Label>
+                <Label htmlFor="task-weight">{t("Weight")}</Label>
               </dt>
               <dd>
                 <div className="flex flex-wrap items-center gap-2">
@@ -362,8 +366,8 @@ function TaskEditor({
                     className={cn("text-xs", remainingWeight < 0 ? "text-destructive" : "text-muted-foreground")}
                   >
                     {remainingWeight < 0
-                      ? `Tasks add up to ${fmtPct(100 - remainingWeight)} — over 100%`
-                      : `${fmtPct(remainingWeight)} of the project not yet assigned`}
+                      ? t("Tasks add up to {pct} — over 100%", { pct: fmtPct(100 - remainingWeight) })
+                      : t("{pct} of the project not yet assigned", { pct: fmtPct(remainingWeight) })}
                   </span>
                 </div>
               </dd>
@@ -373,7 +377,7 @@ function TaskEditor({
           {!milestone && (
             <>
               <dt className="text-muted-foreground">
-                <Label htmlFor="task-start">Start date</Label>
+                <Label htmlFor="task-start">{t("Start date")}</Label>
               </dt>
               <dd>
                 <Input
@@ -388,7 +392,7 @@ function TaskEditor({
           )}
 
           <dt className="text-muted-foreground">
-            <Label htmlFor="task-due">{milestone ? "Date" : "End date"}</Label>
+            <Label htmlFor="task-due">{milestone ? t("Date") : t("End date")}</Label>
           </dt>
           <dd>
             <Input
@@ -403,7 +407,7 @@ function TaskEditor({
           {!milestone && (
           <>
           <dt className="text-muted-foreground">
-            <Label htmlFor="task-budget">Budget</Label>
+            <Label htmlFor="task-budget">{t("Budget")}</Label>
           </dt>
           <dd className="flex items-center gap-2">
             <Input
@@ -423,7 +427,7 @@ function TaskEditor({
           {!isSubtask && (
             <>
               <dt className="text-muted-foreground">
-                <Label htmlFor="task-repeat">Repeat</Label>
+                <Label htmlFor="task-repeat">{t("Repeat")}</Label>
               </dt>
               <dd>
                 <select
@@ -433,16 +437,16 @@ function TaskEditor({
                   aria-describedby="task-repeat-help"
                   className={cn(nativeSelectClass, "w-full sm:w-56")}
                 >
-                  <option value="">Doesn&apos;t repeat</option>
+                  <option value="">{t("Doesn't repeat")}</option>
                   {(Object.keys(RECURRENCE_LABELS) as (keyof typeof RECURRENCE_LABELS)[]).map((r) => (
                     <option key={r} value={r}>
-                      {RECURRENCE_LABELS[r]}
+                      {t(RECURRENCE_LABELS[r])}
                     </option>
                   ))}
                 </select>
                 {task.recurrence && (
                   <p id="task-repeat-help" className="mt-1 text-xs text-muted-foreground">
-                    When it&apos;s done, the next one is created with its dates moved forward.
+                    {t("When it's done, the next one is created with its dates moved forward.")}
                   </p>
                 )}
               </dd>
@@ -450,7 +454,7 @@ function TaskEditor({
           )}
 
           <dt className="text-muted-foreground">
-            <Label htmlFor="task-priority">Priority</Label>
+            <Label htmlFor="task-priority">{t("Priority")}</Label>
           </dt>
           <dd>
             <Select value={task.priority} onValueChange={(priority) => save({ priority })}>
@@ -460,7 +464,7 @@ function TaskEditor({
               <SelectContent>
                 {PRIORITIES.map((p) => (
                   <SelectItem key={p.value} value={p.value}>
-                    <PriorityIcon priority={p.value as Priority} /> {p.label}
+                    <PriorityIcon priority={p.value as Priority} /> {t(p.label)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -468,7 +472,7 @@ function TaskEditor({
           </dd>
 
           <dt className="text-muted-foreground">
-            <Label htmlFor="task-assignee">Assignee</Label>
+            <Label htmlFor="task-assignee">{t("Assignee")}</Label>
           </dt>
           <dd>
             <Select
@@ -480,7 +484,7 @@ function TaskEditor({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={UNASSIGNED}>
-                  <span className="text-muted-foreground">Unassigned</span>
+                  <span className="text-muted-foreground">{t("Unassigned")}</span>
                 </SelectItem>
                 {members.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
@@ -493,7 +497,7 @@ function TaskEditor({
 
           {task.reporter && (
             <>
-              <dt className="text-muted-foreground">Reporter</dt>
+              <dt className="text-muted-foreground">{t("Reporter")}</dt>
               <dd className="flex items-center gap-2">
                 <UserAvatar name={task.reporter.name} className="size-5" />
                 {task.reporter.name}
@@ -505,13 +509,13 @@ function TaskEditor({
         <TaskFields taskId={task.id} fields={fields} values={task.customFields ?? {}} />
 
         <div className="grid gap-1.5">
-          <Label htmlFor="task-description">Description</Label>
+          <Label htmlFor="task-description">{t("Description")}</Label>
           <Textarea
             id="task-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onBlur={() => description !== (task.description ?? "") && save({ description })}
-            placeholder="Add more detail…"
+            placeholder={t("Add more detail…")}
             rows={5}
             className="field-sizing-content w-full min-w-0 min-h-28"
           />
@@ -540,14 +544,14 @@ function TaskEditor({
         <section aria-labelledby="task-resources-heading" className="grid gap-2">
           <div className="flex items-center justify-between">
             <h3 id="task-resources-heading" className="text-sm font-medium">
-              Resources
+              {t("Resources")}
             </h3>
             <Link href={resourcesHref} className="text-xs text-primary underline-offset-4 hover:underline">
-              Manage in Resources tab
+              {t("Manage in Resources tab")}
             </Link>
           </div>
           {resources.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No resources assigned to this task.</p>
+            <p className="text-sm text-muted-foreground">{t("No resources assigned to this task.")}</p>
           ) : (
             <ul className="grid divide-y rounded-lg border text-sm">
               {resources.map((r) => (
@@ -557,10 +561,10 @@ function TaskEditor({
                     {r.role && <span className="text-muted-foreground"> · {r.role}</span>}
                   </span>
                   <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
-                    {Number(r.usedQty).toLocaleString()} / {Number(r.plannedQty).toLocaleString()} {r.unit}
+                    {formatNumber(r.usedQty, t.intl, 3)} / {formatNumber(r.plannedQty, t.intl, 3)} {r.unit}
                   </span>
                   <span className="w-24 text-end whitespace-nowrap tabular-nums">
-                    {formatMoney(Number(r.plannedQty) * Number(r.unitCost), currency)}
+                    {formatMoney(Number(r.plannedQty) * Number(r.unitCost), currency, t.intl)}
                   </span>
                 </li>
               ))}
@@ -582,24 +586,24 @@ function TaskEditor({
 
         <section aria-labelledby="activity-heading">
           <h3 id="activity-heading" className="mb-3 text-sm font-medium">
-            Activity
+            {t("Activity")}
           </h3>
           <ol className="grid gap-3">
             {task.activities.map((a) => (
               <li key={a.id} className="flex gap-2.5 text-sm">
-                <UserAvatar name={a.actor?.name ?? (a.data.automation ? "Automation" : "?")} className="size-5" />
+                <UserAvatar name={a.actor?.name ?? (a.data.automation ? t("Automation") : "?")} className="size-5" />
                 <p className="min-w-0 flex-1 text-muted-foreground">
                   <span className="font-medium text-foreground">
-                    {a.actor?.name ?? (a.data.automation ? "Automation" : a.type === "task.created_from_form" ? "Request" : "Someone")}
+                    {a.actor?.name ?? (a.data.automation ? t("Automation") : a.type === "task.created_from_form" ? t("Request") : t("Someone"))}
                   </span>{" "}
-                  {describeActivity(a.type, a.data, { statusName, memberName, currency, projectKey })}
+                  {describeActivity(a.type, a.data, { statusName, memberName, currency, projectKey }, t)}
                   <time
                     dateTime={new Date(a.createdAt).toISOString()}
-                    title={new Date(a.createdAt).toLocaleString()}
+                    title={new Date(a.createdAt).toLocaleString(t.intl)}
                     className="ms-1.5 text-xs whitespace-nowrap"
                     suppressHydrationWarning
                   >
-                    · {timeAgo(new Date(a.createdAt))}
+                    · {timeAgo(a.createdAt, t.intl, t("just now"))}
                   </time>
                 </p>
               </li>
@@ -624,6 +628,7 @@ function Subtasks({
   statuses: BoardStatus[];
   taskHref: (key?: string) => string;
 }) {
+  const t = useT();
   const [title, setTitle] = useState("");
   const [pending, startTransition] = useTransition();
   const doneStatus = statuses.find((s) => s.category === "done");
@@ -671,10 +676,10 @@ function Subtasks({
         toast.error(result.error);
         return;
       }
-      toast(`Sub-task deleted`, {
+      toast(t("Sub-task deleted"), {
         description: sub.title,
         action: {
-          label: "Undo",
+          label: t("Undo"),
           onClick: async () => {
             const undo = await restoreTask(sub.id);
             if (!undo.ok) toast.error(undo.error);
@@ -687,10 +692,10 @@ function Subtasks({
   return (
     <section aria-labelledby="subtasks-heading" className="grid gap-2">
       <h3 id="subtasks-heading" className="flex items-center gap-2 text-sm font-medium">
-        Sub-tasks
+        {t("Sub-tasks")}
         {task.subtasks.length > 0 && (
           <span className="text-xs font-normal text-muted-foreground tabular-nums">
-            {doneIds.size}/{task.subtasks.length} done
+            {t("{done}/{total} done", { done: doneIds.size, total: task.subtasks.length })}
           </span>
         )}
       </h3>
@@ -705,7 +710,7 @@ function Subtasks({
                   type="checkbox"
                   checked={isDone}
                   onChange={(e) => toggle(sub, e.target.checked)}
-                  aria-label={`Mark “${sub.title}” as ${isDone ? "not done" : "done"}`}
+                  aria-label={isDone ? t("Mark “{title}” as not done", { title: sub.title }) : t("Mark “{title}” as done", { title: sub.title })}
                   className="size-4 cursor-pointer accent-[var(--primary)]"
                 />
                 <Link
@@ -722,7 +727,7 @@ function Subtasks({
                 <button
                   type="button"
                   onClick={() => remove(sub)}
-                  aria-label={`Delete sub-task “${sub.title}”`}
+                  aria-label={t("Delete sub-task “{title}”", { title: sub.title })}
                   className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-60 hover:bg-accent hover:text-destructive hover:opacity-100 focus-visible:opacity-100"
                 >
                   <X className="size-4" />
@@ -734,18 +739,18 @@ function Subtasks({
       )}
       <form onSubmit={add} className="flex gap-2">
         <label htmlFor="new-subtask" className="sr-only">
-          New sub-task
+          {t("New sub-task")}
         </label>
         <Input
           id="new-subtask"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Add a sub-task…"
+          placeholder={t("Add a sub-task…")}
           maxLength={300}
           className="h-8"
         />
         <Button type="submit" size="sm" variant="outline" disabled={pending || !title.trim()}>
-          Add
+          {t("Add")}
         </Button>
       </form>
     </section>
@@ -756,60 +761,69 @@ function describeActivity(
   type: string,
   data: Record<string, unknown>,
   ctx: { statusName: Map<string, string>; memberName: Map<string, string>; currency: string; projectKey: string },
+  t: T,
 ) {
   const s = (v: unknown) => (typeof v === "string" ? v : "");
   const pct = (v: unknown) => `${Number(v)}%`;
+  const day = (v: unknown) => formatDue(s(v), true, t.intl).label;
+  const ref = `${ctx.projectKey}-${data.number}`;
   switch (type) {
     case "task.created":
-      return "created the task";
+      return t("created the task");
     case "task.renamed":
-      return `renamed the task to “${s(data.to)}”`;
+      return t("renamed the task to “{title}”", { title: s(data.to) });
     case "task.description_changed":
-      return "updated the description";
+      return t("updated the description");
     case "task.status_changed":
-      return `moved it to ${ctx.statusName.get(s(data.to)) ?? s(data.toName)}`;
-    case "task.priority_changed":
-      return `set priority to ${PRIORITIES.find((p) => p.value === data.to)?.label ?? s(data.to)}`;
+      return t("moved it to {status}", { status: ctx.statusName.get(s(data.to)) ?? s(data.toName) });
+    case "task.priority_changed": {
+      const label = PRIORITIES.find((p) => p.value === data.to)?.label;
+      return t("set priority to {priority}", { priority: label ? t(label) : s(data.to) });
+    }
     case "task.assignee_changed":
       return data.to
-        ? `assigned it to ${ctx.memberName.get(s(data.to)) ?? "a former member"}`
-        : "removed the assignee";
+        ? t("assigned it to {name}", { name: ctx.memberName.get(s(data.to)) ?? t("a former member") })
+        : t("removed the assignee");
     case "task.start_date_changed":
-      return data.to ? `set the start date to ${formatDue(s(data.to), true).label}` : "removed the start date";
+      return data.to ? t("set the start date to {date}", { date: day(data.to) }) : t("removed the start date");
     case "task.due_date_changed":
-      return data.to ? `set the end date to ${formatDue(s(data.to), true).label}` : "removed the end date";
+      return data.to ? t("set the end date to {date}", { date: day(data.to) }) : t("removed the end date");
     case "task.weight_changed":
-      return data.to !== null ? `set the weight to ${pct(data.to)}` : "removed the weight";
+      return data.to !== null ? t("set the weight to {weight}", { weight: pct(data.to) }) : t("removed the weight");
     case "task.progress_changed":
-      return `updated progress to ${pct(data.to)}`;
+      return t("updated progress to {progress}", { progress: pct(data.to) });
     case "task.budget_changed":
-      return data.to !== null ? `set the budget to ${formatMoney(s(data.to), ctx.currency)}` : "removed the budget";
+      return data.to !== null
+        ? t("set the budget to {amount}", { amount: formatMoney(s(data.to), ctx.currency, t.intl) })
+        : t("removed the budget");
     case "task.restored":
-      return "restored the task";
+      return t("restored the task");
     case "comment.added":
-      return "commented";
+      return t("commented");
     case "task.created_from_form":
-      return `came in through the form “${s(data.form)}”${data.requester ? ` from ${s(data.requester)}` : ""}`;
+      return data.requester
+        ? t("came in through the form “{form}” from {name}", { form: s(data.form), name: s(data.requester) })
+        : t("came in through the form “{form}”", { form: s(data.form) });
     case "task.field_changed":
-      return `updated “${s(data.field)}”`;
+      return t("updated “{field}”", { field: s(data.field) });
     case "task.recurred":
-      return `finished this occurrence; next one is ${ctx.projectKey}-${data.number}, due ${formatDue(s(data.dueDate), true).label}`;
+      return t("finished this occurrence; next one is {ref}, due {date}", { ref, date: day(data.dueDate) });
     case "task.recurrence_changed":
-      return data.to ? `set it to repeat ${s(data.to)}` : "stopped it repeating";
+      return data.to ? t("set it to repeat {rule}", { rule: t(s(data.to)) }) : t("stopped it repeating");
     case "task.made_milestone":
-      return "made it a milestone";
+      return t("made it a milestone");
     case "task.unmade_milestone":
-      return "turned it back into a normal task";
+      return t("turned it back into a normal task");
     case "task.dependency_added":
-      return `made it wait on ${ctx.projectKey}-${data.number} “${s(data.title)}”`;
+      return t("made it wait on {ref} “{title}”", { ref, title: s(data.title) });
     case "task.dependency_removed":
-      return `removed the dependency on ${ctx.projectKey}-${data.number} “${s(data.title)}”`;
+      return t("removed the dependency on {ref} “{title}”", { ref, title: s(data.title) });
     case "subtask.created":
-      return `added sub-task ${ctx.projectKey}-${data.number} “${s(data.title)}”`;
+      return t("added sub-task {ref} “{title}”", { ref, title: s(data.title) });
     case "subtask.deleted":
-      return `deleted sub-task “${s(data.title)}”`;
+      return t("deleted sub-task “{title}”", { title: s(data.title) });
     case "subtask.restored":
-      return `restored sub-task “${s(data.title)}”`;
+      return t("restored sub-task “{title}”", { title: s(data.title) });
     default:
       return type;
   }

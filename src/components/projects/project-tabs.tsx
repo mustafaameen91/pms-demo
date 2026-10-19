@@ -3,20 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/client";
 
 export function ProjectTabs({ basePath }: { basePath: string }) {
+  const t = useT();
   const pathname = usePathname();
   const tabs = [
-    { href: `${basePath}/overview`, label: "Overview", active: pathname.startsWith(`${basePath}/overview`) },
-    { href: basePath, label: "Tasks", active: pathname === basePath },
-    { href: `${basePath}/resources`, label: "Resources", active: pathname.startsWith(`${basePath}/resources`) },
-    { href: `${basePath}/expenses`, label: "Expenses", active: pathname.startsWith(`${basePath}/expenses`) },
-    { href: `${basePath}/automations`, label: "Automations", active: pathname.startsWith(`${basePath}/automations`) },
-    { href: `${basePath}/settings`, label: "Settings", active: pathname.startsWith(`${basePath}/settings`) },
+    { href: `${basePath}/overview`, label: t("Overview"), active: pathname.startsWith(`${basePath}/overview`) },
+    { href: basePath, label: t("Tasks"), active: pathname === basePath },
+    { href: `${basePath}/resources`, label: t("Resources"), active: pathname.startsWith(`${basePath}/resources`) },
+    { href: `${basePath}/expenses`, label: t("Expenses"), active: pathname.startsWith(`${basePath}/expenses`) },
+    { href: `${basePath}/automations`, label: t("Automations"), active: pathname.startsWith(`${basePath}/automations`) },
+    { href: `${basePath}/settings`, label: t("Settings"), active: pathname.startsWith(`${basePath}/settings`) },
   ];
 
   return (
-    <nav aria-label="Project" className="-mb-px mt-3 flex gap-4 overflow-x-auto whitespace-nowrap">
+    <nav aria-label={t("Project")} className="-mb-px mt-3 flex gap-4 overflow-x-auto whitespace-nowrap">
       {tabs.map((tab) => (
         <Link
           key={tab.href}

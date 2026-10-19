@@ -6,6 +6,7 @@ import { member, organization } from "@/lib/db/schema";
 import { getWorkspaceAccess } from "@/lib/billing";
 import { listAuditEntries } from "@/lib/data/audit";
 import { ACTIVITY_GROUPS, activityGroup, describeActivity, type ActivityGroup } from "@/lib/activity-text";
+import { getT } from "@/i18n/server";
 
 /** Escapes a CSV cell; also neutralises spreadsheet formulas (=, +, -, @). */
 function cell(value: string) {
@@ -14,18 +15,20 @@ function cell(value: string) {
 }
 
 export async function GET(request: Request, ctx: RouteContext<"/w/[slug]/audit/export">) {
-  const { slug } = await ctx.params;
+  const [{ slug }, t] = await Promise.all([ctx.params, getT()]);
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) return new Response(t("Unauthorized"), { status: 401 });
   const [ws] = await db
     .select({ id: organization.id, role: member.role })
     .from(organization)
     .innerJoin(member, and(eq(member.organizationId, organization.id), eq(member.userId, session.user.id)))
     .where(eq(organization.slug, slug))
     .limit(1);
-  if (!ws || (ws.role !== "owner" && ws.role !== "admin")) return new Response("Not found", { status: 404 });
-  if (!(await getWorkspaceAccess(ws.id)).allowed) return new Response("Subscription not active", { status: 402 });
+  if (!ws || (ws.role !== "owner" && ws.role !== "admin")) return new Response(t("Not found"), { status: 404 });
+  if (!(await getWorkspaceAccess(ws.id)).allowed) return new Response(t("Subscription not active"), { status: 402 });
 
+  // "System" alone is already the theme option ("حسب النظام"); the actor needs its own entry.
+  const systemActor = t.locale === "en" ? "System" : t("System (actor)");
   const url = new URL(request.url);
   const group = (Object.keys(ACTIVITY_GROUPS) as ActivityGroup[]).find((g) => g === url.searchParams.get("group"));
   const entries = await listAuditEntries(ws.id, {
@@ -34,12 +37,12 @@ export async function GET(request: Request, ctx: RouteContext<"/w/[slug]/audit/e
     limit: 10_000,
   });
   const rows = [
-    ["Date (UTC)", "Person", "Area", "What happened", "Project"],
+    [t("Date (UTC)"), t("Person"), t("Area"), t("What happened"), t("Project")],
     ...entries.map((e) => [
       new Date(e.createdAt).toISOString().replace("T", " ").slice(0, 19),
-      e.actorName ?? (e.data.automation ? "Automation" : "System"),
-      ACTIVITY_GROUPS[activityGroup(e.type)],
-      describeActivity(e.type, e.data, e.projectKey && e.taskNumber ? `${e.projectKey}-${e.taskNumber}` : null),
+      e.actorName ?? (e.data.automation ? t("Automation") : systemActor),
+      t(ACTIVITY_GROUPS[activityGroup(e.type)]),
+      describeActivity(e.type, e.data, e.projectKey && e.taskNumber ? `${e.projectKey}-${e.taskNumber}` : null, t),
       e.projectName ?? "",
     ]),
   ];

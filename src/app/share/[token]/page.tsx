@@ -14,15 +14,21 @@ import { cn, formatDate, formatMoney } from "@/lib/utils";
 import { AccomplishmentMeter, ScheduleBadge, fmtPct } from "@/components/projects/accomplishment";
 import { LightTheme } from "@/components/light-theme";
 import { Logo } from "@/components/logo";
+import { LanguageSwitcher } from "@/components/shell/language-switcher";
+import { getT } from "@/i18n/server";
 
 const oneMinuteAgo = () => new Date(Date.now() - 60_000);
 
 // Secret links must never end up in search engines.
-export const metadata: Metadata = { title: "Project progress", robots: { index: false, follow: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Project progress"), robots: { index: false, follow: false } };
+}
 
 /** Public, read-only client view of one project. Access = knowing the token. */
 export default async function SharePage({ params }: PageProps<"/share/[token]">) {
   const { token } = await params;
+  const t = await getT();
   const [row] = await db
     .select({ share: projectShares, project: projects, workspaceName: organization.name })
     .from(projectShares)
@@ -34,11 +40,12 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
   const usable = row && (await getWorkspaceAccess(row.share.workspaceId)).allowed;
   if (!row || !usable) {
     return (
-      <LightTheme className="flex flex-col items-center justify-center px-4 text-center">
+      <LightTheme className="relative flex flex-col items-center justify-center px-4 text-center">
+        <LanguageSwitcher className="absolute top-3 inset-e-3" />
         <Logo />
-        <h1 className="mt-6 text-xl font-semibold">This link isn&apos;t active</h1>
+        <h1 className="mt-6 text-xl font-semibold">{t("This link isn't active")}</h1>
         <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-          It may have been turned off or replaced. Ask the person who shared it for a new link.
+          {t("It may have been turned off or replaced. Ask the person who shared it for a new link.")}
         </p>
       </LightTheme>
     );
@@ -63,9 +70,9 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
   ]);
   const today = todayISO();
   const statusById = new Map(board.statuses.map((s) => [s.id, s]));
-  const tasks = board.tasks.map((t) => ({ ...t, status: statusById.get(t.statusId) }));
+  const tasks = board.tasks.map((task) => ({ ...task, status: statusById.get(task.statusId) }));
   const a = computeAccomplishment(
-    tasks.map((t) => ({ ...t, cancelled: t.status?.category === "canceled" })),
+    tasks.map((task) => ({ ...task, cancelled: task.status?.category === "canceled" })),
     project,
     today,
   );
@@ -76,12 +83,15 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
     <LightTheme>
       <main className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-6 px-4 py-8 sm:px-6">
         <header>
-          <p className="text-xs text-muted-foreground">
-            {row.workspaceName} · shared project · read-only
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {row.workspaceName} · {t("shared project · read-only")}
+            </p>
+            <LanguageSwitcher className="-mt-2 shrink-0" />
+          </div>
           <h1 className="mt-1 text-2xl font-semibold">{project.name}</h1>
           <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
-            {statusLabel && <span>{statusLabel}</span>}
+            {statusLabel && <span>{t(statusLabel)}</span>}
             {project.client && (
               <span className="flex items-center gap-1.5">
                 <Building2 className="size-4" aria-hidden /> {project.client}
@@ -89,7 +99,8 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
             )}
             {(project.startDate || project.endDate) && (
               <span className="flex items-center gap-1.5">
-                <Calendar className="size-4" aria-hidden /> {formatDate(project.startDate)} → {formatDate(project.endDate)}
+                <Calendar className="size-4" aria-hidden />{" "}
+                {t("{start} → {end}", { start: formatDate(project.startDate, t.intl), end: formatDate(project.endDate, t.intl) })}
               </span>
             )}
           </div>
@@ -99,16 +110,16 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 id="progress-heading" className="text-sm font-medium text-muted-foreground">
-                Progress
+                {t("Progress")}
               </h2>
               <p className="mt-1 text-5xl font-semibold tracking-tight">{fmtPct(a.actual)}</p>
             </div>
             <ScheduleBadge state={a.schedule} className="text-sm" />
           </div>
-          <AccomplishmentMeter actual={a.actual} planned={a.planned} size="lg" label="Project progress" className="mt-5" />
+          <AccomplishmentMeter actual={a.actual} planned={a.planned} size="lg" label={t("Project progress")} className="mt-5" />
           {a.planned !== null && (
             <p className="mt-2 text-sm text-muted-foreground">
-              Planned by today: {fmtPct(a.planned)} · as of {formatDate(today)}
+              {t("Planned by today: {pct} · as of {date}", { pct: fmtPct(a.planned), date: formatDate(today, t.intl) })}
             </p>
           )}
         </section>
@@ -116,20 +127,20 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
         {money && (
           <section aria-labelledby="budget-heading" className="rounded-xl border p-5 sm:p-6">
             <h2 id="budget-heading" className="font-semibold">
-              Budget
+              {t("Budget")}
             </h2>
             <dl className="mt-3 grid grid-cols-3 gap-3">
               <div>
-                <dt className="text-xs text-muted-foreground">Budget</dt>
-                <dd className="font-semibold">{money.budget === null ? "—" : formatMoney(money.budget, project.currency)}</dd>
+                <dt className="text-xs text-muted-foreground">{t("Budget")}</dt>
+                <dd className="font-semibold">{money.budget === null ? "—" : formatMoney(money.budget, project.currency, t.intl)}</dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">Spent</dt>
-                <dd className={cn("font-semibold", money.overBudget && "text-destructive")}>{formatMoney(money.actual, project.currency)}</dd>
+                <dt className="text-xs text-muted-foreground">{t("Spent")}</dt>
+                <dd className={cn("font-semibold", money.overBudget && "text-destructive")}>{formatMoney(money.actual, project.currency, t.intl)}</dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">Remaining</dt>
-                <dd className="font-semibold">{money.remaining === null ? "—" : formatMoney(money.remaining, project.currency)}</dd>
+                <dt className="text-xs text-muted-foreground">{t("Remaining")}</dt>
+                <dd className="font-semibold">{money.remaining === null ? "—" : formatMoney(money.remaining, project.currency, t.intl)}</dd>
               </div>
             </dl>
           </section>
@@ -137,42 +148,44 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
 
         <section aria-labelledby="tasks-heading" className="overflow-hidden rounded-xl border">
           <h2 id="tasks-heading" className="border-b px-4 py-3 font-semibold">
-            Work items
+            {t("Work items")}
           </h2>
           {tasks.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">No work items yet.</p>
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("No work items yet.")}</p>
           ) : (
             <div className="relative overflow-x-auto">
               <table className="w-full min-w-[620px] text-sm">
                 <thead className="text-start text-xs text-muted-foreground">
                   <tr className="border-b bg-muted/60">
-                    <th scope="col" className="py-2 pe-3 ps-4 font-medium">Item</th>
-                    <th scope="col" className="px-3 py-2 font-medium">Status</th>
-                    <th scope="col" className="w-40 px-3 py-2 font-medium">Progress</th>
-                    <th scope="col" className="py-2 pe-4 ps-3 font-medium">Dates</th>
+                    <th scope="col" className="py-2 pe-3 ps-4 font-medium">{t("Item")}</th>
+                    <th scope="col" className="px-3 py-2 font-medium">{t("Status")}</th>
+                    <th scope="col" className="w-40 px-3 py-2 font-medium">{t("Progress")}</th>
+                    <th scope="col" className="py-2 pe-4 ps-3 font-medium">{t("Dates")}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {tasks.map((t) => {
-                    const done = t.status?.category === "done" || t.status?.category === "canceled";
-                    const late = !done && t.dueDate !== null && t.dueDate < today;
+                  {tasks.map((task) => {
+                    const done = task.status?.category === "done" || task.status?.category === "canceled";
+                    const late = !done && task.dueDate !== null && task.dueDate < today;
                     return (
-                      <tr key={t.id} className="border-b last:border-b-0">
-                        <td className="py-2.5 pe-3 ps-4 font-medium">{t.title}</td>
-                        <td className="px-3 py-2.5 whitespace-nowrap">{t.status?.name}</td>
+                      <tr key={task.id} className="border-b last:border-b-0">
+                        <td className="py-2.5 pe-3 ps-4 font-medium">{task.title}</td>
+                        <td className="px-3 py-2.5 whitespace-nowrap">{task.status ? t(task.status.name) : null}</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
                             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-primary/15">
-                              <div className="h-full rounded-full bg-primary" style={{ width: `${t.progress}%` }} />
+                              <div className="h-full rounded-full bg-primary" style={{ width: `${task.progress}%` }} />
                             </div>
-                            <span className="w-9 text-end text-xs tabular-nums">{t.progress}%</span>
+                            <span className="w-9 text-end text-xs tabular-nums">{task.progress}%</span>
                           </div>
                         </td>
                         <td className="py-2.5 pe-4 ps-3 whitespace-nowrap tabular-nums">
-                          {t.startDate || t.dueDate ? `${formatDate(t.startDate)} → ${formatDate(t.dueDate)}` : "—"}
+                          {task.startDate || task.dueDate
+                            ? t("{start} → {end}", { start: formatDate(task.startDate, t.intl), end: formatDate(task.dueDate, t.intl) })
+                            : "—"}
                           {late && (
                             <span className="ms-2 inline-flex items-center gap-1 text-xs font-medium text-destructive">
-                              <AlertTriangle className="size-3" aria-hidden /> Late
+                              <AlertTriangle className="size-3" aria-hidden /> {t("Late")}
                             </span>
                           )}
                         </td>
@@ -185,7 +198,7 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
           )}
         </section>
 
-        <footer className="text-center text-xs text-muted-foreground">Shared with PMS · updates automatically</footer>
+        <footer className="text-center text-xs text-muted-foreground">{t("Shared with PMS · updates automatically")}</footer>
       </main>
     </LightTheme>
   );

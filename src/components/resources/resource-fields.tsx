@@ -1,6 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/client";
+import type { T } from "@/i18n/translate";
 
 import { CURRENCIES, RESOURCE_TYPES, resourceTypeInfo, type ResourceType } from "@/lib/constants";
 import type { ResourceInput } from "@/lib/actions/resources";
@@ -23,11 +25,13 @@ export type ResourceDraft = {
   notes: string;
 };
 
-export function emptyResourceDraft(type: ResourceType = "material", currency = "USD"): ResourceDraft {
+/** Pass the translator so the suggested unit is in the viewer's language. */
+export function emptyResourceDraft(type: ResourceType = "material", currency = "USD", t?: T): ResourceDraft {
+  const unit = resourceTypeInfo(type).defaultUnit;
   return {
     type,
     name: "",
-    unit: resourceTypeInfo(type).defaultUnit,
+    unit: t ? t(unit) : unit,
     unitCost: "",
     currency,
     role: "",
@@ -68,6 +72,7 @@ export function ResourceFields({
   lockType?: boolean;
   idPrefix?: string;
 }) {
+  const t = useT();
   const info = resourceTypeInfo(value.type);
   const set = <K extends keyof ResourceDraft>(key: K, v: ResourceDraft[K]) => onChange({ ...value, [key]: v });
   const id = (name: string) => `${idPrefix}-${name}`;
@@ -76,20 +81,20 @@ export function ResourceFields({
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
-        <Label htmlFor={id("type")}>Type</Label>
+        <Label htmlFor={id("type")}>{t("Type")}</Label>
         <select
           id={id("type")}
           value={value.type}
           disabled={lockType}
           onChange={(e) => {
             const type = e.target.value as ResourceType;
-            onChange({ ...value, type, unit: resourceTypeInfo(type).defaultUnit });
+            onChange({ ...value, type, unit: t(resourceTypeInfo(type).defaultUnit) });
           }}
           className={nativeSelectClass}
         >
-          {RESOURCE_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
+          {RESOURCE_TYPES.map((rt) => (
+            <option key={rt.value} value={rt.value}>
+              {t(rt.label)}
             </option>
           ))}
         </select>
@@ -97,13 +102,13 @@ export function ResourceFields({
 
       <div className="grid gap-1.5">
         <Label htmlFor={id("name")}>
-          {value.type === "labor" ? "Worker name" : "Name"} <span aria-hidden className="text-destructive">*</span>
+          {value.type === "labor" ? t("Worker name") : t("Name")} <span aria-hidden className="text-destructive">*</span>
         </Label>
         <Input
           id={id("name")}
           value={value.name}
           onChange={(e) => set("name", e.target.value)}
-          placeholder={PLACEHOLDERS[value.type]}
+          placeholder={t(PLACEHOLDERS[value.type])}
           maxLength={120}
           required
           aria-invalid={Boolean(errors.name)}
@@ -114,17 +119,17 @@ export function ResourceFields({
       {hasPerson && (
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-1.5">
-            <Label htmlFor={id("role")}>{info.roleLabel}</Label>
+            <Label htmlFor={id("role")}>{info.roleLabel && t(info.roleLabel)}</Label>
             <Input
               id={id("role")}
               value={value.role}
               onChange={(e) => set("role", e.target.value)}
-              placeholder={value.type === "labor" ? "Electrician" : "Name of your contact"}
+              placeholder={value.type === "labor" ? t("Electrician") : t("Name of your contact")}
               maxLength={120}
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor={id("phone")}>Phone</Label>
+            <Label htmlFor={id("phone")}>{t("Phone")}</Label>
             <Input
               id={id("phone")}
               type="tel"
@@ -139,7 +144,7 @@ export function ResourceFields({
       <div className="grid items-start gap-4 sm:grid-cols-[1fr_2fr]">
         <div className="grid gap-1.5">
           <Label htmlFor={id("unit")}>
-            Unit <span aria-hidden className="text-destructive">*</span>
+            {t("Unit")} <span aria-hidden className="text-destructive">*</span>
           </Label>
           <Input
             id={id("unit")}
@@ -152,13 +157,13 @@ export function ResourceFields({
           />
           <datalist id={id("units")}>
             {info.units.map((u) => (
-              <option key={u} value={u} />
+              <option key={u} value={t(u)} />
             ))}
           </datalist>
           <FieldError message={errors.unit} />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor={id("cost")}>Price per {value.unit || "unit"}</Label>
+          <Label htmlFor={id("cost")}>{t("Price per {unit}", { unit: value.unit || t("unit") })}</Label>
           <div className="flex gap-2">
             <Input
               id={id("cost")}
@@ -170,7 +175,7 @@ export function ResourceFields({
               aria-invalid={Boolean(errors.unitCost)}
             />
             <label htmlFor={id("currency")} className="sr-only">
-              Currency
+              {t("Currency")}
             </label>
             <select
               id={id("currency")}
@@ -191,7 +196,7 @@ export function ResourceFields({
 
       <div className="grid gap-1.5">
         <Label htmlFor={id("notes")}>
-          Notes <span className="font-normal text-muted-foreground">(optional)</span>
+          {t("Notes")} <span className="font-normal text-muted-foreground">{t("(optional)")}</span>
         </Label>
         <Textarea id={id("notes")} value={value.notes} onChange={(e) => set("notes", e.target.value)} rows={2} maxLength={1000} />
       </div>

@@ -5,9 +5,10 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { addComment, deleteComment, editComment } from "@/lib/actions/comments";
 import type { TaskDetail, WorkspaceMember } from "@/lib/data/projects";
-import { cn } from "@/lib/utils";
+import { cn, timeAgo } from "@/lib/utils";
+import { useT } from "@/i18n/client";
 import { Button } from "@/components/ui/button";
-import { UserAvatar, timeAgo } from "./task-bits";
+import { UserAvatar } from "./task-bits";
 
 type Comment = TaskDetail["comments"][number];
 
@@ -24,13 +25,14 @@ export function Comments({
   currentUserId: string;
   isAdmin: boolean;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   return (
     <section aria-labelledby="comments-heading" className="grid gap-3">
       <h3 id="comments-heading" className="text-sm font-medium">
-        Comments {comments.length > 0 && <span className="text-xs font-normal text-muted-foreground">{comments.length}</span>}
+        {t("Comments")} {comments.length > 0 && <span className="text-xs font-normal text-muted-foreground">{comments.length}</span>}
       </h3>
 
       {comments.length > 0 && (
@@ -42,22 +44,22 @@ export function Comments({
                 <UserAvatar name={c.author?.name ?? "?"} image={c.author?.image} className="size-7" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">{c.author?.name ?? "Former member"}</span> ·{" "}
+                    <span className="font-medium text-foreground">{c.author?.name ?? t("Former member")}</span> ·{" "}
                     <time
                       dateTime={new Date(c.createdAt).toISOString()}
-                      title={new Date(c.createdAt).toLocaleString()}
+                      title={new Date(c.createdAt).toLocaleString(t.intl)}
                       suppressHydrationWarning
                     >
-                      {timeAgo(new Date(c.createdAt))}
+                      {timeAgo(c.createdAt, t.intl, t("just now"))}
                     </time>
-                    {c.editedAt && " · edited"}
+                    {c.editedAt && ` · ${t("edited")}`}
                   </p>
                   {editing === c.id ? (
                     <Composer
                       members={members}
                       initialBody={c.body}
                       initialMentions={c.mentions}
-                      submitLabel="Save"
+                      submitLabel={t("Save")}
                       onCancel={() => setEditing(null)}
                       onSubmit={async (body, mentions) => {
                         const result = await editComment(c.id, { body, mentions });
@@ -75,7 +77,7 @@ export function Comments({
                         <div className="mt-1 flex gap-3 text-xs">
                           {mine && (
                             <button type="button" className="text-muted-foreground hover:text-foreground hover:underline" onClick={() => setEditing(c.id)}>
-                              Edit
+                              {t("Edit")}
                             </button>
                           )}
                           <button
@@ -89,7 +91,7 @@ export function Comments({
                               })
                             }
                           >
-                            Delete
+                            {t("Delete")}
                           </button>
                         </div>
                       )}
@@ -104,7 +106,7 @@ export function Comments({
 
       <Composer
         members={members}
-        submitLabel="Comment"
+        submitLabel={t("Comment")}
         onSubmit={async (body, mentions) => {
           const result = await addComment(taskId, { body, mentions });
           if (!result.ok) toast.error(result.error);
@@ -169,6 +171,7 @@ function Composer({
   onSubmit: (body: string, mentions: string[]) => Promise<boolean>;
   onCancel?: () => void;
 }) {
+  const t = useT();
   const [body, setBody] = useState(initialBody);
   const [mentions, setMentions] = useState<string[]>(initialMentions);
   const [query, setQuery] = useState<string | null>(null);
@@ -222,7 +225,7 @@ function Composer({
   return (
     <div className="relative mt-1">
       <label htmlFor={`${listId}-input`} className="sr-only">
-        {onCancel ? "Edit comment" : "Write a comment"}
+        {onCancel ? t("Edit comment") : t("Write a comment")}
       </label>
       <textarea
         id={`${listId}-input`}
@@ -230,7 +233,7 @@ function Composer({
         value={body}
         rows={onCancel ? 3 : 2}
         maxLength={5000}
-        placeholder="Write a comment… type @ to mention someone"
+        placeholder={t("Write a comment… type @ to mention someone")}
         role="combobox"
         aria-expanded={open}
         aria-controls={listId}
@@ -293,10 +296,10 @@ function Composer({
         </ul>
       )}
       <div className="mt-2 flex items-center justify-end gap-2">
-        <span className="me-auto text-xs text-muted-foreground">Ctrl/⌘ + Enter to send</span>
+        <span className="me-auto text-xs text-muted-foreground">{t("Ctrl/⌘ + Enter to send")}</span>
         {onCancel && (
           <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-            Cancel
+            {t("Cancel")}
           </Button>
         )}
         <Button type="button" size="sm" onClick={submit} disabled={pending || !body.trim()}>

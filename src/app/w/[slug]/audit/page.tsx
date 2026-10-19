@@ -1,20 +1,25 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Download } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { listAuditEntries } from "@/lib/data/audit";
 import { listWorkspaceMembers } from "@/lib/data/members";
 import { ACTIVITY_GROUPS, activityGroup, describeActivity, type ActivityGroup } from "@/lib/activity-text";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
+import { getT } from "@/i18n/server";
 import { Button } from "@/components/ui/button";
 
-export const metadata: Metadata = { title: "Audit log" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: t("Audit log") };
+}
 const PAGE = 100;
 
 export default async function AuditPage({ params, searchParams }: PageProps<"/w/[slug]/audit">) {
-  const [{ slug }, query] = await Promise.all([params, searchParams]);
+  const [{ slug }, query, t] = await Promise.all([params, searchParams, getT()]);
   const { workspace } = await requireWorkspace(slug);
+  // "System" alone is already the theme option ("حسب النظام"); the actor needs its own entry.
+  const systemActor = t.locale === "en" ? "System" : t("System (actor)");
   if (workspace.role !== "owner" && workspace.role !== "admin") notFound();
 
   const group = (Object.keys(ACTIVITY_GROUPS) as ActivityGroup[]).find((g) => g === query.group);
@@ -36,19 +41,19 @@ export default async function AuditPage({ params, searchParams }: PageProps<"/w/
     <div className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-5 px-4 py-6 sm:px-6 lg:py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Audit log</h1>
-          <p className="text-sm text-muted-foreground">Everything that changed in {workspace.name}, newest first.</p>
+          <h1 className="text-xl font-semibold tracking-tight">{t("Audit log")}</h1>
+          <p className="text-sm text-muted-foreground">{t("Everything that changed in {workspace}, newest first.", { workspace: workspace.name })}</p>
         </div>
         <Button variant="outline" size="sm" asChild>
           <a href={`${base}/export${qs({})}`} download>
             <Download className="size-4" />
-            Download CSV
+            {t("Download CSV")}
           </a>
         </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <nav aria-label="Filter by area" className="flex flex-wrap gap-1 rounded-lg bg-muted p-0.5">
+        <nav aria-label={t("Filter by area")} className="flex flex-wrap gap-1 rounded-lg bg-muted p-0.5">
           {[{ key: undefined, label: "All" }, ...Object.entries(ACTIVITY_GROUPS).map(([key, label]) => ({ key, label }))].map((g) => (
             <Link
               key={g.label}
@@ -59,17 +64,17 @@ export default async function AuditPage({ params, searchParams }: PageProps<"/w/
                 group === g.key && "bg-background font-medium text-foreground shadow-sm",
               )}
             >
-              {g.label}
+              {t(g.label)}
             </Link>
           ))}
         </nav>
         <form className="flex items-center gap-2" action={base}>
           {group && <input type="hidden" name="group" value={group} />}
           <label htmlFor="audit-actor" className="text-sm text-muted-foreground">
-            Person
+            {t("Person")}
           </label>
           <select id="audit-actor" name="actor" defaultValue={actorId ?? ""} className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm dark:bg-input/30">
-            <option value="">Everyone</option>
+            <option value="">{t("Everyone")}</option>
             {members.map((m) => (
               <option key={m.userId} value={m.userId}>
                 {m.name}
@@ -77,13 +82,13 @@ export default async function AuditPage({ params, searchParams }: PageProps<"/w/
             ))}
           </select>
           <Button type="submit" size="sm" variant="outline">
-            Apply
+            {t("Apply")}
           </Button>
         </form>
       </div>
 
       {entries.length === 0 ? (
-        <p className="rounded-xl border border-dashed px-6 py-12 text-center text-sm text-muted-foreground">Nothing recorded for this filter.</p>
+        <p className="rounded-xl border border-dashed px-6 py-12 text-center text-sm text-muted-foreground">{t("Nothing recorded for this filter.")}</p>
       ) : (
         <ol className="divide-y overflow-hidden rounded-xl border bg-card">
           {entries.map((e) => {
@@ -92,17 +97,17 @@ export default async function AuditPage({ params, searchParams }: PageProps<"/w/
             return (
               <li key={e.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 py-2.5 text-sm">
                 <time dateTime={when.toISOString()} className="w-36 shrink-0 text-xs text-muted-foreground tabular-nums" suppressHydrationWarning>
-                  {when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                  {formatDateTime(when, t.intl)}
                 </time>
                 <p className="min-w-0 flex-1">
-                  <span className="font-medium">{e.actorName ?? (e.data.automation ? "Automation:" : e.type === "task.created_from_form" ? "Request form:" : "System")}</span> {describeActivity(e.type, e.data, taskRef)}
+                  <span className="font-medium">{e.actorName ?? (e.data.automation ? t("Automation:") : e.type === "task.created_from_form" ? t("Request form:") : systemActor)}</span> {describeActivity(e.type, e.data, taskRef, t)}
                   {e.projectName && (
                     <Link href={`/w/${workspace.slug}/p/${e.projectKey}/overview`} className="ms-1 text-muted-foreground hover:underline">
                       · {e.projectName}
                     </Link>
                   )}
                 </p>
-                <span className="rounded border px-1.5 text-[11px] text-muted-foreground">{ACTIVITY_GROUPS[activityGroup(e.type)]}</span>
+                <span className="rounded border px-1.5 text-[11px] text-muted-foreground">{t(ACTIVITY_GROUPS[activityGroup(e.type)])}</span>
               </li>
             );
           })}
@@ -112,7 +117,7 @@ export default async function AuditPage({ params, searchParams }: PageProps<"/w/
       {entries.length === PAGE && (
         <div className="flex justify-center">
           <Button variant="outline" asChild>
-            <Link href={`${base}${qs({ before: new Date(entries[entries.length - 1].createdAt).toISOString() })}`}>Older entries</Link>
+            <Link href={`${base}${qs({ before: new Date(entries[entries.length - 1].createdAt).toISOString() })}`}>{t("Older entries")}</Link>
           </Button>
         </div>
       )}

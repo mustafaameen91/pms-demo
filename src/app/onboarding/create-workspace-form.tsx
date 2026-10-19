@@ -6,18 +6,20 @@ import { createWorkspace } from "@/lib/actions/workspace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/i18n/client";
 
 export function CreateWorkspaceForm() {
+  const t = useT();
   const [state, action, pending] = useActionState(createWorkspace, undefined);
 
   return (
     <form action={action} className="mt-6 grid gap-4">
       <div className="grid gap-1.5">
-        <Label htmlFor="name">Workspace name</Label>
+        <Label htmlFor="name">{t("Workspace name")}</Label>
         <Input
           id="name"
           name="name"
-          placeholder="Acme Inc."
+          placeholder={t("Acme Inc.")}
           required
           minLength={2}
           maxLength={50}
@@ -26,7 +28,7 @@ export function CreateWorkspaceForm() {
           aria-describedby="name-help"
         />
         <p id="name-help" className="text-xs text-muted-foreground">
-          Usually your company or team name.
+          {t("Usually your company or team name.")}
         </p>
         {state?.error && (
           <p role="alert" className="text-sm text-destructive">
@@ -36,7 +38,7 @@ export function CreateWorkspaceForm() {
       </div>
       <Button type="submit" disabled={pending}>
         {pending && <Loader2 className="size-4 animate-spin" />}
-        Create workspace
+        {t("Create workspace")}
       </Button>
     </form>
   );

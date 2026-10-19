@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useT } from "@/i18n/client"
 import { cn } from "cn"
 import { Dialog as SheetPrimitive, Direction } from "radix-ui"
 
@@ -56,6 +57,7 @@ function SheetContent({
   showCloseButton?: boolean
 }) {
   // "right"/"left" mean the reading end/start: in Arabic a "right" panel opens from the left.
+  const t = useT()
   const rtl = Direction.useDirection() === "rtl"
   const physical = rtl && side === "right" ? "left" : rtl && side === "left" ? "right" : side
   return (
@@ -80,7 +82,7 @@ function SheetContent({
             >
               <XIcon
               />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{t("Close")}</span>
             </Button>
           </SheetPrimitive.Close>
         )}

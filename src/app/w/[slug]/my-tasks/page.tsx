@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import { CheckSquare } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { listMyTasks } from "@/lib/data/my-tasks";
@@ -7,14 +6,19 @@ import { todayISO } from "@/lib/accomplishment";
 import { DUE_GROUP_LABELS, dueGroup, type DueGroup } from "@/lib/my-tasks-groups";
 import { cn, formatDate } from "@/lib/utils";
 import { MilestoneIcon, PriorityIcon, ProgressBar, StatusDot } from "@/components/tasks/task-bits";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "My tasks" };
+export async function generateMetadata() {
+  const t = await getT();
+  return { title: t("My tasks") };
+}
 
 const ORDER: DueGroup[] = ["overdue", "today", "week", "later", "none", "done"];
 
 export default async function MyTasksPage({ params, searchParams }: PageProps<"/w/[slug]/my-tasks">) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const { user, workspace } = await requireWorkspace(slug);
+  const tr = await getT();
   const showDone = query.done === "1";
   const today = todayISO();
   const all = await listMyTasks(workspace.id, user.id);
@@ -31,27 +35,27 @@ export default async function MyTasksPage({ params, searchParams }: PageProps<"/
     <div className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-5 px-4 py-6 sm:px-6 lg:py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">My tasks</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{tr("My tasks")}</h1>
           <p className="text-sm text-muted-foreground">
-            {open} open {open === 1 ? "task" : "tasks"} assigned to you across all projects.
+            {tr.plural(open, "{count} open task assigned to you across all projects.", "{count} open tasks assigned to you across all projects.")}
           </p>
         </div>
         <Link href={showDone ? `${base}/my-tasks` : `${base}/my-tasks?done=1`} className="text-sm text-primary underline-offset-4 hover:underline">
-          {showDone ? "Hide finished" : "Show finished"}
+          {showDone ? tr("Hide finished") : tr("Show finished")}
         </Link>
       </div>
 
       {all.length === 0 || (open === 0 && !showDone) ? (
         <div className="rounded-xl border border-dashed px-6 py-14 text-center">
           <CheckSquare className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
-          <p className="font-medium">{all.length === 0 ? "Nothing assigned to you yet" : "All done!"}</p>
-          <p className="mt-1 text-sm text-muted-foreground">Tasks assigned to you in any project show up here.</p>
+          <p className="font-medium">{all.length === 0 ? tr("Nothing assigned to you yet") : tr("All done!")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{tr("Tasks assigned to you in any project show up here.")}</p>
         </div>
       ) : (
         ORDER.filter((g) => groups.has(g)).map((g) => (
           <section key={g} aria-labelledby={`grp-${g}`} className="overflow-hidden rounded-xl border bg-card">
             <h2 id={`grp-${g}`} className={cn("flex items-center gap-2 border-b px-4 py-2.5 text-sm font-semibold", g === "overdue" && "text-destructive")}>
-              {DUE_GROUP_LABELS[g]}
+              {tr(DUE_GROUP_LABELS[g])}
               <span className="text-xs font-normal text-muted-foreground tabular-nums">{groups.get(g)!.length}</span>
             </h2>
             <ul className="divide-y">
@@ -65,7 +69,7 @@ export default async function MyTasksPage({ params, searchParams }: PageProps<"/
                       {t.isMilestone && <MilestoneIcon />}
                       <span className={cn("min-w-0 flex-1 truncate font-medium", g === "done" && "text-muted-foreground line-through")}>
                         {t.title}
-                        {t.parentId && <span className="ms-1.5 text-xs font-normal text-muted-foreground">(sub-task)</span>}
+                        {t.parentId && <span className="ms-1.5 text-xs font-normal text-muted-foreground">{tr("(sub-task)")}</span>}
                       </span>
                       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <span aria-hidden className="size-2 rounded-sm" style={{ backgroundColor: t.projectColor }} />
@@ -75,9 +79,9 @@ export default async function MyTasksPage({ params, searchParams }: PageProps<"/
                         <StatusDot color={t.statusColor} className="size-2" />
                         {t.statusName}
                       </span>
-                      {!t.isMilestone && <ProgressBar value={t.progress} label={`${t.title} progress`} className="w-28" />}
+                      {!t.isMilestone && <ProgressBar value={t.progress} label={tr("{title} progress", { title: t.title })} className="w-28" />}
                       <span className={cn("w-24 text-end text-xs tabular-nums", g === "overdue" ? "font-medium text-destructive" : "text-muted-foreground")}>
-                        {t.dueDate ? formatDate(t.dueDate) : "—"}
+                        {t.dueDate ? formatDate(t.dueDate, tr.intl) : "—"}
                       </span>
                     </Link>
                   </li>

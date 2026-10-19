@@ -5,14 +5,16 @@ import { Archive, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { setProjectArchived } from "@/lib/actions/projects";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/i18n/client";
 
 export function ArchivedBanner({ projectId, canRestore }: { projectId: string; canRestore: boolean }) {
+  const t = useT();
   const [pending, startTransition] = useTransition();
 
   return (
     <div role="status" className="flex items-center gap-3 border-b bg-muted px-4 py-2 text-sm sm:px-6">
       <Archive className="size-4 shrink-0 text-muted-foreground" />
-      <span className="flex-1">This project is archived. It&apos;s hidden from the project list.</span>
+      <span className="flex-1">{t("This project is archived. It's hidden from the project list.")}</span>
       {canRestore && (
         <Button
           size="sm"
@@ -21,13 +23,13 @@ export function ArchivedBanner({ projectId, canRestore }: { projectId: string; c
           onClick={() =>
             startTransition(async () => {
               const result = await setProjectArchived(projectId, false);
-              if (result.ok) toast.success("Project restored");
+              if (result.ok) toast.success(t("Project restored"));
               else toast.error(result.error);
             })
           }
         >
           {pending && <Loader2 className="size-4 animate-spin" />}
-          Restore
+          {t("Restore")}
         </Button>
       )}
     </div>

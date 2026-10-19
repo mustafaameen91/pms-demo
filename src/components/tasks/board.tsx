@@ -17,6 +17,7 @@ import {
   type DragOverEvent,
   type CollisionDetection,
   type DragStartEvent,
+  type Announcements,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -32,6 +33,7 @@ import { moveTask } from "@/lib/actions/tasks";
 import type { BoardStatus, BoardTask } from "@/lib/data/projects";
 import { POSITION_STEP } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/client";
 import { QuickAddTask } from "./quick-add-task";
 import { BlockedBadge, MilestoneIcon, RepeatIcon, ProgressBar, PriorityIcon, StatusDot, UserAvatar, formatDue } from "./task-bits";
 
@@ -56,6 +58,7 @@ const collisionDetection: CollisionDetection = (args) => {
 };
 
 export function Board({ projectId, projectKey, statuses, tasks }: Props) {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   // Local copy for optimistic drag & drop.
@@ -89,6 +92,27 @@ export function Board({ projectId, projectKey, statuses, tasks }: Props) {
     () => new Set(statuses.filter((s) => s.category === "done" || s.category === "canceled").map((s) => s.id)),
     [statuses],
   );
+
+  // dnd-kit's screen-reader texts, in the viewer's language.
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => t("Picked up draggable item {id}.", { id: String(active.id) }),
+    onDragOver: ({ active, over }) =>
+      over
+        ? t("Draggable item {id} was moved over droppable area {over}.", { id: String(active.id), over: String(over.id) })
+        : t("Draggable item {id} is no longer over a droppable area.", { id: String(active.id) }),
+    onDragEnd: ({ active, over }) =>
+      over
+        ? t("Draggable item {id} was dropped over droppable area {over}", { id: String(active.id), over: String(over.id) })
+        : t("Draggable item {id} was dropped.", { id: String(active.id) }),
+    onDragCancel: ({ active }) => t("Dragging was cancelled. Draggable item {id} was dropped.", { id: String(active.id) }),
+  };
+  const screenReaderInstructions = {
+    draggable: `
+    ${t("To pick up a draggable item, press the space bar.")}
+    ${t("While dragging, use the arrow keys to move the item.")}
+    ${t("Press space again to drop the item in its new position, or press escape to cancel.")}
+  `,
+  };
 
   const activeTask = activeId ? items.find((t) => t.id === activeId) : null;
 
@@ -170,6 +194,7 @@ export function Board({ projectId, projectKey, statuses, tasks }: Props) {
     <DndContext
       id={dndId}
       sensors={sensors}
+      accessibility={{ announcements, screenReaderInstructions }}
       collisionDetection={collisionDetection}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
@@ -258,6 +283,7 @@ function SortableCard({
   done: boolean;
   onOpen: () => void;
 }) {
+  const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
   });
@@ -268,7 +294,7 @@ function SortableCard({
       style={{ transform: CSS.Translate.toString(transform), transition }}
       {...attributes}
       {...listeners}
-      aria-roledescription="Draggable task"
+      aria-roledescription={t("Draggable task")}
       onClick={onOpen}
       onKeyDown={(e) => {
         listeners?.onKeyDown?.(e);
@@ -292,7 +318,8 @@ function TaskCard({
   done: boolean;
   className?: string;
 }) {
-  const due = task.dueDate ? formatDue(task.dueDate, done) : null;
+  const t = useT();
+  const due = task.dueDate ? formatDue(task.dueDate, done, t.intl) : null;
   const key = `${projectKey}-${task.number}`;
   return (
     <div
@@ -320,16 +347,16 @@ function TaskCard({
       </p>
       {!done && task.blockedBy > 0 && <BlockedBadge count={task.blockedBy} className="mt-1.5" />}
       {!task.isMilestone && (task.progress > 0 || task.weight) && (
-        <ProgressBar value={task.progress} label={`${task.title} progress`} className="mt-2" />
+        <ProgressBar value={task.progress} label={t("{title} progress", { title: task.title })} className="mt-2" />
       )}
       {(task.weight || task.subtaskCount > 0) && (
         <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
-          {task.weight && <span>Weight {Number(task.weight)}%</span>}
+          {task.weight && <span>{t("Weight {weight}%", { weight: String(Number(task.weight)) })}</span>}
           {task.subtaskCount > 0 && (
-            <span className="flex items-center gap-1" title="Sub-tasks done">
+            <span className="flex items-center gap-1" title={t("Sub-tasks done")}>
               <ListTree className="size-3.5" aria-hidden />
               {task.subtaskDone}/{task.subtaskCount}
-              <span className="sr-only">sub-tasks done</span>
+              <span className="sr-only">{t("sub-tasks done")}</span>
             </span>
           )}
         </div>
@@ -343,7 +370,7 @@ function TaskCard({
                 due.overdue ? "bg-destructive/10 font-medium text-destructive" : "bg-muted text-muted-foreground",
               )}
             >
-              {due.overdue ? `Overdue · ${due.label}` : due.label}
+              {due.overdue ? t("Overdue · {date}", { date: due.label }) : due.label}
             </span>
           )}
           {task.assigneeName && (

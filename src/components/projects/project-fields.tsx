@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useT } from "@/i18n/client";
 
 export type ProjectFieldValues = {
   name: string;
@@ -39,6 +40,7 @@ export function ProjectFields({
   onNameChange?: (name: string) => void;
   autoFocus?: boolean;
 }) {
+  const t = useT();
   const [color, setColor] = useState<string>(defaults?.color ?? PROJECT_COLORS[0]);
 
   return (
@@ -47,14 +49,14 @@ export function ProjectFields({
 
       <div className="grid gap-1.5">
         <Label htmlFor="project-name">
-          Project name <span aria-hidden className="text-destructive">*</span>
+          {t("Project name")} <span aria-hidden className="text-destructive">*</span>
         </Label>
         <Input
           id="project-name"
           name="name"
           defaultValue={defaults?.name}
           onChange={(e) => onNameChange?.(e.target.value)}
-          placeholder="Open new branch in Baghdad"
+          placeholder={t("Open new branch in Baghdad")}
           required
           minLength={2}
           maxLength={60}
@@ -66,24 +68,24 @@ export function ProjectFields({
 
       <div className="grid gap-1.5">
         <Label htmlFor="project-client">
-          Client <span className="font-normal text-muted-foreground">(optional)</span>
+          {t("Client")} <span className="font-normal text-muted-foreground">{t("(optional)")}</span>
         </Label>
         <Input
           id="project-client"
           name="client"
           defaultValue={defaults?.client ?? ""}
-          placeholder="Who is this project for?"
+          placeholder={t("Who is this project for?")}
           maxLength={120}
         />
       </div>
 
       <div className="grid items-start gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
-          <Label htmlFor="project-start">Start date</Label>
+          <Label htmlFor="project-start">{t("Start date")}</Label>
           <Input id="project-start" name="startDate" type="date" defaultValue={defaults?.startDate ?? ""} />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="project-end">End date</Label>
+          <Label htmlFor="project-end">{t("End date")}</Label>
           <Input
             id="project-end"
             name="endDate"
@@ -96,7 +98,7 @@ export function ProjectFields({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="project-budget">Planned budget</Label>
+        <Label htmlFor="project-budget">{t("Planned budget")}</Label>
         <div className="flex gap-2">
           <Input
             id="project-budget"
@@ -109,7 +111,7 @@ export function ProjectFields({
             aria-describedby="project-budget-help"
           />
           <label htmlFor="project-currency" className="sr-only">
-            Currency
+            {t("Currency")}
           </label>
           <select
             id="project-currency"
@@ -125,20 +127,20 @@ export function ProjectFields({
           </select>
         </div>
         <p id="project-budget-help" className="text-xs text-muted-foreground">
-          Total money planned for this project. Expenses will be compared against it.
+          {t("Total money planned for this project. Expenses will be compared against it.")}
         </p>
         <FieldError message={errors.budget} />
       </div>
 
       <fieldset className="grid gap-1.5">
-        <legend className="mb-1.5 text-sm font-medium">Colour</legend>
+        <legend className="mb-1.5 text-sm font-medium">{t("Colour")}</legend>
         <div className="flex flex-wrap gap-2">
           {PROJECT_COLORS.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setColor(c)}
-              aria-label={`Colour ${c}`}
+              aria-label={t("Colour {color}", { color: c })}
               aria-pressed={color === c}
               className={cn(
                 "size-7 rounded-md ring-offset-2 ring-offset-background transition-shadow disabled:cursor-not-allowed disabled:opacity-50",
@@ -152,7 +154,7 @@ export function ProjectFields({
 
       <div className="grid gap-1.5">
         <Label htmlFor="project-description">
-          Description <span className="font-normal text-muted-foreground">(optional)</span>
+          {t("Description")} <span className="font-normal text-muted-foreground">{t("(optional)")}</span>
         </Label>
         <Textarea
           id="project-description"

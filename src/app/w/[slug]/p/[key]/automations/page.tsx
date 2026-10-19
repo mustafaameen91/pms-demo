@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
 import { requireWorkspace } from "@/lib/auth/session";
+import { getT } from "@/i18n/server";
 import { getProjectByKey, listMembers } from "@/lib/data/projects";
 import { getAutomationRuns, getProjectAutomations } from "@/lib/data/automations";
 import { db } from "@/lib/db";
@@ -9,8 +10,8 @@ import { canManageProject } from "@/lib/permissions";
 import { AutomationsView } from "@/components/automations/automations-view";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/automations">) {
-  const { key } = await params;
-  return { title: `Automations · ${key.toUpperCase()}` };
+  const [{ key }, t] = await Promise.all([params, getT()]);
+  return { title: t("Automations · {key}", { key: key.toUpperCase() }) };
 }
 
 export default async function AutomationsPage({ params }: PageProps<"/w/[slug]/p/[key]/automations">) {

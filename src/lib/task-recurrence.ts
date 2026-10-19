@@ -6,6 +6,8 @@ import { nextOccurrence, type Recurrence } from "@/lib/recurrence";
 import { todayISO } from "@/lib/accomplishment";
 import { formatDate } from "@/lib/utils";
 import { POSITION_STEP } from "@/lib/constants";
+import { tFor } from "@/i18n/server";
+import type { T } from "@/i18n/translate";
 
 /** First "To do"-type status, falling back to the first column. */
 export async function defaultStatus(projectId: string) {
@@ -21,8 +23,9 @@ export async function defaultStatus(projectId: string) {
  * When a repeating task is finished, create its next occurrence (once).
  * Copies title, description, priority, assignee, budget and sub-tasks;
  * progress starts at 0 and weight is left empty (it would exceed 100%).
+ * Returns a note for the person who finished it, in `t`'s language (English by default).
  */
-export async function spawnNextOccurrence(taskId: string, actorId: string | null): Promise<string | undefined> {
+export async function spawnNextOccurrence(taskId: string, actorId: string | null, t: T = tFor("en")): Promise<string | undefined> {
   const [task] = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
   if (!task?.recurrence || task.recurrenceNextId || task.deletedAt) return;
   const status = await defaultStatus(task.projectId);
@@ -96,5 +99,5 @@ export async function spawnNextOccurrence(taskId: string, actorId: string | null
   });
   if (!result) return;
   const [project] = await db.select({ key: projects.key }).from(projects).where(eq(projects.id, task.projectId)).limit(1);
-  return `Repeats: ${project.key}-${result.number} created, due ${formatDate(dates.dueDate)}`;
+  return t("Repeats: {ref} created, due {date}", { ref: `${project.key}-${result.number}`, date: formatDate(dates.dueDate, t.intl) });
 }

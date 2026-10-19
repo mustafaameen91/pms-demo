@@ -7,10 +7,12 @@ import { formatDate, formatMoney } from "@/lib/utils";
 import { fmtPct } from "@/components/projects/accomplishment";
 import { PrintButton } from "./print-button";
 import { LightTheme } from "@/components/light-theme";
+import { getT } from "@/i18n/server";
 
 export async function generateMetadata({ params }: PageProps<"/print/[slug]/[key]">) {
   const { key } = await params;
-  return { title: `Report · ${key.toUpperCase()}` };
+  const t = await getT();
+  return { title: t("Report · {key}", { key: key.toUpperCase() }) };
 }
 
 const SCHEDULE = { ahead: "Ahead of plan", on_track: "On track", behind: "Behind plan" } as const;
@@ -18,11 +20,14 @@ const SCHEDULE = { ahead: "Ahead of plan", on_track: "On track", behind: "Behind
 /** Print-friendly project report. The browser's "Save as PDF" turns it into a PDF. */
 export default async function ProjectReportPage({ params }: PageProps<"/print/[slug]/[key]">) {
   const { slug, key } = await params;
+  const t = await getT();
   const { workspace } = await requireWorkspace(slug);
   const report = await getProjectReport(workspace.id, key);
   if (!report) notFound();
   const { project, accomplishment: a, budget } = report;
-  const money = (v: number | string | null) => (v === null ? "—" : formatMoney(v, project.currency));
+  const money = (v: number | string | null) => (v === null ? "—" : formatMoney(v, project.currency, t.intl))
+  const date = (d: string | null) => formatDate(d, t.intl);
+  const projectStatus = PROJECT_STATUSES.find((s) => s.value === project.status)?.label;
   const backHref = `/w/${workspace.slug}/p/${project.key}/overview`;
 
   return (
@@ -32,24 +37,25 @@ export default async function ProjectReportPage({ params }: PageProps<"/print/[s
 
       <div className="mb-6 flex items-center justify-between gap-4 print:hidden">
         <Link href={backHref} className="text-sm text-primary underline-offset-4 hover:underline">
-          ← Back to project
+          {t("← Back to project")}
         </Link>
         <PrintButton />
       </div>
 
       <header className="border-b pb-4">
         <p className="text-xs text-muted-foreground">
-          {workspace.name} · Project report · {formatDate(report.today)}
+          {workspace.name} · {t("Project report")} · {date(report.today)}
         </p>
         <h1 className="mt-1 text-2xl font-semibold">
           {project.name} <span className="font-mono text-base font-normal text-muted-foreground">{project.key}</span>
         </h1>
         <p className="mt-1 text-muted-foreground">
           {[
-            PROJECT_STATUSES.find((s) => s.value === project.status)?.label,
-            project.client && `Client: ${project.client}`,
-            (project.startDate || project.endDate) && `${formatDate(project.startDate)} → ${formatDate(project.endDate)}`,
-            project.leadName && `Manager: ${project.leadName}`,
+            projectStatus && t(projectStatus),
+            project.client && t("Client: {client}", { client: project.client }),
+            (project.startDate || project.endDate) &&
+              t("{start} → {end}", { start: date(project.startDate), end: date(project.endDate) }),
+            project.leadName && t("Manager: {name}", { name: project.leadName }),
           ]
             .filter(Boolean)
             .join(" · ")}
@@ -58,10 +64,31 @@ export default async function ProjectReportPage({ params }: PageProps<"/print/[s
 
       <section className="mt-5 grid grid-cols-4 gap-3 break-inside-avoid">
         {[
-          { label: "Accomplishment", value: fmtPct(a.actual), sub: a.planned === null ? "No schedule" : `Planned ${fmtPct(a.planned)}` },
-          { label: "Schedule", value: a.schedule ? SCHEDULE[a.schedule] : "—", sub: a.variance === null ? "" : `${a.variance > 0 ? "+" : ""}${fmtPct(a.variance)} vs plan` },
-          { label: "Spent", value: money(budget.actual), sub: budget.budget === null ? "No budget" : `of ${money(budget.budget)}${budget.usedPct !== null ? ` (${budget.usedPct}%)` : ""}` },
-          { label: "Remaining", value: money(budget.remaining), sub: budget.overBudget ? "Over budget" : `Owed ${money(budget.owedToResources)}` },
+          {
+            label: t("Accomplishment"),
+            value: fmtPct(a.actual),
+            sub: a.planned === null ? t("No schedule") : t("Planned {pct}", { pct: fmtPct(a.planned) }),
+          },
+          {
+            label: t("Schedule"),
+            value: a.schedule ? t(SCHEDULE[a.schedule]) : "—",
+            sub: a.variance === null ? "" : t("{pct} vs plan", { pct: `${a.variance > 0 ? "+" : ""}${fmtPct(a.variance)}` }),
+          },
+          {
+            label: t("Spent"),
+            value: money(budget.actual),
+            sub:
+              budget.budget === null
+                ? t("No budget")
+                : budget.usedPct !== null
+                  ? t("of {amount} ({pct}%)", { amount: money(budget.budget), pct: String(budget.usedPct) })
+                  : t("of {amount}", { amount: money(budget.budget) }),
+          },
+          {
+            label: t("Remaining"),
+            value: money(budget.remaining),
+            sub: budget.overBudget ? t("Over budget") : t("Owed {amount}", { amount: money(budget.owedToResources) }),
+          },
         ].map((k) => (
           <div key={k.label} className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">{k.label}</p>
@@ -73,37 +100,40 @@ export default async function ProjectReportPage({ params }: PageProps<"/print/[s
 
       {report.late.length > 0 && (
         <p className="mt-4 rounded-lg border border-destructive/40 px-3 py-2 text-destructive">
-          Late tasks ({report.late.length}): {report.late.map((t) => `${project.key}-${t.number} ${t.title}`).join(", ")}
+          {t("Late tasks ({count}): {list}", {
+            count: report.late.length,
+            list: report.late.map((task) => `${project.key}-${task.number} ${task.title}`).join(t(", ")),
+          })}
         </p>
       )}
 
       <ReportTable
-        title="Tasks"
-        head={["ID", "Task", "Status", "Weight", "Progress", "Start", "End", "Budget", "Spent"]}
+        title={t("Tasks")}
+        head={[t("ID"), t("Task"), t("Status"), t("Weight"), t("Progress"), t("Start"), t("End"), t("Budget"), t("Spent")]}
         right={[3, 4, 7, 8]}
-        rows={report.tasks.map((t) => [
-          `${project.key}-${t.number}`,
-          t.title,
-          t.statusName,
-          t.weight ? `${Number(t.weight)}%` : "—",
-          `${t.progress}%`,
-          formatDate(t.startDate),
-          formatDate(t.dueDate),
-          money(t.budget),
-          money(t.spent),
+        rows={report.tasks.map((task) => [
+          `${project.key}-${task.number}`,
+          task.title,
+          t(task.statusName),
+          task.weight ? `${Number(task.weight)}%` : "—",
+          `${task.progress}%`,
+          date(task.startDate),
+          date(task.dueDate),
+          money(task.budget),
+          money(task.spent),
         ])}
-        empty="No tasks."
+        empty={t("No tasks.")}
       />
 
       <ReportTable
-        title="Resources"
-        head={["Resource", "Type", "Used / planned", "Price", "Planned cost", "Used cost", "Owed"]}
+        title={t("Resources")}
+        head={[t("Resource"), t("Type"), t("Used / planned"), t("Price"), t("Planned cost"), t("Used cost"), t("Owed")]}
         right={[3, 4, 5, 6]}
         rows={report.usages.map((u) => {
           const p = budget.resources.find((r) => r.usageId === u.id);
           return [
             u.role ? `${u.name} (${u.role})` : u.name,
-            resourceTypeInfo(u.type).label,
+            t(resourceTypeInfo(u.type).label),
             `${Number(u.usedQty)} / ${Number(u.plannedQty)} ${u.unit}`,
             `${money(u.unitCost)} / ${u.unit}`,
             money(Number(u.plannedQty) * Number(u.unitCost)),
@@ -111,27 +141,34 @@ export default async function ProjectReportPage({ params }: PageProps<"/print/[s
             money(p?.owed ?? 0),
           ];
         })}
-        empty="No resources."
+        empty={t("No resources.")}
       />
 
       <ReportTable
-        title="Expenses & payments"
-        head={["Date", "Description", "Category", "Task", "Amount"]}
+        title={t("Expenses & payments")}
+        head={[t("Date"), t("Description"), t("Category"), t("Task"), t("Amount")]}
         right={[4]}
         rows={report.expenses.map((e) => [
-          formatDate(e.date),
-          (e.projectResourceId ? `${e.description} (payment · ${e.resourceName ?? "resource"})` : e.description) +
-            (e.approvalStatus === "pending" ? " — waiting for approval, not counted" : e.approvalStatus === "rejected" ? " — rejected, not counted" : ""),
-          EXPENSE_CATEGORIES.find((c) => c.value === e.category)?.label ?? e.category,
+          date(e.date),
+          (e.projectResourceId
+            ? t("{description} (payment · {resource})", { description: e.description, resource: e.resourceName ?? t("resource") })
+            : e.description) +
+            (e.approvalStatus === "pending"
+              ? t(" — waiting for approval, not counted")
+              : e.approvalStatus === "rejected"
+                ? t(" — rejected, not counted")
+                : ""),
+          t(EXPENSE_CATEGORIES.find((c) => c.value === e.category)?.label ?? e.category),
           e.taskNumber && !e.taskDeleted ? `${project.key}-${e.taskNumber}` : "—",
           money(e.amount),
         ])}
-        empty="No expenses."
+        empty={t("No expenses.")}
       />
 
       <p className="mt-6 text-xs text-muted-foreground">
-        Spent = used resource costs + expenses not linked to a resource. Payments to resources reduce what is owed and are
-        not counted twice.
+        {t(
+          "Spent = used resource costs + expenses not linked to a resource. Payments to resources reduce what is owed and are not counted twice.",
+        )}
       </p>
     </main>
     </LightTheme>

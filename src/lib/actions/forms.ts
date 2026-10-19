@@ -15,6 +15,7 @@ import { MIN_FILL_MS, createRateLimiter, describeSubmission, formConfigSchema, s
 import { notify, projectContext } from "@/lib/notifications";
 import { runAutomations } from "@/lib/automation-runner";
 import { canManageProject } from "@/lib/permissions";
+import { getT } from "@/i18n/server";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
@@ -52,7 +53,7 @@ async function checkTargets(projectId: string, workspaceId: string, statusId: st
       .from(taskStatuses)
       .where(and(eq(taskStatuses.id, statusId), eq(taskStatuses.projectId, projectId)))
       .limit(1);
-    if (!s) return "That column isn't in this project.";
+    if (!s) return "That column isn't in this project."; // translated by the caller
   }
   if (assigneeId) {
     const [m] = await db
@@ -66,13 +67,14 @@ async function checkTargets(projectId: string, workspaceId: string, statusId: st
 }
 
 export async function saveForm(projectId: string, formId: string | null, input: FormInput): Promise<Result> {
+  const t = await getT();
   const auth = formId ? await authorizeForm(formId) : await authorizeProject(projectId);
-  if (!auth) return { ok: false, error: "Only admins or the project manager can manage request forms." };
+  if (!auth) return { ok: false, error: t("Only admins or the project manager can manage request forms.") };
   const parsed = formSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  if (!parsed.success) return { ok: false, error: t(parsed.error.issues[0].message) };
   const d = parsed.data;
   const bad = await checkTargets(auth.project.id, auth.project.workspaceId, d.statusId, d.assigneeId);
-  if (bad) return { ok: false, error: bad };
+  if (bad) return { ok: false, error: t(bad) };
 
   if (formId) {
     await db.update(requestForms).set(d).where(eq(requestForms.id, formId));
@@ -99,8 +101,9 @@ export async function saveForm(projectId: string, formId: string | null, input: 
 }
 
 export async function setFormEnabled(formId: string, enabled: boolean): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeForm(formId);
-  if (!auth) return { ok: false, error: "Not allowed" };
+  if (!auth) return { ok: false, error: t("Not allowed") };
   await db.update(requestForms).set({ enabled }).where(eq(requestForms.id, formId));
   refresh();
   return { ok: true };
@@ -108,16 +111,18 @@ export async function setFormEnabled(formId: string, enabled: boolean): Promise<
 
 /** New link; the old one stops working (e.g. if it was shared too widely). */
 export async function regenerateFormLink(formId: string): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeForm(formId);
-  if (!auth) return { ok: false, error: "Not allowed" };
+  if (!auth) return { ok: false, error: t("Not allowed") };
   await db.update(requestForms).set({ token: newToken() }).where(eq(requestForms.id, formId));
   refresh();
   return { ok: true };
 }
 
 export async function deleteForm(formId: string): Promise<Result> {
+  const t = await getT();
   const auth = await authorizeForm(formId);
-  if (!auth) return { ok: false, error: "Not allowed" };
+  if (!auth) return { ok: false, error: t("Not allowed") };
   // Tasks created from it stay; only the form and its submission records go.
   await db.delete(requestForms).where(eq(requestForms.id, formId));
   refresh();
@@ -155,25 +160,27 @@ export type SubmitInput = {
 };
 
 export async function submitRequest(token: string, input: SubmitInput): Promise<Result<{ reference: string }>> {
+  const t = await getT();
   const [form] = await db.select().from(requestForms).where(eq(requestForms.token, token)).limit(1);
   if (!form || !form.enabled || !(await getWorkspaceAccess(form.workspaceId)).allowed) {
-    return { ok: false, error: "This form is closed." };
+    return { ok: false, error: t("This form is closed.") };
   }
 
   // Bots: pretend it worked, store nothing.
   if (input.website) return { ok: true, data: { reference: "—" } };
   if (!Number.isFinite(input.renderedAt) || Date.now() - input.renderedAt < MIN_FILL_MS) {
-    return { ok: false, error: "That was very fast — please check your answers and send again." };
+    return { ok: false, error: t("That was very fast — please check your answers and send again.") };
   }
   const ipHash = await clientKey();
   const limitKey = `${form.id}:${ipHash}`;
   if (!submitLimiter.allowed(limitKey)) {
-    return { ok: false, error: "Too many requests from your connection. Please try again in a few minutes." };
+    return { ok: false, error: t("Too many requests from your connection. Please try again in a few minutes.") };
   }
 
   const config = formConfigSchema.safeParse(form.config);
-  if (!config.success) return { ok: false, error: "This form is misconfigured. Please contact the team." };
-  const parsed = submissionSchema(config.data).safeParse({
+  if (!config.success) return { ok: false, error: t("This form is misconfigured. Please contact the team.") };
+  // The visitor's language: messages and the task description they produce.
+  const parsed = submissionSchema(config.data, t).safeParse({
     ...input,
     priority: input.priority || undefined,
     name: config.data.askName === "off" ? undefined : (input.name ?? ""),
@@ -220,7 +227,7 @@ export async function submitRequest(token: string, input: SubmitInput): Promise<
         number: taskCounter,
         statusId: status.id,
         title: d.subject,
-        description: describeSubmission(config.data.questions, { ...d, answers }) || null,
+        description: describeSubmission(config.data.questions, { ...d, answers }, t) || null,
         priority: (d.priority as typeof tasks.$inferInsert.priority) ?? "none",
         dueDate: d.neededBy ?? null,
         assigneeId: form.assigneeId,
@@ -257,8 +264,9 @@ export async function submitRequest(token: string, input: SubmitInput): Promise<
       workspaceId: form.workspaceId,
       userIds: [ctx.leadId, form.assigneeId],
       type: "request.received",
-      title: `New request ${reference}: ${d.subject}`,
-      body: `Via “${form.title}”${d.name ? ` from ${d.name}` : ""}`,
+      title: (tr) => tr("New request {ref}: {subject}", { ref: reference, subject: d.subject }),
+      body: (tr) =>
+        d.name ? tr("Via “{form}” from {name}", { form: form.title, name: d.name }) : tr("Via “{form}”", { form: form.title }),
       link: `/w/${ctx.slug}/p/${ctx.key}?task=${reference}`,
       email: true,
     });
@@ -266,8 +274,9 @@ export async function submitRequest(token: string, input: SubmitInput): Promise<
   if (d.email) {
     await sendEmail({
       to: d.email,
-      subject: `We received your request ${reference}`,
-      text: `Thanks${d.name ? ` ${d.name}` : ""}, we received your request:\n\n“${d.subject}”\n\nReference: ${reference}\nPlease mention this reference if you contact us about it.\n\n${appUrl(`/f/${token}`)}`,
+      // The visitor's language (they have no account).
+      subject: t("We received your request {ref}", { ref: reference }),
+      text: `${d.name ? t("Thanks {name}, we received your request:", { name: d.name }) : t("Thanks, we received your request:")}\n\n“${d.subject}”\n\n${t("Reference: {ref}", { ref: reference })}\n${t("Please mention this reference if you contact us about it.")}\n\n${appUrl(`/f/${token}`)}`,
     });
   }
   return { ok: true, data: { reference } };

@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useT } from "@/i18n/client";
 import { FieldError, ProjectFields, type ProjectFieldValues } from "./project-fields";
 
 type SettingsProject = ProjectFieldValues & {
@@ -45,11 +46,12 @@ export function ProjectSettings({
   canManage: boolean;
   canDelete: boolean;
 }) {
+  const t = useT();
   return (
     <div className="grid gap-8">
       {!canManage && (
         <p role="status" className="rounded-lg border bg-muted px-4 py-3 text-sm">
-          You can view these settings. Only workspace admins and the project manager can change them.
+          {t("You can view these settings. Only workspace admins and the project manager can change them.")}
         </p>
       )}
       <DetailsSection project={project} members={members} canManage={canManage} />
@@ -88,11 +90,12 @@ function DetailsSection({
   members: { id: string; name: string }[];
   canManage: boolean;
 }) {
+  const t = useT();
   const [state, action, pending] = useActionState(updateProject, undefined);
   const errors = state?.fieldErrors ?? {};
 
   return (
-    <Section title="Project details">
+    <Section title={t("Project details")}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -105,19 +108,19 @@ function DetailsSection({
 
           <div className="grid items-start gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="project-status">Status</Label>
+              <Label htmlFor="project-status">{t("Status")}</Label>
               <select id="project-status" name="status" defaultValue={project.status} className={selectClass}>
                 {PROJECT_STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>
-                    {s.label}
+                    {t(s.label)}
                   </option>
                 ))}
               </select>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="project-lead">Project manager</Label>
+              <Label htmlFor="project-lead">{t("Project manager")}</Label>
               <select id="project-lead" name="leadId" defaultValue={project.leadId ?? ""} className={selectClass}>
-                <option value="">No manager</option>
+                <option value="">{t("No manager")}</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
@@ -136,12 +139,12 @@ function DetailsSection({
             <div className="flex items-center justify-end gap-3">
               {state?.saved && !pending && (
                 <span role="status" className="text-sm text-primary">
-                  Changes saved
+                  {t("Changes saved")}
                 </span>
               )}
               <Button type="submit" disabled={pending}>
                 {pending && <Loader2 className="size-4 animate-spin" />}
-                Save changes
+                {t("Save changes")}
               </Button>
             </div>
           )}
@@ -152,14 +155,15 @@ function DetailsSection({
 }
 
 function KeySection({ project }: { project: SettingsProject }) {
+  const t = useT();
   const [key, setKey] = useState(project.key);
   const [error, setError] = useState<string>();
   const [pending, startKeyTransition] = useTransition();
 
   return (
     <Section
-      title="Project key"
-      description={`Used in task IDs (${project.key}-1, ${project.key}-2…). Changing it renames every task ID and breaks old links.`}
+      title={t("Project key")}
+      description={t("Used in task IDs ({key}-1, {key}-2…). Changing it renames every task ID and breaks old links.", { key: project.key })}
     >
       <form
         className="flex flex-wrap items-start gap-3"
@@ -174,7 +178,7 @@ function KeySection({ project }: { project: SettingsProject }) {
       >
         <div className="grid gap-1.5">
           <Label htmlFor="settings-key" className="sr-only">
-            Project key
+            {t("Project key")}
           </Label>
           <Input
             id="settings-key"
@@ -187,7 +191,7 @@ function KeySection({ project }: { project: SettingsProject }) {
         </div>
         <Button type="submit" variant="outline" disabled={pending || key === project.key || key.length < 2}>
           {pending && <Loader2 className="size-4 animate-spin" />}
-          Change key
+          {t("Change key")}
         </Button>
       </form>
     </Section>
@@ -203,21 +207,22 @@ function DangerZone({
   canArchive: boolean;
   canDelete: boolean;
 }) {
+  const t = useT();
   const [archiving, startArchive] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   return (
     <section className="rounded-xl border border-destructive/40 p-5 sm:p-6">
-      <h2 className="font-semibold text-destructive">Danger zone</h2>
+      <h2 className="font-semibold text-destructive">{t("Danger zone")}</h2>
       <div className="mt-4 grid gap-4">
         {canArchive && (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium">{project.archived ? "Restore project" : "Archive project"}</p>
+              <p className="text-sm font-medium">{project.archived ? t("Restore project") : t("Archive project")}</p>
               <p className="text-sm text-muted-foreground">
                 {project.archived
-                  ? "Show it in the project list again."
-                  : "Hide it from the project list. Nothing is deleted and you can restore it anytime."}
+                  ? t("Show it in the project list again.")
+                  : t("Hide it from the project list. Nothing is deleted and you can restore it anytime.")}
               </p>
             </div>
             <Button
@@ -227,12 +232,12 @@ function DangerZone({
                 startArchive(async () => {
                   const result = await setProjectArchived(project.id, !project.archived);
                   if (result && !result.ok) toast.error(result.error);
-                  else if (result?.ok) toast.success("Project restored");
+                  else if (result?.ok) toast.success(t("Project restored"));
                 })
               }
             >
               {archiving ? <Loader2 className="size-4 animate-spin" /> : <Archive className="size-4" />}
-              {project.archived ? "Restore" : "Archive"}
+              {project.archived ? t("Restore") : t("Archive")}
             </Button>
           </div>
         )}
@@ -240,14 +245,14 @@ function DangerZone({
         {canDelete && (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium">Delete project</p>
+              <p className="text-sm font-medium">{t("Delete project")}</p>
               <p className="text-sm text-muted-foreground">
-                Permanently deletes the project and all its tasks and history. This can&apos;t be undone.
+                {t("Permanently deletes the project and all its tasks and history. This can't be undone.")}
               </p>
             </div>
             <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="size-4" />
-              Delete
+              {t("Delete")}
             </Button>
           </div>
         )}
@@ -267,7 +272,9 @@ function DeleteDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const [confirm, setConfirm] = useState("");
+  const [typeBefore, typeAfter] = t("Type {key} to confirm").split("{key}");
   const [error, setError] = useState<string>();
   const [pending, startDelete] = useTransition();
 
@@ -284,10 +291,11 @@ function DeleteDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Delete “{project.name}”?</DialogTitle>
+          <DialogTitle>{t("Delete “{name}”?", { name: project.name })}</DialogTitle>
           <DialogDescription>
-            All tasks, history and settings of this project will be permanently deleted. If you might need it
-            later, archive it instead.
+            {t(
+              "All tasks, history and settings of this project will be permanently deleted. If you might need it later, archive it instead.",
+            )}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -302,7 +310,9 @@ function DeleteDialog({
         >
           <div className="grid gap-1.5">
             <Label htmlFor="delete-confirm">
-              Type <span className="font-mono font-semibold">{project.key}</span> to confirm
+              {typeBefore}
+              <span className="font-mono font-semibold">{project.key}</span>
+              {typeAfter}
             </Label>
             <Input
               id="delete-confirm"
@@ -315,7 +325,7 @@ function DeleteDialog({
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button
               type="submit"
@@ -323,7 +333,7 @@ function DeleteDialog({
               disabled={pending || confirm.trim().toUpperCase() !== project.key}
             >
               {pending && <Loader2 className="size-4 animate-spin" />}
-              Delete project
+              {t("Delete project")}
             </Button>
           </DialogFooter>
         </form>

@@ -12,7 +12,9 @@ import {
 } from "@/lib/actions/resources";
 import type { ProjectResource } from "@/lib/data/resources";
 import { RESOURCE_TYPES, resourceTypeInfo, type ResourceType } from "@/lib/constants";
-import { cn, formatMoney } from "@/lib/utils";
+import { cn, formatMoney, formatNumber } from "@/lib/utils";
+import { useT } from "@/i18n/client";
+import type { T } from "@/i18n/translate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,9 +44,26 @@ type TaskOption = { id: string; number: number; title: string };
 type ProjectInfo = { id: string; key: string; currency: string; budget: string | null };
 
 const num = (v: string | null) => (v ? Number(v) : 0);
-/** 12 / 12.5 / 1,250 — quantities without trailing zeros. */
-const fmtQty = (v: string | number) =>
-  Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+/** "3 materials" — per resource type, so each language can inflect it. */
+function typeCount(t: T, type: ResourceType, n: number) {
+  switch (type) {
+    case "material": return t.plural(n, "{count} material", "{count} materials");
+    case "equipment": return t.plural(n, "{count} equipment", "{count} equipment");
+    case "labor": return t.plural(n, "{count} worker", "{count} workers");
+    case "supplier": return t.plural(n, "{count} supplier", "{count} suppliers");
+  }
+}
+
+/** "Materials total" footer label per resource type. */
+function typeTotal(t: T, type: ResourceType) {
+  switch (type) {
+    case "material": return t("Materials total");
+    case "equipment": return t("Equipment total");
+    case "labor": return t("Workers total");
+    case "supplier": return t("Suppliers total");
+  }
+}
 
 export function ProjectResourcesView({
   project,
@@ -59,89 +78,93 @@ export function ProjectResourcesView({
   library: LibraryItem[];
   tasks: TaskOption[];
 }) {
+  const t = useT();
+  /** 12 / 12.5 / 1,250 — quantities without trailing zeros. */
+  const fmtQty = (v: string | number) => formatNumber(v, t.intl);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<ProjectResource | null>(null);
 
   const plannedTotal = usages.reduce((s, u) => s + num(u.plannedQty) * num(u.unitCost), 0);
   const usedTotal = usages.reduce((s, u) => s + num(u.usedQty) * num(u.unitCost), 0);
   const budget = project.budget ? Number(project.budget) : null;
-  const money = (v: number) => formatMoney(v, project.currency);
+  const money = (v: number) => formatMoney(v, project.currency, t.intl);
 
   return (
     <>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <dl className="grid flex-1 gap-4 sm:grid-cols-3">
           <div className="rounded-xl border bg-card p-4">
-            <dt className="text-sm text-muted-foreground">Planned resource cost</dt>
+            <dt className="text-sm text-muted-foreground">{t("Planned resource cost")}</dt>
             <dd className="mt-1 text-2xl font-semibold">{money(plannedTotal)}</dd>
             {budget !== null && budget > 0 && (
               <p className={cn("mt-0.5 text-xs", plannedTotal > budget ? "text-destructive" : "text-muted-foreground")}>
-                {Math.round((plannedTotal / budget) * 100)}% of the {money(budget)} budget
+                {t("{pct}% of the {budget} budget", { pct: String(Math.round((plannedTotal / budget) * 100)), budget: money(budget) })}
               </p>
             )}
           </div>
           <div className="rounded-xl border bg-card p-4">
-            <dt className="text-sm text-muted-foreground">Used so far</dt>
+            <dt className="text-sm text-muted-foreground">{t("Used so far")}</dt>
             <dd className="mt-1 text-2xl font-semibold">{money(usedTotal)}</dd>
             {plannedTotal > 0 && (
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {Math.round((usedTotal / plannedTotal) * 100)}% of planned resource cost
+                {t("{pct}% of planned resource cost", { pct: String(Math.round((usedTotal / plannedTotal) * 100)) })}
               </p>
             )}
           </div>
           <div className="rounded-xl border bg-card p-4">
-            <dt className="text-sm text-muted-foreground">Resources</dt>
+            <dt className="text-sm text-muted-foreground">{t("Resources")}</dt>
             <dd className="mt-1 text-2xl font-semibold">{usages.length}</dd>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {RESOURCE_TYPES.map((t) => {
-                const n = usages.filter((u) => u.type === t.value).length;
-                return n ? `${n} ${(n === 1 ? t.label : t.plural).toLowerCase()}` : null;
+              {RESOURCE_TYPES.map((rt) => {
+                const n = usages.filter((u) => u.type === rt.value).length;
+                return n ? typeCount(t, rt.value, n) : null;
               })
                 .filter(Boolean)
-                .join(" · ") || "None yet"}
+                .join(" · ") || t("None yet")}
             </p>
           </div>
         </dl>
         <Button onClick={() => setAddOpen(true)}>
           <Plus className="size-4" />
-          Add resource
+          {t("Add resource")}
         </Button>
       </div>
 
       {usages.length === 0 ? (
         <div className="rounded-xl border border-dashed px-6 py-14 text-center">
-          <p className="font-medium">No resources in this project yet</p>
+          <p className="font-medium">{t("No resources in this project yet")}</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Add the materials, equipment, workers and suppliers this project needs, with planned quantities. Then
-            record what was actually used.
+            {t(
+              "Add the materials, equipment, workers and suppliers this project needs, with planned quantities. Then record what was actually used.",
+            )}
           </p>
         </div>
       ) : (
         <div className="grid gap-5">
-          {RESOURCE_TYPES.map((t) => {
-            const rows = usages.filter((u) => u.type === t.value);
+          {RESOURCE_TYPES.map((rt) => {
+            const rows = usages.filter((u) => u.type === rt.value);
             if (rows.length === 0) return null;
-            const Icon = RESOURCE_ICONS[t.value];
+            const Icon = RESOURCE_ICONS[rt.value];
             const typePlanned = rows.reduce((s, u) => s + num(u.plannedQty) * num(u.unitCost), 0);
             const typeUsed = rows.reduce((s, u) => s + num(u.usedQty) * num(u.unitCost), 0);
             return (
-              <section key={t.value} aria-labelledby={`type-${t.value}`} className="overflow-hidden rounded-xl border bg-card">
-                <h2 id={`type-${t.value}`} className="flex items-center gap-2 border-b px-4 py-3 font-semibold">
+              <section key={rt.value} aria-labelledby={`type-${rt.value}`} className="overflow-hidden rounded-xl border bg-card">
+                <h2 id={`type-${rt.value}`} className="flex items-center gap-2 border-b px-4 py-3 font-semibold">
                   <Icon className="size-4 text-muted-foreground" aria-hidden />
-                  {t.plural}
+                  {t(rt.plural)}
                   <span className="text-xs font-normal text-muted-foreground">{rows.length}</span>
                 </h2>
                 <div className="relative overflow-x-auto">
                   <table className="w-full min-w-[880px] table-fixed text-sm">
                     <thead className="text-start text-xs text-muted-foreground">
                       <tr className="border-b bg-muted/40">
-                        <th scope="col" className="w-[22%] py-2 pe-3 ps-4 font-medium">Resource</th>
-                        <th scope="col" className="w-[18%] px-3 py-2 font-medium">Task</th>
-                        <th scope="col" className="w-[20%] px-3 py-2 font-medium">Used / planned</th>
-                        <th scope="col" className="w-[12%] px-3 py-2 text-end font-medium">Price</th>
-                        <th scope="col" className="w-[10%] px-3 py-2 text-end font-medium">Planned cost</th>
-                        <th scope="col" className="w-[10%] px-3 py-2 text-end font-medium">Used cost</th>
-                        <th scope="col" className="w-[8%] py-2 pe-4 ps-3"><span className="sr-only">Actions</span></th>
+                        <th scope="col" className="w-[22%] py-2 pe-3 ps-4 font-medium">{t("Resource")}</th>
+                        <th scope="col" className="w-[18%] px-3 py-2 font-medium">{t("Task")}</th>
+                        <th scope="col" className="w-[20%] px-3 py-2 font-medium">{t("Used / planned")}</th>
+                        <th scope="col" className="w-[12%] px-3 py-2 text-end font-medium">{t("Price")}</th>
+                        <th scope="col" className="w-[10%] px-3 py-2 text-end font-medium">{t("Planned cost")}</th>
+                        <th scope="col" className="w-[10%] px-3 py-2 text-end font-medium">{t("Used cost")}</th>
+                        <th scope="col" className="w-[8%] py-2 pe-4 ps-3"><span className="sr-only">{t("Actions")}</span></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -165,7 +188,7 @@ export function ProjectResourcesView({
                                   <span className="font-mono text-xs">{project.key}-{u.taskNumber}</span> {u.taskTitle}
                                 </Link>
                               ) : (
-                                <span className="text-muted-foreground">Whole project</span>
+                                <span className="text-muted-foreground">{t("Whole project")}</span>
                               )}
                             </td>
                             <td className="px-3 py-2.5">
@@ -173,7 +196,7 @@ export function ProjectResourcesView({
                                 <div
                                   className="h-1.5 flex-1 overflow-hidden rounded-full bg-primary/15"
                                   role="meter"
-                                  aria-label={`${u.name} used`}
+                                  aria-label={t("{name} used", { name: u.name })}
                                   aria-valuenow={Math.round(pct)}
                                   aria-valuemin={0}
                                   aria-valuemax={100}
@@ -190,7 +213,7 @@ export function ProjectResourcesView({
                               {over && (
                                 <p className="mt-0.5 flex items-center gap-1 text-xs text-destructive">
                                   <AlertTriangle className="size-3" aria-hidden />
-                                  {fmtQty(used - planned)} {u.unit} over plan
+                                  {t("{qty} {unit} over plan", { qty: fmtQty(used - planned), unit: u.unit })}
                                 </p>
                               )}
                             </td>
@@ -203,9 +226,9 @@ export function ProjectResourcesView({
                               {money(used * num(u.unitCost))}
                             </td>
                             <td className="py-2 pe-4 ps-3 text-end">
-                              <Button variant="ghost" size="sm" onClick={() => setEditing(u)} aria-label={`Edit ${u.name}`}>
+                              <Button variant="ghost" size="sm" onClick={() => setEditing(u)} aria-label={t("Edit {name}", { name: u.name })}>
                                 <Pencil className="size-4" />
-                                Edit
+                                {t("Edit")}
                               </Button>
                             </td>
                           </tr>
@@ -215,7 +238,7 @@ export function ProjectResourcesView({
                     <tfoot>
                       <tr className="border-t bg-muted/40 text-xs">
                         <th scope="row" colSpan={4} className="py-2 pe-3 ps-4 text-start font-medium">
-                          {t.plural} total
+                          {typeTotal(t, rt.value)}
                         </th>
                         <td className="px-3 py-2 text-end font-medium tabular-nums">{money(typePlanned)}</td>
                         <td className="px-3 py-2 text-end font-medium tabular-nums">{money(typeUsed)}</td>
@@ -263,16 +286,17 @@ function UsageFields({
   currency: string;
   priceHint?: string;
 }) {
+  const t = useT();
   const set = <K extends keyof UsageDraft>(k: K, v: UsageDraft[K]) => onChange({ ...value, [k]: v });
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
-        <Label htmlFor="usage-task">For task</Label>
+        <Label htmlFor="usage-task">{t("For task")}</Label>
         <select id="usage-task" value={value.taskId} onChange={(e) => set("taskId", e.target.value)} className={nativeSelectClass}>
-          <option value="">Whole project</option>
-          {tasks.map((t) => (
-            <option key={t.id} value={t.id}>
-              #{t.number} {t.title}
+          <option value="">{t("Whole project")}</option>
+          {tasks.map((task) => (
+            <option key={task.id} value={task.id}>
+              #{task.number} {task.title}
             </option>
           ))}
         </select>
@@ -280,17 +304,17 @@ function UsageFields({
       </div>
       <div className="grid items-start gap-4 sm:grid-cols-3">
         <div className="grid gap-1.5">
-          <Label htmlFor="usage-planned">Planned ({unit})</Label>
+          <Label htmlFor="usage-planned">{t("Planned ({unit})", { unit })}</Label>
           <Input id="usage-planned" inputMode="decimal" value={value.plannedQty} onChange={(e) => set("plannedQty", e.target.value)} placeholder="0" className="tabular-nums" aria-invalid={Boolean(errors.plannedQty)} />
           <FieldError message={errors.plannedQty} />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="usage-used">Used so far ({unit})</Label>
+          <Label htmlFor="usage-used">{t("Used so far ({unit})", { unit })}</Label>
           <Input id="usage-used" inputMode="decimal" value={value.usedQty} onChange={(e) => set("usedQty", e.target.value)} placeholder="0" className="tabular-nums" aria-invalid={Boolean(errors.usedQty)} />
           <FieldError message={errors.usedQty} />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="usage-price">Price per {unit} ({currency})</Label>
+          <Label htmlFor="usage-price">{t("Price per {unit} ({currency})", { unit, currency })}</Label>
           <Input id="usage-price" inputMode="decimal" value={value.unitCost} onChange={(e) => set("unitCost", e.target.value)} placeholder="0" className="tabular-nums" aria-invalid={Boolean(errors.unitCost)} aria-describedby={priceHint ? "usage-price-hint" : undefined} />
           <FieldError message={errors.unitCost} />
         </div>
@@ -302,7 +326,7 @@ function UsageFields({
       )}
       <div className="grid gap-1.5">
         <Label htmlFor="usage-notes">
-          Notes <span className="font-normal text-muted-foreground">(optional)</span>
+          {t("Notes")} <span className="font-normal text-muted-foreground">{t("(optional)")}</span>
         </Label>
         <Textarea id="usage-notes" value={value.notes} onChange={(e) => set("notes", e.target.value)} rows={2} maxLength={1000} />
       </div>
@@ -319,13 +343,14 @@ const toUsageInput = (d: UsageDraft): UsageInput => ({
 });
 
 function CostPreview({ draft, unit, currency }: { draft: UsageDraft; unit: string; currency: string }) {
+  const t = useT();
   const n = (v: string) => Number(v.replace(/,/g, "")) || 0;
   return (
     <p className="rounded-lg bg-muted px-3 py-2 text-sm">
-      Planned cost <span className="font-semibold tabular-nums">{formatMoney(n(draft.plannedQty) * n(draft.unitCost), currency)}</span>
+      {t("Planned cost")} <span className="font-semibold tabular-nums">{formatMoney(n(draft.plannedQty) * n(draft.unitCost), currency, t.intl)}</span>
       <span className="text-muted-foreground"> · </span>
-      Used cost <span className="font-semibold tabular-nums">{formatMoney(n(draft.usedQty) * n(draft.unitCost), currency)}</span>
-      <span className="sr-only"> (price per {unit})</span>
+      {t("Used cost")} <span className="font-semibold tabular-nums">{formatMoney(n(draft.usedQty) * n(draft.unitCost), currency, t.intl)}</span>
+      <span className="sr-only"> {t("(price per {unit})", { unit })}</span>
     </p>
   );
 }
@@ -345,12 +370,13 @@ function AddResourceDialog({
   library: LibraryItem[];
   tasks: TaskOption[];
 }) {
+  const t = useT();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Add resource to project</DialogTitle>
-          <DialogDescription>Pick one from your company library, or create a new one.</DialogDescription>
+          <DialogTitle>{t("Add resource to project")}</DialogTitle>
+          <DialogDescription>{t("Pick one from your company library, or create a new one.")}</DialogDescription>
         </DialogHeader>
         {open && <AddResourceForm project={project} library={library} tasks={tasks} onDone={() => onOpenChange(false)} />}
       </DialogContent>
@@ -369,18 +395,22 @@ function AddResourceForm({
   tasks: TaskOption[];
   onDone: () => void;
 }) {
+  const t = useT();
   const [mode, setMode] = useState<"library" | "new">(library.length ? "library" : "new");
   const [resourceId, setResourceId] = useState("");
-  const [newResource, setNewResource] = useState<ResourceDraft>(emptyResourceDraft("material", project.currency));
+  const [newResource, setNewResource] = useState<ResourceDraft>(emptyResourceDraft("material", project.currency, t));
   const [usage, setUsage] = useState<UsageDraft>({ taskId: "", plannedQty: "", usedQty: "", unitCost: "", notes: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
 
   const picked = library.find((r) => r.id === resourceId);
-  const unit = mode === "library" ? (picked?.unit ?? "unit") : newResource.unit || "unit";
+  const unit = mode === "library" ? (picked?.unit ?? t("unit")) : newResource.unit || t("unit");
   const priceHint =
     mode === "library" && picked?.unitCost && picked.currency !== project.currency
-      ? `Library price is ${formatMoney(picked.unitCost, picked.currency)}; enter this project's price in ${project.currency}.`
+      ? t("Library price is {price}; enter this project's price in {currency}.", {
+          price: formatMoney(picked.unitCost, picked.currency, t.intl),
+          currency: project.currency,
+        })
       : undefined;
 
   function pick(id: string) {
@@ -396,7 +426,7 @@ function AddResourceForm({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (mode === "library" && !resourceId) {
-      setErrors({ resourceId: "Choose a resource" });
+      setErrors({ resourceId: t("Choose a resource") });
       return;
     }
     startTransition(async () => {
@@ -408,18 +438,18 @@ function AddResourceForm({
         if (!result.fieldErrors) toast.error(result.error);
         return;
       }
-      toast.success("Resource added");
+      toast.success(t("Resource added"));
       onDone();
     });
   }
 
   return (
     <form onSubmit={submit} className="grid gap-5">
-      <div role="radiogroup" aria-label="Source" className="flex rounded-lg bg-muted p-0.5">
+      <div role="radiogroup" aria-label={t("Source")} className="flex rounded-lg bg-muted p-0.5">
         {(
           [
-            { id: "library", label: "From library", disabled: library.length === 0 },
-            { id: "new", label: "New resource", disabled: false },
+            { id: "library", label: t("From library"), disabled: library.length === 0 },
+            { id: "new", label: t("New resource"), disabled: false },
           ] as const
         ).map((o) => (
           <button
@@ -445,7 +475,7 @@ function AddResourceForm({
 
       {mode === "library" ? (
         <div className="grid gap-1.5">
-          <Label htmlFor="pick-resource">Resource</Label>
+          <Label htmlFor="pick-resource">{t("Resource")}</Label>
           <select
             id="pick-resource"
             value={resourceId}
@@ -453,16 +483,16 @@ function AddResourceForm({
             className={nativeSelectClass}
             aria-invalid={Boolean(errors.resourceId)}
           >
-            <option value="">Choose…</option>
-            {RESOURCE_TYPES.map((t) => {
-              const items = library.filter((r) => r.type === t.value);
+            <option value="">{t("Choose…")}</option>
+            {RESOURCE_TYPES.map((rt) => {
+              const items = library.filter((r) => r.type === rt.value);
               if (!items.length) return null;
               return (
-                <optgroup key={t.value} label={t.plural}>
+                <optgroup key={rt.value} label={t(rt.plural)}>
                   {items.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.name}
-                      {r.role ? ` (${r.role})` : ""} — {r.unitCost ? `${formatMoney(r.unitCost, r.currency)} / ${r.unit}` : r.unit}
+                      {r.role ? ` (${r.role})` : ""} — {r.unitCost ? `${formatMoney(r.unitCost, r.currency, t.intl)} / ${r.unit}` : r.unit}
                     </option>
                   ))}
                 </optgroup>
@@ -483,7 +513,7 @@ function AddResourceForm({
             }}
             errors={errors}
           />
-          <p className="mt-3 text-xs text-muted-foreground">It will also be saved in your company library.</p>
+          <p className="mt-3 text-xs text-muted-foreground">{t("It will also be saved in your company library.")}</p>
         </div>
       )}
 
@@ -500,11 +530,11 @@ function AddResourceForm({
 
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={onDone}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button type="submit" disabled={pending}>
           {pending && <Loader2 className="size-4 animate-spin" />}
-          Add to project
+          {t("Add to project")}
         </Button>
       </DialogFooter>
     </form>
@@ -524,14 +554,17 @@ function EditUsageDialog({
   project: ProjectInfo;
   tasks: TaskOption[];
 }) {
+  const t = useT();
   return (
     <Dialog open={Boolean(usage)} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{usage?.name}</DialogTitle>
           <DialogDescription>
-            {usage && `${resourceTypeInfo(usage.type).label}${usage.role ? ` · ${usage.role}` : ""}`} — update quantities used, price
-            or task.
+            {usage &&
+              t("{type} — update quantities used, price or task.", {
+                type: `${t(resourceTypeInfo(usage.type).label)}${usage.role ? ` · ${usage.role}` : ""}`,
+              })}
           </DialogDescription>
         </DialogHeader>
         {usage && <EditUsageForm key={usage.id} usage={usage} project={project} tasks={tasks} onDone={onClose} />}
@@ -551,6 +584,7 @@ function EditUsageForm({
   tasks: TaskOption[];
   onDone: () => void;
 }) {
+  const t = useT();
   const strip = (v: string) => String(Number(v));
   const [draft, setDraft] = useState<UsageDraft>({
     taskId: usage.taskId && usage.taskNumber ? usage.taskId : "",
@@ -575,7 +609,7 @@ function EditUsageForm({
             if (!result.fieldErrors) toast.error(result.error);
             return;
           }
-          toast.success("Saved");
+          toast.success(t("Saved"));
           onDone();
         });
       }}
@@ -598,21 +632,21 @@ function EditUsageForm({
                 toast.error(result.error);
                 return;
               }
-              toast.success(`${usage.name} removed from project`);
+              toast.success(t("{name} removed from project", { name: usage.name }));
               onDone();
             });
           }}
         >
           <Trash2 className="size-4" />
-          {confirmRemove ? "Click again to remove" : "Remove from project"}
+          {confirmRemove ? t("Click again to remove") : t("Remove from project")}
         </Button>
         <div className="flex gap-2">
           <Button type="button" variant="ghost" onClick={onDone}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button type="submit" disabled={pending}>
             {pending && <Loader2 className="size-4 animate-spin" />}
-            Save
+            {t("Save")}
           </Button>
         </div>
       </DialogFooter>

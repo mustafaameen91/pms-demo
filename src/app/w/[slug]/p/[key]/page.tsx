@@ -17,6 +17,7 @@ import { TaskTimeline } from "@/components/tasks/task-timeline";
 import { TaskCalendar } from "@/components/tasks/task-calendar";
 import { todayISO } from "@/lib/accomplishment";
 import { TaskSheet } from "@/components/tasks/task-sheet";
+import { getT } from "@/i18n/server";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]">) {
   const { key } = await params;
@@ -65,11 +66,12 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
     : [null, []];
 
   const basePath = `/w/${workspace.slug}/p/${project.key}`;
+  const t = await getT();
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center border-b px-4 py-2 sm:px-6">
-        <nav aria-label="Task views" className="ms-auto flex rounded-lg bg-muted p-0.5">
+        <nav aria-label={t("Task views")} className="ms-auto flex max-w-full min-w-0 overflow-x-auto rounded-lg bg-muted p-0.5">
           {(
             [
               { id: "table", label: "Table", icon: Table2 },
@@ -84,12 +86,12 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
               href={id === "table" ? basePath : `${basePath}?view=${id}`}
               aria-current={view === id ? "page" : undefined}
               className={cn(
-                "flex h-7 items-center gap-1.5 rounded-md px-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground",
+                "flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground",
                 view === id && "bg-background font-medium text-foreground shadow-sm",
               )}
             >
               <Icon className="size-4" />
-              {label}
+              {t(label)}
             </Link>
           ))}
         </nav>

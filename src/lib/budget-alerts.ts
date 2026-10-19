@@ -26,8 +26,13 @@ export async function checkOverBudget(projectId: string, actorId: string) {
     // The person who made the change still sees the red banner; others get told.
     actorId,
     type: "project.over_budget",
-    title: `${ctx.name} is over budget`,
-    body: `Spent ${formatMoney(summary.actual, project.currency)} of ${formatMoney(summary.budget ?? 0, project.currency)}.`,
+    // Each manager reads it in their own language.
+    title: (t) => t("{name} is over budget", { name: ctx.name }),
+    body: (t) =>
+      t("Spent {spent} of {budget}.", {
+        spent: formatMoney(summary.actual, project.currency, t.intl),
+        budget: formatMoney(summary.budget ?? 0, project.currency, t.intl),
+      }),
     link: `/w/${ctx.slug}/p/${ctx.key}/expenses`,
     dedupeKey: `over_budget:${projectId}:${todayISO()}`,
     email: true,

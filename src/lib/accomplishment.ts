@@ -9,6 +9,7 @@
  *              no dates at all are left out of the planned figure.
  * - Cancelled tasks and milestones are ignored.
  */
+import { createT, type T } from "@/i18n/translate";
 
 export type AccomplishmentTask = {
   weight: string | number | null;
@@ -127,21 +128,24 @@ export function computeAccomplishment(
   };
 }
 
-/** Human-readable problems with the weights, or [] when they're fine. */
-export function weightWarnings(a: Accomplishment): string[] {
+/** Human-readable problems with the weights, or [] when they're fine. Pass the viewer's translator (English by default). */
+export function weightWarnings(a: Accomplishment, t: T = createT("en", {})): string[] {
   if (a.mode === "empty") return [];
   if (a.mode === "equal") {
-    return ["No task has a weight yet, so every task counts equally. Give tasks weights that add up to 100%."];
+    return [t("No task has a weight yet, so every task counts equally. Give tasks weights that add up to 100%.")];
   }
   const warnings: string[] = [];
   const diff = round1(a.totalWeight - 100);
-  if (diff < 0) warnings.push(`Task weights add up to ${a.totalWeight}%. Assign the remaining ${-diff}%.`);
-  if (diff > 0) warnings.push(`Task weights add up to ${a.totalWeight}%, which is ${diff}% over 100%.`);
+  // Numbers passed as text so they print exactly as computed (no grouping).
+  if (diff < 0) warnings.push(t("Task weights add up to {total}%. Assign the remaining {rest}%.", { total: String(a.totalWeight), rest: String(-diff) }));
+  if (diff > 0) warnings.push(t("Task weights add up to {total}%, which is {over}% over 100%.", { total: String(a.totalWeight), over: String(diff) }));
   if (a.unweightedCount > 0) {
     warnings.push(
-      `${a.unweightedCount} ${a.unweightedCount === 1 ? "task has" : "tasks have"} no weight and ${
-        a.unweightedCount === 1 ? "doesn't" : "don't"
-      } count toward the project %.`,
+      t.plural(
+        a.unweightedCount,
+        "{count} task has no weight and doesn't count toward the project %.",
+        "{count} tasks have no weight and don't count toward the project %.",
+      ),
     );
   }
   return warnings;

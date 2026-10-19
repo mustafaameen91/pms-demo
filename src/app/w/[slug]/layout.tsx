@@ -6,6 +6,7 @@ import { unreadCount } from "@/lib/data/notifications";
 import { listPendingApprovals } from "@/lib/data/expenses";
 import { ensureLateTaskNotifications } from "@/lib/notifications";
 import { sweepLateTaskAutomations } from "@/lib/automation-runner";
+import { chosenLocale, syncUserLocale } from "@/lib/locale-sync";
 import { AppShell } from "@/components/shell/app-shell";
 
 export default async function WorkspaceLayout({ children, params }: LayoutProps<"/w/[slug]">) {
@@ -17,6 +18,8 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
     await ensureLateTaskNotifications(user.id, workspace.id);
     // "Task becomes late" automations: after the page is sent, so they never slow it down.
     after(() => sweepLateTaskAutomations(workspace.id));
+    const chosen = await chosenLocale();
+    after(() => syncUserLocale(user.id, chosen));
   }
   const isAdmin = workspace.role === "owner" || workspace.role === "admin";
   const [workspaces, projects, unread, approvals] = await Promise.all([

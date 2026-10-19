@@ -1,32 +1,13 @@
-import { AlertTriangle, Diamond, Lock, Minus, Repeat, SignalHigh, SignalLow, SignalMedium } from "lucide-react";
 import { cn, initials } from "@/lib/utils";
 import { PRIORITIES, type Priority } from "@/lib/constants";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { T } from "@/i18n/translate";
 
-const priorityIcon = {
-  none: Minus,
-  low: SignalLow,
-  medium: SignalMedium,
-  high: SignalHigh,
-  urgent: AlertTriangle,
-} as const;
+// Components with text live in task-badges (client, translated); re-exported here.
+export { BlockedBadge, MilestoneIcon, PriorityIcon, RepeatIcon } from "./task-badges";
 
-export function priorityLabel(p: Priority) {
-  return PRIORITIES.find((x) => x.value === p)?.label ?? p;
-}
-
-export function PriorityIcon({ priority, className }: { priority: Priority; className?: string }) {
-  const Icon = priorityIcon[priority];
-  return (
-    <Icon
-      aria-label={priorityLabel(priority)}
-      className={cn(
-        "size-4 shrink-0",
-        priority === "urgent" ? "text-brand-accent" : "text-muted-foreground",
-        className,
-      )}
-    />
-  );
+export function priorityLabel(p: Priority, t: T) {
+  return t(PRIORITIES.find((x) => x.value === p)?.label ?? p);
 }
 
 export function StatusDot({ color, className }: { color: string; className?: string }) {
@@ -57,12 +38,12 @@ export function UserAvatar({
 }
 
 /** "2026-10-20" -> { label: "Oct 20", overdue } without timezone drift. */
-export function formatDue(date: string, done = false) {
+export function formatDue(date: string, done = false, locale = "en-US") {
   const [y, m, d] = date.split("-").map(Number);
   const due = new Date(y, m - 1, d);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const label = due.toLocaleDateString(undefined, {
+  const label = due.toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     ...(y !== today.getFullYear() && { year: "numeric" }),
@@ -88,52 +69,5 @@ export function ProgressBar({ value, label, className }: { value: number; label:
       </div>
       <span className="w-9 text-end text-xs text-muted-foreground tabular-nums">{value}%</span>
     </div>
-  );
-}
-
-/** "just now", "5 minutes ago", "3 days ago", then a date. Relative to the viewer's clock. */
-export function timeAgo(date: Date) {
-  const seconds = Math.round((Date.now() - date.getTime()) / 1000);
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
-  if (seconds < 60) return "just now";
-  if (seconds < 3600) return rtf.format(-Math.round(seconds / 60), "minute");
-  if (seconds < 86400) return rtf.format(-Math.round(seconds / 3600), "hour");
-  if (seconds < 604800) return rtf.format(-Math.round(seconds / 86400), "day");
-  return date.toLocaleDateString();
-}
-
-/** ◆ for milestones (decorative; the row text says "Milestone" to screen readers). */
-export function MilestoneIcon({ className }: { className?: string }) {
-  return (
-    <>
-      <Diamond className={cn("size-3.5 shrink-0 fill-current text-brand-accent", className)} aria-hidden />
-      <span className="sr-only">Milestone:</span>
-    </>
-  );
-}
-
-/** Shown when a task waits on unfinished tasks. Icon + text, never colour alone. */
-export function BlockedBadge({ count, className }: { count: number; className?: string }) {
-  return (
-    <span
-      title={`Waiting on ${count} unfinished ${count === 1 ? "task" : "tasks"}`}
-      className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300",
-        className,
-      )}
-    >
-      <Lock className="size-3" aria-hidden />
-      Blocked
-    </span>
-  );
-}
-
-/** 🔁 marker for repeating tasks (with a text alternative). */
-export function RepeatIcon({ rule, className }: { rule: string; className?: string }) {
-  return (
-    <span title={`Repeats ${rule}`} className={cn("inline-flex shrink-0 text-muted-foreground", className)}>
-      <Repeat className="size-3.5" aria-hidden />
-      <span className="sr-only">Repeats {rule}</span>
-    </span>
   );
 }
