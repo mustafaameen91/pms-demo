@@ -60,3 +60,19 @@ test("planned resource cost", () => {
   assert.equal(b.plannedResourceCost, 4500);
   assert.equal(b.usedPct, null); // zero budget -> no percentage
 });
+
+test("only approved expenses count; pending total is reported", () => {
+  const b = computeBudget(
+    "1000",
+    [usage("u1", 5, 40)],
+    [
+      { amount: "100", taskId: null, projectResourceId: null, approvalStatus: "approved" },
+      { amount: "300", taskId: null, projectResourceId: null, approvalStatus: "pending" },
+      { amount: "50", taskId: null, projectResourceId: null, approvalStatus: "rejected" },
+      { amount: "200", taskId: null, projectResourceId: "u1", approvalStatus: "pending" },
+    ],
+  );
+  assert.equal(b.actual, 300); // 200 resources + 100 approved
+  assert.equal(b.paidToResources, 0); // pending payment not counted
+  assert.equal(b.pendingApproval, 500);
+});

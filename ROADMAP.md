@@ -106,9 +106,9 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Dependency arrows on the timeline (red = date conflict)
 
 ## Phase 12 — Approvals *(finance, construction)*
-- [ ] Approval rule per workspace: expenses above an amount need approval
-- [ ] Pending / approved / rejected expenses; only approved ones count as spent
-- [ ] Approve / reject with a comment; notifications to approvers and requester
+- [x] Approval rule per project: expenses above an amount (project currency) need approval; approvers = owners, admins, project manager (their own expenses are auto-approved)
+- [x] Pending / approved / rejected expenses; only approved ones count as spent; editing a rejected one resubmits it
+- [x] Approve / reject (reason required) on the Expenses tab and a workspace Approvals page; notifications to approvers and requester
 
 ## Phase 13 — Request forms *(IT, operations, marketing)*
 - [ ] Public request form per project (no login) → creates a task in a "Requests" column

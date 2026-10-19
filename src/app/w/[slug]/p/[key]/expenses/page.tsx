@@ -29,7 +29,14 @@ export default async function ExpensesPage({ params }: PageProps<"/w/[slug]/p/[k
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
       <ExpensesView
-        project={{ id: project.id, key: project.key, currency: project.currency, slug: workspace.slug }}
+        project={{
+          id: project.id,
+          key: project.key,
+          currency: project.currency,
+          slug: workspace.slug,
+          approvalThreshold: project.approvalThreshold,
+          isApprover: canManage,
+        }}
         summary={summary}
         tasks={board.tasks.map((t) => ({ id: t.id, number: t.number, title: t.title }))}
         usages={usages.map((u) => ({ id: u.id, name: u.name, role: u.role, type: u.type, taskId: u.taskId }))}

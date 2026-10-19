@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   AlertTriangle,
+  BadgeCheck,
   Bell,
   CreditCard,
   ScrollText,
@@ -49,6 +50,8 @@ type ShellProps = {
   workspaces: { id: string; name: string; slug: string }[];
   projects: { id: string; name: string; key: string; color: string }[];
   unread: number;
+  /** Expenses this user can approve; null-ish = not an approver anywhere. */
+  approvals: number;
   access: AccessState;
   isPlatformAdmin: boolean;
   children: React.ReactNode;
@@ -99,6 +102,7 @@ function SidebarContent({
   workspaces,
   projects,
   unread,
+  approvals,
   access,
   isPlatformAdmin,
   onNavigate,
@@ -139,6 +143,16 @@ function SidebarContent({
             </span>
           )}
         </NavLink>
+        {approvals > 0 && (
+          <NavLink href={`${base}/approvals`} active={pathname.startsWith(`${base}/approvals`)} onNavigate={onNavigate}>
+            <BadgeCheck className="size-4" />
+            Approvals
+            <span className="ml-auto rounded-full bg-amber-400 px-1.5 text-xs font-semibold text-amber-950 tabular-nums">
+              {approvals}
+              <span className="sr-only"> waiting</span>
+            </span>
+          </NavLink>
+        )}
         <NavLink href={`${base}/dashboard`} active={pathname.startsWith(`${base}/dashboard`)} onNavigate={onNavigate}>
           <LayoutDashboard className="size-4" />
           Dashboard

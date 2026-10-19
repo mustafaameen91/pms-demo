@@ -59,6 +59,13 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "expense.added": return `added expense “${s(data.description)}” (${s(data.amount)})`;
     case "expense.updated": return `edited expense “${s(data.description)}” (${s(data.amount)})`;
     case "expense.deleted": return `deleted expense “${s(data.description)}” (${s(data.amount)})`;
+    case "expense.approved": return `approved expense “${s(data.description)}” (${s(data.amount)})`;
+    case "expense.rejected": return `rejected expense “${s(data.description)}” (${s(data.amount)})${data.note ? ` — ${s(data.note)}` : ""}`;
+    case "project.approval_threshold_changed": return data.to ? `set expenses above ${s(data.to)} to need approval` : "turned off expense approvals";
+    case "task.made_milestone": return `made ${taskRef ?? "a task"} a milestone`;
+    case "task.unmade_milestone": return `turned ${taskRef ?? "a task"} back into a normal task`;
+    case "task.dependency_added": return `made ${taskRef ?? "a task"} wait on “${s(data.title)}”`;
+    case "task.dependency_removed": return `removed a dependency${on}`;
     case "member.invited": return `invited ${s(data.email)} as ${s(data.role)}`;
     case "member.invitation_cancelled": return "cancelled an invitation";
     case "member.role_changed": return `changed ${s(data.email)} from ${s(data.from)} to ${s(data.to)}`;

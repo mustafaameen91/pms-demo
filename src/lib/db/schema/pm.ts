@@ -77,6 +77,8 @@ export const projects = pgTable(
     // Planned budget; money is stored as exact decimals (returned as strings).
     budget: numeric("budget", { precision: 14, scale: 2 }),
     currency: text("currency").notNull().default("USD"),
+    // Expenses above this amount (project currency) need approval; null = no approval.
+    approvalThreshold: numeric("approval_threshold", { precision: 14, scale: 2 }),
     // Project manager.
     leadId: text("lead_id").references(() => user.id, { onDelete: "set null" }),
     // Incremented atomically when a task is created, to hand out task numbers.
@@ -394,6 +396,8 @@ export const projectResourcesRelations = relations(projectResources, ({ one }) =
 
 // --- Expenses (Phase 6) ---
 
+export const approvalStatus = pgEnum("approval_status", ["approved", "pending", "rejected"]);
+
 export const expenseCategory = pgEnum("expense_category", [
   "materials",
   "equipment",
@@ -432,6 +436,11 @@ export const expenses = pgTable(
     receiptPath: text("receipt_path"),
     receiptName: text("receipt_name"),
     receiptType: text("receipt_type"),
+    // Only approved expenses count as spent (see lib/budget.ts).
+    approvalStatus: approvalStatus("approval_status").notNull().default("approved"),
+    decidedById: text("decided_by_id").references(() => user.id, { onDelete: "set null" }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decisionNote: text("decision_note"),
     createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
     ...timestamps,
   },

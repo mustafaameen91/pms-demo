@@ -2,6 +2,7 @@ import { getUserWorkspaces, requireMembership } from "@/lib/auth/session";
 import { getWorkspaceAccess, isSuperAdmin } from "@/lib/billing";
 import { listProjects } from "@/lib/data/projects";
 import { unreadCount } from "@/lib/data/notifications";
+import { listPendingApprovals } from "@/lib/data/expenses";
 import { ensureLateTaskNotifications } from "@/lib/notifications";
 import { AppShell } from "@/components/shell/app-shell";
 
@@ -11,11 +12,13 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
   const access = await getWorkspaceAccess(workspace.id);
   // No background scheduler: late-task reminders are created when the app is opened.
   if (access.allowed) await ensureLateTaskNotifications(user.id, workspace.id);
-  const [workspaces, projects, unread] = await Promise.all([
+  const isAdmin = workspace.role === "owner" || workspace.role === "admin";
+  const [workspaces, projects, unread, approvals] = await Promise.all([
     getUserWorkspaces(user.id),
     // A locked workspace shows no project data in the sidebar.
     access.allowed ? listProjects(workspace.id) : [],
     access.allowed ? unreadCount(user.id, workspace.id) : 0,
+    access.allowed ? listPendingApprovals(workspace.id, user.id, isAdmin) : [],
   ]);
 
   return (
@@ -25,6 +28,7 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
       workspaces={workspaces}
       projects={projects.map((p) => ({ id: p.id, name: p.name, key: p.key, color: p.color }))}
       unread={unread}
+      approvals={approvals.filter((a) => a.requesterId !== user.id).length}
       access={access}
       isPlatformAdmin={isSuperAdmin(user.email)}
     >

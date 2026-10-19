@@ -12,7 +12,10 @@ export type NotificationType =
   | "comment.mentioned"
   | "comment.added"
   | "task.late"
-  | "project.over_budget";
+  | "project.over_budget"
+  | "expense.approval_requested"
+  | "expense.approved"
+  | "expense.rejected";
 
 type Notify = {
   workspaceId: string;

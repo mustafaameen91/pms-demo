@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AlertTriangle, AtSign, Bell, CalendarClock, MessageSquare, UserPlus } from "lucide-react";
+import { AlertTriangle, AtSign, BadgeCheck, Bell, CalendarClock, MessageSquare, UserPlus, XCircle } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { listNotifications } from "@/lib/data/notifications";
 import { markAllNotificationsRead } from "@/lib/actions/notifications";
@@ -15,8 +15,11 @@ const ICONS: Record<string, typeof Bell> = {
   "comment.added": MessageSquare,
   "task.late": CalendarClock,
   "project.over_budget": AlertTriangle,
+  "expense.approval_requested": BadgeCheck,
+  "expense.approved": BadgeCheck,
+  "expense.rejected": XCircle,
 };
-const ALERT_TYPES = new Set(["task.late", "project.over_budget"]);
+const ALERT_TYPES = new Set(["task.late", "project.over_budget", "expense.rejected"]);
 
 function timeAgo(date: Date) {
   const seconds = Math.round((Date.now() - date.getTime()) / 1000);

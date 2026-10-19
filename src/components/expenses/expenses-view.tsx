@@ -23,8 +23,16 @@ import {
 } from "@/components/ui/dialog";
 import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
+import { ApprovalBadge, DecisionButtons } from "./approval";
 
-type ProjectInfo = { id: string; key: string; currency: string; slug: string };
+type ProjectInfo = {
+  id: string;
+  key: string;
+  currency: string;
+  slug: string;
+  approvalThreshold: string | null;
+  isApprover: boolean;
+};
 type TaskOption = { id: string; number: number; title: string };
 type UsageOption = { id: string; name: string; role: string | null; type: ResourceType; taskId: string | null };
 type ExpenseRow = Omit<ProjectExpense, "hasReceipt" | "createdById"> & { hasReceipt: boolean; canEdit: boolean };
@@ -100,6 +108,11 @@ export function ExpensesView({
             <p className="mt-0.5 text-xs text-muted-foreground">
               Resources {money(summary.resourceCost)} · Other expenses {money(summary.otherExpenses)}
             </p>
+            {summary.pendingApproval > 0 && (
+              <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
+                + {money(summary.pendingApproval)} waiting for approval (not counted yet)
+              </p>
+            )}
           </div>
           <div>
             <dt className="text-sm text-muted-foreground">Remaining</dt>
@@ -250,6 +263,32 @@ export function ExpensesView({
       )}
 
       {/* Expense list */}
+      {project.isApprover && expenses.some((e) => e.approvalStatus === "pending") && (
+        <section aria-labelledby="approve-heading" className="overflow-hidden rounded-xl border border-amber-500/40 bg-card">
+          <h2 id="approve-heading" className="border-b bg-amber-500/10 px-4 py-3 font-semibold">
+            Waiting for your approval
+          </h2>
+          <ul className="divide-y">
+            {expenses
+              .filter((e) => e.approvalStatus === "pending")
+              .map((e) => (
+                <li key={e.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">
+                      {e.description} · <span className="tabular-nums">{formatMoney(e.amount, project.currency)}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(e.date)} · requested by {e.createdByName ?? "someone"}
+                      {e.payee && ` · paid to ${e.payee}`}
+                    </p>
+                  </div>
+                  <DecisionButtons expenseId={e.id} label={e.description} />
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
+
       <section aria-labelledby="expense-list" className="overflow-hidden rounded-xl border bg-card">
         <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
           <h2 id="expense-list" className="font-semibold">
@@ -293,12 +332,19 @@ export function ExpensesView({
                         {e.payee && <span>Paid to {e.payee}</span>}
                         {e.createdByName && <span>Added by {e.createdByName}</span>}
                       </div>
+                      <ApprovalBadge status={e.approvalStatus} decidedBy={e.decidedByName} note={e.decisionNote} />
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">{categoryLabel(e.category)}</td>
                     <td className="max-w-48 truncate px-3 py-2.5 text-muted-foreground">
                       {e.taskNumber && !e.taskDeleted ? `${project.key}-${e.taskNumber} ${e.taskTitle}` : "—"}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-medium whitespace-nowrap tabular-nums">
+                    <td
+                      className={cn(
+                        "px-3 py-2.5 text-right font-medium whitespace-nowrap tabular-nums",
+                        e.approvalStatus !== "approved" && "text-muted-foreground line-through decoration-1",
+                      )}
+                      title={e.approvalStatus !== "approved" ? "Not counted in spending" : undefined}
+                    >
                       {formatMoney(e.amount, project.currency)}
                     </td>
                     <td className="py-2 pr-4 pl-3">
@@ -422,7 +468,11 @@ function ExpenseForm({
             if (!result.fieldErrors) toast.error(result.error);
             return;
           }
-          toast.success(expense ? "Expense updated" : "Expense added");
+          if ("pending" in result && result.pending) {
+            toast.success("Sent for approval — it counts once a manager approves it");
+          } else {
+            toast.success(expense ? "Expense updated" : "Expense added");
+          }
           onDone();
         });
       }}
@@ -450,6 +500,11 @@ function ExpenseForm({
             aria-invalid={Boolean(errors.amount)}
           />
           <FieldError message={errors.amount} />
+          {project.approvalThreshold && !project.isApprover && (
+            <p className="text-xs text-muted-foreground">
+              Above {formatMoney(project.approvalThreshold, project.currency)} needs a manager&apos;s approval.
+            </p>
+          )}
         </div>
       </div>
 

@@ -120,7 +120,8 @@ export default async function ProjectReportPage({ params }: PageProps<"/print/[s
         right={[4]}
         rows={report.expenses.map((e) => [
           formatDate(e.date),
-          e.projectResourceId ? `${e.description} (payment · ${e.resourceName ?? "resource"})` : e.description,
+          (e.projectResourceId ? `${e.description} (payment · ${e.resourceName ?? "resource"})` : e.description) +
+            (e.approvalStatus === "pending" ? " — waiting for approval, not counted" : e.approvalStatus === "rejected" ? " — rejected, not counted" : ""),
           EXPENSE_CATEGORIES.find((c) => c.value === e.category)?.label ?? e.category,
           e.taskNumber && !e.taskDeleted ? `${project.key}-${e.taskNumber}` : "—",
           money(e.amount),

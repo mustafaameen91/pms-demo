@@ -137,7 +137,8 @@ export async function buildProjectWorkbook(report: ProjectReport) {
     { header: "Paid to", key: "payee", width: 22 },
     { header: "Payment for resource", key: "resource", width: 24 },
     { header: "Amount", key: "amount", width: 16, style: { numFmt: money } },
-    { header: "Counted in spent", key: "counted", width: 16 },
+    { header: "Approval", key: "approval", width: 12 },
+    { header: "Counted in spent", key: "counted", width: 22 },
   ];
   header(expenses);
   for (const e of report.expenses) {
@@ -149,8 +150,10 @@ export async function buildProjectWorkbook(report: ProjectReport) {
       payee: e.payee ?? "",
       resource: e.projectResourceId ? (e.resourceName ?? "removed resource") : "",
       amount: Number(e.amount),
+      approval: e.approvalStatus === "approved" ? "Approved" : e.approvalStatus === "pending" ? "Pending" : "Rejected",
       // Resource payments are already counted through the resource's used cost.
-      counted: e.projectResourceId ? "No (resource payment)" : "Yes",
+      counted:
+        e.approvalStatus !== "approved" ? "No (not approved)" : e.projectResourceId ? "No (resource payment)" : "Yes",
     });
   }
 

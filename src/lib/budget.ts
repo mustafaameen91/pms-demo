@@ -5,6 +5,7 @@
  *                 + expenses NOT linked to a resource.
  * Expenses linked to a resource are payments for it: they reduce what is still
  * owed, but are not added to spending again (that would count it twice).
+ * Only approved expenses count; pending and rejected ones are ignored.
  */
 
 export type BudgetUsage = {
@@ -19,6 +20,8 @@ export type BudgetExpense = {
   amount: string | number;
   taskId: string | null;
   projectResourceId: string | null;
+  /** Pending / rejected expenses don't count. Missing = approved. */
+  approvalStatus?: "approved" | "pending" | "rejected";
 };
 
 export type BudgetTask = { id: string; budget: string | number | null };
@@ -47,6 +50,8 @@ export type BudgetSummary = {
   overBudget: boolean;
   paidToResources: number;
   owedToResources: number;
+  /** Total of expenses waiting for approval (not counted in `actual`). */
+  pendingApproval: number;
   tasks: TaskBudgetLine[];
   resources: ResourcePaymentLine[];
 };
@@ -61,6 +66,8 @@ export function computeBudget(
   tasks: BudgetTask[] = [],
 ): BudgetSummary {
   const budget = projectBudget === null || projectBudget === "" ? null : Number(projectBudget);
+  const allExpenses = expenses;
+  expenses = allExpenses.filter((e) => (e.approvalStatus ?? "approved") === "approved");
 
   const paidByUsage = new Map<string, number>();
   for (const e of expenses) {
@@ -111,6 +118,7 @@ export function computeBudget(
     overBudget: budget !== null && actual > budget,
     paidToResources,
     owedToResources: cents(resources.reduce((s, r) => s + r.owed, 0)),
+    pendingApproval: cents(allExpenses.filter((e) => e.approvalStatus === "pending").reduce((s, e) => s + n(e.amount), 0)),
     tasks: taskLines,
     resources,
   };

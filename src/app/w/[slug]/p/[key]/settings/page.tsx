@@ -5,6 +5,7 @@ import { canManageProject } from "@/lib/permissions";
 import { ProjectSettings } from "@/components/projects/project-settings";
 import { ClientShare } from "@/components/projects/client-share";
 import { SaveAsTemplate } from "@/components/projects/save-as-template";
+import { ApprovalThreshold } from "@/components/projects/approval-threshold";
 import { db } from "@/lib/db";
 import { projectShares } from "@/lib/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
@@ -37,6 +38,9 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
           share={share ?? null}
           appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
         />
+      )}
+      {canManage && (
+        <ApprovalThreshold projectId={project.id} currency={project.currency} current={project.approvalThreshold} />
       )}
       {canManage && <SaveAsTemplate projectId={project.id} projectName={project.name} />}
       <ProjectSettings
