@@ -86,7 +86,7 @@ export function ProgressBar({ value, label, className }: { value: number; label:
           style={{ width: `${value}%` }}
         />
       </div>
-      <span className="w-9 text-right text-xs text-muted-foreground tabular-nums">{value}%</span>
+      <span className="w-9 text-end text-xs text-muted-foreground tabular-nums">{value}%</span>
     </div>
   );
 }

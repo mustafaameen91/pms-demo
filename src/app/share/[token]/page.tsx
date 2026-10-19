@@ -144,12 +144,12 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
           ) : (
             <div className="relative overflow-x-auto">
               <table className="w-full min-w-[620px] text-sm">
-                <thead className="text-left text-xs text-muted-foreground">
+                <thead className="text-start text-xs text-muted-foreground">
                   <tr className="border-b bg-muted/60">
-                    <th scope="col" className="py-2 pr-3 pl-4 font-medium">Item</th>
+                    <th scope="col" className="py-2 pe-3 ps-4 font-medium">Item</th>
                     <th scope="col" className="px-3 py-2 font-medium">Status</th>
                     <th scope="col" className="w-40 px-3 py-2 font-medium">Progress</th>
-                    <th scope="col" className="py-2 pr-4 pl-3 font-medium">Dates</th>
+                    <th scope="col" className="py-2 pe-4 ps-3 font-medium">Dates</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -158,20 +158,20 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
                     const late = !done && t.dueDate !== null && t.dueDate < today;
                     return (
                       <tr key={t.id} className="border-b last:border-b-0">
-                        <td className="py-2.5 pr-3 pl-4 font-medium">{t.title}</td>
+                        <td className="py-2.5 pe-3 ps-4 font-medium">{t.title}</td>
                         <td className="px-3 py-2.5 whitespace-nowrap">{t.status?.name}</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
                             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-primary/15">
                               <div className="h-full rounded-full bg-primary" style={{ width: `${t.progress}%` }} />
                             </div>
-                            <span className="w-9 text-right text-xs tabular-nums">{t.progress}%</span>
+                            <span className="w-9 text-end text-xs tabular-nums">{t.progress}%</span>
                           </div>
                         </td>
-                        <td className="py-2.5 pr-4 pl-3 whitespace-nowrap tabular-nums">
+                        <td className="py-2.5 pe-4 ps-3 whitespace-nowrap tabular-nums">
                           {t.startDate || t.dueDate ? `${formatDate(t.startDate)} → ${formatDate(t.dueDate)}` : "—"}
                           {late && (
-                            <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-destructive">
+                            <span className="ms-2 inline-flex items-center gap-1 text-xs font-medium text-destructive">
                               <AlertTriangle className="size-3" aria-hidden /> Late
                             </span>
                           )}

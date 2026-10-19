@@ -100,10 +100,10 @@ export function AccomplishmentMeter({
         <span
           aria-hidden
           className={cn(
-            "absolute top-1/2 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/70 ring-2 ring-background",
+            "absolute top-1/2 w-0.5 -translate-x-1/2 -translate-y-1/2 rtl:translate-x-1/2 rounded-full bg-foreground/70 ring-2 ring-background",
             size === "lg" ? "h-5" : "h-3.5",
           )}
-          style={{ left: `${Math.min(100, Math.max(0, planned))}%` }}
+          style={{ insetInlineStart: `${Math.min(100, Math.max(0, planned))}%` }}
         />
       )}
     </div>

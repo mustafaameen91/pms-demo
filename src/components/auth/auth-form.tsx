@@ -96,12 +96,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 required
                 minLength={8}
                 aria-describedby={isSignup ? "password-help" : undefined}
-                className="h-10 pr-10"
+                className="h-10 pe-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute inset-y-0 right-0 grid w-10 place-items-center text-muted-foreground hover:text-foreground"
+                className="absolute inset-y-0 inset-e-0 grid w-10 place-items-center text-muted-foreground hover:text-foreground"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}

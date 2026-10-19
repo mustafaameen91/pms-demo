@@ -133,15 +133,15 @@ export function ProjectResourcesView({
                 </h2>
                 <div className="relative overflow-x-auto">
                   <table className="w-full min-w-[880px] table-fixed text-sm">
-                    <thead className="text-left text-xs text-muted-foreground">
+                    <thead className="text-start text-xs text-muted-foreground">
                       <tr className="border-b bg-muted/40">
-                        <th scope="col" className="w-[22%] py-2 pr-3 pl-4 font-medium">Resource</th>
+                        <th scope="col" className="w-[22%] py-2 pe-3 ps-4 font-medium">Resource</th>
                         <th scope="col" className="w-[18%] px-3 py-2 font-medium">Task</th>
                         <th scope="col" className="w-[20%] px-3 py-2 font-medium">Used / planned</th>
-                        <th scope="col" className="w-[12%] px-3 py-2 text-right font-medium">Price</th>
-                        <th scope="col" className="w-[10%] px-3 py-2 text-right font-medium">Planned cost</th>
-                        <th scope="col" className="w-[10%] px-3 py-2 text-right font-medium">Used cost</th>
-                        <th scope="col" className="w-[8%] py-2 pr-4 pl-3"><span className="sr-only">Actions</span></th>
+                        <th scope="col" className="w-[12%] px-3 py-2 text-end font-medium">Price</th>
+                        <th scope="col" className="w-[10%] px-3 py-2 text-end font-medium">Planned cost</th>
+                        <th scope="col" className="w-[10%] px-3 py-2 text-end font-medium">Used cost</th>
+                        <th scope="col" className="w-[8%] py-2 pe-4 ps-3"><span className="sr-only">Actions</span></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -152,7 +152,7 @@ export function ProjectResourcesView({
                         const pct = planned > 0 ? Math.min(100, (used / planned) * 100) : used > 0 ? 100 : 0;
                         return (
                           <tr key={u.id} className="border-b last:border-b-0">
-                            <td className="py-2.5 pr-3 pl-4">
+                            <td className="py-2.5 pe-3 ps-4">
                               <div className="font-medium">{u.name}</div>
                               {u.role && <div className="text-xs text-muted-foreground">{u.role}</div>}
                             </td>
@@ -194,15 +194,15 @@ export function ProjectResourcesView({
                                 </p>
                               )}
                             </td>
-                            <td className="px-3 py-2.5 text-right whitespace-nowrap tabular-nums">
+                            <td className="px-3 py-2.5 text-end whitespace-nowrap tabular-nums">
                               {money(num(u.unitCost))}
                               <span className="text-muted-foreground"> / {u.unit}</span>
                             </td>
-                            <td className="px-3 py-2.5 text-right whitespace-nowrap tabular-nums">{money(planned * num(u.unitCost))}</td>
-                            <td className={cn("px-3 py-2.5 text-right whitespace-nowrap tabular-nums", over && "text-destructive")}>
+                            <td className="px-3 py-2.5 text-end whitespace-nowrap tabular-nums">{money(planned * num(u.unitCost))}</td>
+                            <td className={cn("px-3 py-2.5 text-end whitespace-nowrap tabular-nums", over && "text-destructive")}>
                               {money(used * num(u.unitCost))}
                             </td>
-                            <td className="py-2 pr-4 pl-3 text-right">
+                            <td className="py-2 pe-4 ps-3 text-end">
                               <Button variant="ghost" size="sm" onClick={() => setEditing(u)} aria-label={`Edit ${u.name}`}>
                                 <Pencil className="size-4" />
                                 Edit
@@ -214,11 +214,11 @@ export function ProjectResourcesView({
                     </tbody>
                     <tfoot>
                       <tr className="border-t bg-muted/40 text-xs">
-                        <th scope="row" colSpan={4} className="py-2 pr-3 pl-4 text-left font-medium">
+                        <th scope="row" colSpan={4} className="py-2 pe-3 ps-4 text-start font-medium">
                           {t.plural} total
                         </th>
-                        <td className="px-3 py-2 text-right font-medium tabular-nums">{money(typePlanned)}</td>
-                        <td className="px-3 py-2 text-right font-medium tabular-nums">{money(typeUsed)}</td>
+                        <td className="px-3 py-2 text-end font-medium tabular-nums">{money(typePlanned)}</td>
+                        <td className="px-3 py-2 text-end font-medium tabular-nums">{money(typeUsed)}</td>
                         <td />
                       </tr>
                     </tfoot>

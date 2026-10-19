@@ -73,7 +73,7 @@ export function WorkloadGrid({
           <caption className="sr-only">Open tasks per person and week</caption>
           <thead>
             <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-              <th scope="col" className="w-48 py-2 pr-3 pl-4 text-left font-medium">Person</th>
+              <th scope="col" className="w-48 py-2 pe-3 ps-4 text-start font-medium">Person</th>
               {columns.map((c) => (
                 <th key={c.key} scope="col" className={cn("px-1 py-2 text-center font-medium", c.key === "overdue" && "text-destructive")}>
                   {label(c)}
@@ -84,7 +84,7 @@ export function WorkloadGrid({
           <tbody>
             {people.map((p) => (
               <tr key={p.id || "unassigned"} className="border-b last:border-b-0">
-                <th scope="row" className="py-1.5 pr-3 pl-4 text-left font-normal">
+                <th scope="row" className="py-1.5 pe-3 ps-4 text-start font-normal">
                   <span className="flex items-center gap-2">
                     {p.id ? <UserAvatar name={p.name} image={p.image} className="size-6" /> : <span className="size-6" />}
                     <span className={cn("truncate", !p.id && "text-muted-foreground italic")}>{p.name}</span>
@@ -147,7 +147,7 @@ export function WorkloadGrid({
                   <span className="w-16 font-mono text-xs text-muted-foreground">{t.key}</span>
                   <span className="min-w-0 flex-1 truncate">{t.title}</span>
                   <span className="text-xs text-muted-foreground">{t.projectName}</span>
-                  <span className="w-24 text-right text-xs text-muted-foreground tabular-nums">{formatDate(t.dueDate)}</span>
+                  <span className="w-24 text-end text-xs text-muted-foreground tabular-nums">{formatDate(t.dueDate)}</span>
                 </Link>
               </li>
             ))}

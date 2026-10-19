@@ -159,9 +159,9 @@ function ReportTable({
       ) : (
         <table className="w-full border-collapse text-xs">
           <thead>
-            <tr className="border-b-2 text-left">
+            <tr className="border-b-2 text-start">
               {head.map((h, i) => (
-                <th key={h} scope="col" className={`px-1.5 py-1.5 font-semibold ${right.includes(i) ? "text-right" : ""}`}>
+                <th key={h} scope="col" className={`px-1.5 py-1.5 font-semibold ${right.includes(i) ? "text-end" : ""}`}>
                   {h}
                 </th>
               ))}
@@ -171,7 +171,7 @@ function ReportTable({
             {rows.map((r, ri) => (
               <tr key={ri} className="break-inside-avoid border-b">
                 {r.map((c, ci) => (
-                  <td key={ci} className={`px-1.5 py-1.5 align-top ${right.includes(ci) ? "text-right tabular-nums whitespace-nowrap" : ""}`}>
+                  <td key={ci} className={`px-1.5 py-1.5 align-top ${right.includes(ci) ? "text-end tabular-nums whitespace-nowrap" : ""}`}>
                     {c}
                   </td>
                 ))}

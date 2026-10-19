@@ -129,15 +129,15 @@ export function AdminPanel({
         </h2>
         <div className="relative overflow-x-auto">
           <table className="w-full min-w-[900px] text-sm">
-            <thead className="text-left text-xs text-muted-foreground">
+            <thead className="text-start text-xs text-muted-foreground">
               <tr className="border-b bg-muted/40">
-                <th scope="col" className="py-2 pr-3 pl-4 font-medium">Workspace</th>
+                <th scope="col" className="py-2 pe-3 ps-4 font-medium">Workspace</th>
                 <th scope="col" className="px-3 py-2 font-medium">Owner</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">Members</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">Projects</th>
+                <th scope="col" className="px-3 py-2 text-end font-medium">Members</th>
+                <th scope="col" className="px-3 py-2 text-end font-medium">Projects</th>
                 <th scope="col" className="px-3 py-2 font-medium">Subscription</th>
                 <th scope="col" className="px-3 py-2 font-medium">Last payment</th>
-                <th scope="col" className="py-2 pr-4 pl-3"><span className="sr-only">Actions</span></th>
+                <th scope="col" className="py-2 pe-4 ps-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -145,15 +145,15 @@ export function AdminPanel({
                 const s = statuses[i];
                 return (
                   <tr key={w.id} className="border-b last:border-b-0">
-                    <td className="py-2.5 pr-3 pl-4">
+                    <td className="py-2.5 pe-3 ps-4">
                       <p className="font-medium">{w.name}</p>
                       <p className="text-xs text-muted-foreground">
                         since {formatDate(new Date(w.createdAt).toISOString().slice(0, 10))}
                       </p>
                     </td>
                     <td className="max-w-56 truncate px-3 py-2.5 text-muted-foreground">{w.owners ?? "—"}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">{w.members}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">{w.projectCount}</td>
+                    <td className="px-3 py-2.5 text-end tabular-nums">{w.members}</td>
+                    <td className="px-3 py-2.5 text-end tabular-nums">{w.projectCount}</td>
                     <td className="px-3 py-2.5">
                       <span
                         className={cn(
@@ -170,7 +170,7 @@ export function AdminPanel({
                     <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground tabular-nums">
                       {w.lastPayment ? formatDate(w.lastPayment) : "—"}
                     </td>
-                    <td className="py-2 pr-4 pl-3">
+                    <td className="py-2 pe-4 ps-3">
                       <div className="flex justify-end gap-1">
                         <Button size="sm" onClick={() => setPaying(w)} aria-label={`Record payment for ${w.name}`}>
                           <Plus className="size-4" />
@@ -213,20 +213,20 @@ export function AdminPanel({
         ) : (
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
-              <thead className="text-left text-xs text-muted-foreground">
+              <thead className="text-start text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
-                  <th scope="col" className="py-2 pr-3 pl-4 font-medium">Date</th>
+                  <th scope="col" className="py-2 pe-3 ps-4 font-medium">Date</th>
                   <th scope="col" className="px-3 py-2 font-medium">Workspace</th>
                   <th scope="col" className="px-3 py-2 font-medium">Method</th>
                   <th scope="col" className="px-3 py-2 font-medium">Covers until</th>
                   <th scope="col" className="px-3 py-2 font-medium">Recorded by</th>
-                  <th scope="col" className="py-2 pr-4 pl-3 text-right font-medium">Amount</th>
+                  <th scope="col" className="py-2 pe-4 ps-3 text-end font-medium">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {payments.map((p) => (
                   <tr key={p.id} className="border-b last:border-b-0">
-                    <td className="py-2.5 pr-3 pl-4 tabular-nums">{formatDate(new Date(p.createdAt).toISOString().slice(0, 10))}</td>
+                    <td className="py-2.5 pe-3 ps-4 tabular-nums">{formatDate(new Date(p.createdAt).toISOString().slice(0, 10))}</td>
                     <td className="px-3 py-2.5">{p.workspaceName}</td>
                     <td className="px-3 py-2.5">
                       {p.method}
@@ -234,7 +234,7 @@ export function AdminPanel({
                     </td>
                     <td className="px-3 py-2.5 tabular-nums">{formatDate(p.coversUntil)}</td>
                     <td className="px-3 py-2.5 text-muted-foreground">{p.recordedBy ?? "—"}</td>
-                    <td className="py-2.5 pr-4 pl-3 text-right font-medium tabular-nums">{formatMoney(p.amount, p.currency)}</td>
+                    <td className="py-2.5 pe-4 ps-3 text-end font-medium tabular-nums">{formatMoney(p.amount, p.currency)}</td>
                   </tr>
                 ))}
               </tbody>

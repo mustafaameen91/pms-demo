@@ -177,13 +177,13 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
         ) : (
           <div className="relative mt-3 overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
-              <thead className="text-left text-xs text-muted-foreground">
+              <thead className="text-start text-xs text-muted-foreground">
                 <tr className="border-y bg-muted/40">
-                  <th scope="col" className="w-2/5 py-2 pr-3 pl-5 font-medium sm:pl-6">Task</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">Weight</th>
+                  <th scope="col" className="w-2/5 py-2 pe-3 ps-5 font-medium sm:ps-6">Task</th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">Weight</th>
                   <th scope="col" className="w-64 px-3 py-2 font-medium">Progress vs planned</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">Contributes</th>
-                  <th scope="col" className="py-2 pr-5 pl-3 font-medium sm:pr-6">Schedule</th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">Contributes</th>
+                  <th scope="col" className="py-2 pe-5 ps-3 font-medium sm:pe-6">Schedule</th>
                 </tr>
               </thead>
               <tbody>
@@ -205,7 +205,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
                           : "on_track";
                   return (
                     <tr key={r.id} className={cn("border-b last:border-b-0", r.cancelled && "text-muted-foreground")}>
-                      <td className="max-w-0 py-2.5 pr-3 pl-5 sm:pl-6">
+                      <td className="max-w-0 py-2.5 pe-3 ps-5 sm:ps-6">
                         <Link
                           href={`${tasksHref}?task=${project.key}-${r.number}`}
                           className="flex items-center gap-2 hover:underline"
@@ -217,7 +217,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
                           <span className="truncate font-medium">{r.title}</span>
                         </Link>
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">
+                      <td className="px-3 py-2.5 text-end tabular-nums">
                         {r.weight ? fmtPct(Number(r.weight)) : "—"}
                       </td>
                       <td className="px-3 py-2.5">
@@ -229,15 +229,15 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
                             label={`${r.title} progress`}
                             className="flex-1"
                           />
-                          <span className="w-20 text-right text-xs text-muted-foreground tabular-nums">
+                          <span className="w-20 text-end text-xs text-muted-foreground tabular-nums">
                             {r.progress}%{planned !== null && !r.cancelled ? ` / ${Math.round(planned)}%` : ""}
                           </span>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 text-right font-medium tabular-nums">
+                      <td className="px-3 py-2.5 text-end font-medium tabular-nums">
                         {r.cancelled ? "Cancelled" : contributes === null ? "—" : fmtPct(Math.round(contributes * 10) / 10)}
                       </td>
-                      <td className="py-2.5 pr-5 pl-3 sm:pr-6">
+                      <td className="py-2.5 pe-5 ps-3 sm:pe-6">
                         {!r.cancelled && <ScheduleBadge state={state} short />}
                       </td>
                     </tr>
@@ -246,18 +246,18 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
               </tbody>
               <tfoot>
                 <tr className="border-t bg-muted/40 text-xs">
-                  <th scope="row" className="py-2 pr-3 pl-5 text-left font-medium sm:pl-6">
+                  <th scope="row" className="py-2 pe-3 ps-5 text-start font-medium sm:ps-6">
                     Project
                   </th>
-                  <td className="px-3 py-2 text-right font-medium tabular-nums">
+                  <td className="px-3 py-2 text-end font-medium tabular-nums">
                     {a.mode === "weighted" ? fmtPct(a.totalWeight) : "—"}
                   </td>
-                  <td className="px-3 py-2 text-right text-muted-foreground tabular-nums">
+                  <td className="px-3 py-2 text-end text-muted-foreground tabular-nums">
                     {fmtPct(a.actual)}
                     {a.planned !== null ? ` / ${fmtPct(a.planned)}` : ""}
                   </td>
-                  <td className="px-3 py-2 text-right font-semibold tabular-nums">{fmtPct(a.actual)}</td>
-                  <td className="py-2 pr-5 pl-3 sm:pr-6">
+                  <td className="px-3 py-2 text-end font-semibold tabular-nums">{fmtPct(a.actual)}</td>
+                  <td className="py-2 pe-5 ps-3 sm:pe-6">
                     <ScheduleBadge state={a.schedule} short />
                   </td>
                 </tr>

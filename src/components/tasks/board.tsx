@@ -311,7 +311,7 @@ function TaskCard({
         >
           {key}
         </Link>
-        {task.priority !== "none" && <PriorityIcon priority={task.priority} className="ml-auto size-3.5" />}
+        {task.priority !== "none" && <PriorityIcon priority={task.priority} className="ms-auto size-3.5" />}
       </div>
       <p className={cn("flex items-center gap-1.5 leading-snug font-medium", done && "text-muted-foreground line-through")}>
         {task.isMilestone && <MilestoneIcon />}
@@ -347,7 +347,7 @@ function TaskCard({
             </span>
           )}
           {task.assigneeName && (
-            <UserAvatar name={task.assigneeName} image={task.assigneeImage} className="ml-auto size-5" />
+            <UserAvatar name={task.assigneeName} image={task.assigneeImage} className="ms-auto size-5" />
           )}
         </div>
       )}

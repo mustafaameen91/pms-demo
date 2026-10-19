@@ -142,26 +142,26 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
         ) : (
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[980px] text-sm">
-              <thead className="text-left text-xs text-muted-foreground">
+              <thead className="text-start text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
-                  <th scope="col" className="py-2 pr-3 pl-4 font-medium">Project</th>
+                  <th scope="col" className="py-2 pe-3 ps-4 font-medium">Project</th>
                   <th scope="col" className="px-3 py-2 font-medium">Status</th>
                   <th scope="col" className="w-56 px-3 py-2 font-medium">Accomplishment</th>
                   <th scope="col" className="w-48 px-3 py-2 font-medium">Spent / budget</th>
                   <th scope="col" className="px-3 py-2 font-medium">End date</th>
-                  <th scope="col" className="py-2 pr-4 pl-3 text-right font-medium">Late tasks</th>
+                  <th scope="col" className="py-2 pe-4 ps-3 text-end font-medium">Late tasks</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map(({ p, accomplishment: a, money, late, daysLeft, overdue, finished }) => (
                   <tr key={p.id} className={cn("border-b last:border-b-0", finished && "text-muted-foreground")}>
-                    <td className="py-3 pr-3 pl-4">
+                    <td className="py-3 pe-3 ps-4">
                       <Link href={`${base}/p/${p.key}/overview`} className="flex items-center gap-2 font-medium hover:underline">
                         <span aria-hidden className="size-2.5 shrink-0 rounded-sm" style={{ backgroundColor: p.color }} />
                         {p.name}
                         <span className="font-mono text-xs font-normal text-muted-foreground">{p.key}</span>
                       </Link>
-                      {p.client && <p className="pl-4.5 text-xs text-muted-foreground">{p.client}</p>}
+                      {p.client && <p className="ps-4.5 text-xs text-muted-foreground">{p.client}</p>}
                     </td>
                     <td className="px-3 py-3">
                       <ProjectStatusBadge status={p.status} />
@@ -202,7 +202,7 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
                         </p>
                       )}
                     </td>
-                    <td className={cn("py-3 pr-4 pl-3 text-right font-medium tabular-nums", late > 0 && !finished && "text-destructive")}>
+                    <td className={cn("py-3 pe-4 ps-3 text-end font-medium tabular-nums", late > 0 && !finished && "text-destructive")}>
                       {late}
                     </td>
                   </tr>

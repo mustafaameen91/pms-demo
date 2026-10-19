@@ -70,7 +70,7 @@ function Card({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex h-full flex-col rounded-xl border bg-card p-3 text-left transition-colors",
+        "flex h-full flex-col rounded-xl border bg-card p-3 text-start transition-colors",
         "hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-2 focus-visible:outline-ring",
       )}
     >

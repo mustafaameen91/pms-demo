@@ -121,7 +121,7 @@ export function CommandPalette({
                 <CommandItem key={t.key} value={`task-${t.key}`} onSelect={() => go(`${base}/p/${t.projectKey}?task=${t.key}`)}>
                   <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">{t.key}</span>
                   <span className={t.done ? "truncate text-muted-foreground line-through" : "truncate"}>{t.title}</span>
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                  <span className="ms-auto shrink-0 text-xs text-muted-foreground">
                     {t.projectName} · {t.statusName}
                   </span>
                 </CommandItem>
@@ -134,7 +134,7 @@ export function CommandPalette({
                 <CommandItem key={p.key} value={`project-${p.key}`} onSelect={() => go(`${base}/p/${p.key}/overview`)}>
                   <span aria-hidden className="size-2.5 shrink-0 rounded-sm" style={{ backgroundColor: p.color }} />
                   {p.name}
-                  <span className="ml-auto text-xs text-muted-foreground">{p.client ?? p.key}</span>
+                  <span className="ms-auto text-xs text-muted-foreground">{p.client ?? p.key}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -156,7 +156,7 @@ export function CommandPalette({
                 <CommandItem key={p.email} value={`person-${p.email}`} onSelect={() => go(`${base}/members`)}>
                   <User className="size-4" />
                   {p.name}
-                  <span className="ml-auto text-xs text-muted-foreground">{p.email}</span>
+                  <span className="ms-auto text-xs text-muted-foreground">{p.email}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -193,7 +193,7 @@ export function SearchButton({ onClick }: { onClick: () => void }) {
     >
       <Search className="size-4" />
       Search
-      <kbd className="ml-auto rounded border bg-muted px-1.5 font-sans text-[11px]">{mac ? "⌘K" : "Ctrl K"}</kbd>
+      <kbd className="ms-auto rounded border bg-muted px-1.5 font-sans text-[11px]">{mac ? "⌘K" : "Ctrl K"}</kbd>
     </button>
   );
 }

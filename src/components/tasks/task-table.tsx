@@ -37,21 +37,21 @@ export function TaskTable({
   return (
     <div className="flex-1 overflow-auto pb-10">
       <table className="w-full border-collapse text-sm" style={{ minWidth: 1040 + fields.length * 140 }}>
-        <thead className="sticky top-0 z-10 bg-muted/80 text-left text-xs text-muted-foreground backdrop-blur">
+        <thead className="sticky top-0 z-10 bg-muted/80 text-start text-xs text-muted-foreground backdrop-blur">
           <tr className="border-b">
-            <th scope="col" className="w-[34%] py-2 pr-3 pl-4 font-medium sm:pl-6">Task</th>
+            <th scope="col" className="w-[34%] py-2 pe-3 ps-4 font-medium sm:ps-6">Task</th>
             <th scope="col" className="px-3 py-2 font-medium">Status</th>
-            <th scope="col" className="px-3 py-2 text-right font-medium">Weight</th>
+            <th scope="col" className="px-3 py-2 text-end font-medium">Weight</th>
             <th scope="col" className="w-40 px-3 py-2 font-medium">Progress</th>
             <th scope="col" className="px-3 py-2 font-medium">Start</th>
             <th scope="col" className="px-3 py-2 font-medium">End</th>
-            <th scope="col" className="px-3 py-2 text-right font-medium">Budget</th>
+            <th scope="col" className="px-3 py-2 text-end font-medium">Budget</th>
             {fields.map((f) => (
               <th key={f.id} scope="col" className="max-w-40 truncate px-3 py-2 font-medium" title={f.name}>
                 {f.name}
               </th>
             ))}
-            <th scope="col" className="py-2 pr-4 pl-3 font-medium sm:pr-6">
+            <th scope="col" className="py-2 pe-4 ps-3 font-medium sm:pe-6">
               <span className="sr-only">Assignee</span>
             </th>
           </tr>
@@ -66,7 +66,7 @@ export function TaskTable({
             // The whole row is clickable; the title link is the keyboard/screen-reader target.
             return (
               <tr key={task.id} className="group relative border-b transition-colors hover:bg-accent/50">
-                <td className="max-w-0 py-2.5 pr-3 pl-4 sm:pl-6">
+                <td className="max-w-0 py-2.5 pe-3 ps-4 sm:ps-6">
                   <Link
                     href={href}
                     scroll={false}
@@ -99,7 +99,7 @@ export function TaskTable({
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-2.5 text-right tabular-nums">
+                <td className="px-3 py-2.5 text-end tabular-nums">
                   {task.weight ? fmtPct(Number(task.weight)) : <span className="text-muted-foreground">—</span>}
                 </td>
                 <td className="px-3 py-2.5">
@@ -120,7 +120,7 @@ export function TaskTable({
                 >
                   {end ? (end.overdue ? `Overdue · ${end.label}` : end.label) : "—"}
                 </td>
-                <td className="px-3 py-2.5 text-right whitespace-nowrap tabular-nums">
+                <td className="px-3 py-2.5 text-end whitespace-nowrap tabular-nums">
                   {task.budget ? formatMoney(task.budget, currency) : <span className="text-muted-foreground">—</span>}
                 </td>
                 {fields.map((f) => (
@@ -128,7 +128,7 @@ export function TaskTable({
                     {formatFieldValue(f, task.customFields?.[f.id]) || "—"}
                   </td>
                 ))}
-                <td className="py-2.5 pr-4 pl-3 sm:pr-6">
+                <td className="py-2.5 pe-4 ps-3 sm:pe-6">
                   {task.assigneeName && <UserAvatar name={task.assigneeName} image={task.assigneeImage} />}
                 </td>
               </tr>
@@ -138,13 +138,13 @@ export function TaskTable({
         {tasks.length > 0 && (
           <tfoot>
             <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-              <th scope="row" className="py-2 pr-3 pl-4 text-left font-medium sm:pl-6">
+              <th scope="row" className="py-2 pe-3 ps-4 text-start font-medium sm:ps-6">
                 Total · {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
               </th>
               <td />
               <td
                 className={cn(
-                  "px-3 py-2 text-right font-medium tabular-nums",
+                  "px-3 py-2 text-end font-medium tabular-nums",
                   totalWeight > 100 ? "text-destructive" : "text-foreground",
                 )}
               >
@@ -158,7 +158,7 @@ export function TaskTable({
               <td colSpan={2} className="px-3 py-2 text-foreground">
                 {accomplishment !== null && <span className="font-medium">Project accomplishment</span>}
               </td>
-              <td className="px-3 py-2 text-right font-medium whitespace-nowrap text-foreground tabular-nums">
+              <td className="px-3 py-2 text-end font-medium whitespace-nowrap text-foreground tabular-nums">
                 {formatMoney(totalBudget, currency)}
               </td>
               {fields.map((f) => (

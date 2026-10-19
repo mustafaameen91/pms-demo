@@ -50,7 +50,7 @@ export function Dependencies({
           <Lock className="size-4 shrink-0 text-amber-600 dark:text-amber-400" aria-label="Not finished" />
         )}
         <Link href={taskHref(`${projectKey}-${t.number}`)} scroll={false} className="min-w-0 flex-1 truncate hover:underline">
-          <span className="mr-2 font-mono text-xs text-muted-foreground">
+          <span className="me-2 font-mono text-xs text-muted-foreground">
             {projectKey}-{t.number}
           </span>
           {t.title}
@@ -120,7 +120,7 @@ export function Dependencies({
       {links.successors.length > 0 && (
         <div className="grid gap-1.5">
           <h4 className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-            Blocking <ArrowRight className="size-3" aria-hidden /> these wait on this task
+            Blocking <ArrowRight className="size-3 rtl:-scale-x-100" aria-hidden /> these wait on this task
           </h4>
           <ul className="grid divide-y rounded-lg border">{links.successors.map((s) => row(s))}</ul>
         </div>

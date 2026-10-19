@@ -50,20 +50,20 @@ export function TaskCalendar({
   return (
     <div className="flex min-h-0 flex-1 flex-col px-4 py-4 sm:px-6">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h2 className="mr-2 text-lg font-semibold" aria-live="polite">
+        <h2 className="me-2 text-lg font-semibold" aria-live="polite">
           {monthLabel}
         </h2>
         <Link href={href(shift(-1))} scroll={false} aria-label="Previous month" className="grid size-8 place-items-center rounded-md border hover:bg-accent">
-          <ChevronLeft className="size-4" />
+          <ChevronLeft className="size-4 rtl:-scale-x-100" />
         </Link>
         <Link href={href(today.slice(0, 7))} scroll={false} className="flex h-8 items-center rounded-md border px-3 text-sm hover:bg-accent">
           Today
         </Link>
         <Link href={href(shift(1))} scroll={false} aria-label="Next month" className="grid size-8 place-items-center rounded-md border hover:bg-accent">
-          <ChevronRight className="size-4" />
+          <ChevronRight className="size-4 rtl:-scale-x-100" />
         </Link>
         {unscheduled > 0 && (
-          <span className="ml-auto text-xs text-muted-foreground">
+          <span className="ms-auto text-xs text-muted-foreground">
             {unscheduled} {unscheduled === 1 ? "task has" : "tasks have"} no end date
           </span>
         )}
@@ -89,7 +89,7 @@ export function TaskCalendar({
                     key={d}
                     role="gridcell"
                     aria-label={`${d}: ${list.length} ${list.length === 1 ? "task" : "tasks"}`}
-                    className={cn("min-h-28 border-r border-b p-1.5 last:border-r-0 [&:nth-child(7n)]:border-r-0", !inMonth && "bg-muted/30")}
+                    className={cn("min-h-28 border-e border-b p-1.5 last:border-e-0 [&:nth-child(7n)]:border-e-0", !inMonth && "bg-muted/30")}
                   >
                     <div className={cn("mb-1 flex size-6 items-center justify-center rounded-full text-xs tabular-nums", isToday ? "font-semibold ring-2 ring-brand-accent" : inMonth ? "text-foreground" : "text-muted-foreground")}>
                       {Number(d.slice(8))}

@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       <header className="flex h-14 items-center gap-3 border-b px-4 sm:px-6">
         <Logo />
         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Platform admin</span>
-        <Link href="/" className="ml-auto text-sm text-primary underline-offset-4 hover:underline">
+        <Link href="/" className="ms-auto text-sm text-primary underline-offset-4 hover:underline">
           Back to app
         </Link>
       </header>

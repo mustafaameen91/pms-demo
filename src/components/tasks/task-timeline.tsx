@@ -113,7 +113,8 @@ export function TaskTimeline({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex-1 overflow-auto">
+      {/* The chart keeps time flowing left → right in every language (positions are pixel offsets). */}
+      <div className="flex-1 overflow-auto" dir="ltr">
         <div className="relative" style={{ width: LABEL_WIDTH + width }}>
           {/* Header */}
           <div className="sticky top-0 z-20 flex border-b bg-background">

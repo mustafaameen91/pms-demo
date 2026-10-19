@@ -69,7 +69,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center border-b px-4 py-2 sm:px-6">
-        <nav aria-label="Task views" className="ml-auto flex rounded-lg bg-muted p-0.5">
+        <nav aria-label="Task views" className="ms-auto flex rounded-lg bg-muted p-0.5">
           {(
             [
               { id: "table", label: "Table", icon: Table2 },

@@ -127,13 +127,21 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Rules: "when status becomes Done → notify the manager", "when an expense is added → …", "when a task is late → …"
 - [x] Simple rule builder (when … then …), on/off per rule, run history
 
-## Phase 16 — AI assistant & integrations *(needs a decision: AI has a small cost per use)*
+## Phase 16 — Arabic & English
+- [ ] Language switch (English / العربية) on every page incl. login; each person's choice is remembered
+- [ ] Right-to-left layout for Arabic (sidebar, panels, tables, board, icons) + Arabic font
+- [ ] All screens translated: sign-in, workspace, projects, tasks, resources, expenses, approvals, automations, settings, billing, admin, public forms and client page
+- [ ] Notifications, emails, activity history and audit log in each person's language
+- [ ] Dates, money and numbers formatted per language; Excel export in your language
+- [ ] Tests: everything still passes in English, plus an Arabic check
+
+## Phase 17 — AI assistant & integrations *(needs a decision: free AI services vs paid vs own server — discussed, to decide later)*
 - [ ] AI: turn a project brief into weighted tasks
 - [ ] AI: weekly status summary and risk list per project
 - [ ] "Continue with Google" sign-in
 - [ ] Outgoing webhooks / API for other systems
 
-## Phase 17 — Going live on your Ubuntu servers
+## Phase 18 — Going live on your Ubuntu servers
 - [ ] **Turn on real email** (SMTP settings in `.env`) — chosen to postpone; currently printed to terminal
 - [ ] Automated tests, production Docker setup
 - [ ] Deploy with HTTPS

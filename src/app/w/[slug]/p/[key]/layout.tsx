@@ -54,7 +54,7 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
               Over budget
             </a>
           )}
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ms-auto flex items-center gap-3">
             <AccomplishmentSummary a={accomplishment} />
             {accomplishment.mode !== "empty" && (
               <AccomplishmentMeter

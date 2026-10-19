@@ -1,4 +1,5 @@
-/** Plain-English description of an activity row, for the audit log (pure). */
+/** Description of an activity row for the audit log, in the viewer's language (pure). */
+import { createT, type T } from "@/i18n/translate";
 const s = (v: unknown) => (typeof v === "string" ? v : v === null || v === undefined ? "" : String(v));
 
 export const ACTIVITY_GROUPS = {
@@ -27,62 +28,93 @@ export const GROUP_PREFIXES: Record<ActivityGroup, string[]> = {
   billing: ["subscription."],
 };
 
-export function describeActivity(type: string, data: Record<string, unknown>, taskRef?: string | null) {
-  const on = taskRef ? ` on ${taskRef}` : "";
+const EN = createT("en", {});
+
+/** Generated text stored in both languages (e.g. an automation rule) — pick the viewer's. */
+const localized = (data: Record<string, unknown>, key: string, t: T) => s(data[`${key}_${t.locale}`] ?? data[key]);
+
+/**
+ * Sentence after the actor's name, e.g. "moved PS-3 to Done". Pass the
+ * viewer's translator; English by default. "with ref" variants name the task.
+ */
+export function describeActivity(type: string, data: Record<string, unknown>, taskRef?: string | null, t: T = EN) {
+  const ref = taskRef ?? t("a task");
+  // Two phrasings: with the task named ("… on PS-3") and without.
+  const on = (withRef: string, without: string, vars: Record<string, string | number> = {}) =>
+    taskRef ? t(withRef, { ref: taskRef, ...vars }) : t(without, vars);
   switch (type) {
-    case "project.created": return `created the project “${s(data.name)}”`;
-    case "project.updated": return `updated project details (${(Array.isArray(data.fields) ? data.fields : []).join(", ")})`;
-    case "project.archived": return "archived the project";
-    case "project.restored": return "restored the project";
-    case "project.deleted": return `deleted the project “${s(data.name)}” (${s(data.key)})`;
-    case "share.created": return `created a client link${data.showBudget ? " (with budget)" : ""}`;
-    case "share.revoked": return "turned off the client link";
-    case "task.created": return `created ${taskRef ?? "a task"}`;
-    case "task.created_from_form": return `request ${taskRef ?? ""} came in through “${s(data.form)}”${data.requester ? ` from ${s(data.requester)}` : ""}`;
-    case "form.created": return `created the request form “${s(data.title)}”`;
-    case "automation.created": return `added an automation: ${s(data.rule)}`;
-    case "automation.updated": return `changed an automation to: ${s(data.rule)}`;
-    case "automation.enabled": return `turned on an automation: ${s(data.rule)}`;
-    case "automation.disabled": return `turned off an automation: ${s(data.rule)}`;
-    case "automation.deleted": return `deleted an automation: ${s(data.rule)}`;
-    case "task.deleted": return `deleted task “${s(data.title)}”`;
-    case "task.restored": return `restored ${taskRef ?? "a task"}`;
-    case "task.renamed": return `renamed ${taskRef ?? "a task"} to “${s(data.to)}”`;
-    case "task.status_changed": return `moved ${taskRef ?? "a task"} to ${s(data.toName)}`;
-    case "task.progress_changed": return `set progress${on} to ${s(data.to)}%`;
-    case "task.weight_changed": return data.to !== null ? `set weight${on} to ${Number(data.to)}%` : `removed the weight${on}`;
-    case "task.budget_changed": return data.to !== null ? `set budget${on} to ${s(data.to)}` : `removed the budget${on}`;
-    case "task.assignee_changed": return data.to ? `changed the assignee${on}` : `removed the assignee${on}`;
-    case "task.priority_changed": return `set priority${on} to ${s(data.to)}`;
-    case "task.start_date_changed": return `changed the start date${on}`;
-    case "task.due_date_changed": return `changed the end date${on}`;
-    case "task.description_changed": return `edited the description${on}`;
-    case "subtask.created": return `added sub-task “${s(data.title)}”${on}`;
-    case "subtask.deleted": return `deleted sub-task “${s(data.title)}”${on}`;
-    case "subtask.restored": return `restored sub-task “${s(data.title)}”${on}`;
-    case "comment.added": return `commented${on}`;
-    case "resource.added": return `added resource “${s(data.name)}”`;
-    case "resource.removed": return `removed resource “${s(data.name)}”`;
-    case "expense.added": return `added expense “${s(data.description)}” (${s(data.amount)})`;
-    case "expense.updated": return `edited expense “${s(data.description)}” (${s(data.amount)})`;
-    case "expense.deleted": return `deleted expense “${s(data.description)}” (${s(data.amount)})`;
-    case "expense.approved": return `approved expense “${s(data.description)}” (${s(data.amount)})`;
-    case "expense.rejected": return `rejected expense “${s(data.description)}” (${s(data.amount)})${data.note ? ` — ${s(data.note)}` : ""}`;
-    case "project.approval_threshold_changed": return data.to ? `set expenses above ${s(data.to)} to need approval` : "turned off expense approvals";
-    case "task.recurred": return `finished a repeating task; created ${s(data.number) ? `#${s(data.number)}` : "the next one"}`;
-    case "task.recurrence_changed": return data.to ? `set ${taskRef ?? "a task"} to repeat ${s(data.to)}` : `stopped ${taskRef ?? "a task"} repeating`;
-    case "task.made_milestone": return `made ${taskRef ?? "a task"} a milestone`;
-    case "task.unmade_milestone": return `turned ${taskRef ?? "a task"} back into a normal task`;
-    case "task.dependency_added": return `made ${taskRef ?? "a task"} wait on “${s(data.title)}”`;
-    case "task.dependency_removed": return `removed a dependency${on}`;
-    case "member.invited": return `invited ${s(data.email)} as ${s(data.role)}`;
-    case "member.invitation_cancelled": return "cancelled an invitation";
-    case "member.role_changed": return `changed ${s(data.email)} from ${s(data.from)} to ${s(data.to)}`;
-    case "member.removed": return `removed ${s(data.email)} from the workspace`;
-    case "subscription.payment_recorded": return `recorded a payment of ${s(data.amount)} ${s(data.currency)} (${s(data.method)}), active until ${s(data.coversUntil)}`;
-    case "subscription.complimentary": return "gave the workspace free access";
-    case "subscription.cancel": return "cancelled the subscription";
-    case "subscription.pending": return "set the subscription to awaiting payment";
+    case "project.created": return t("created the project “{name}”", { name: s(data.name) });
+    case "project.updated": return t("updated project details ({fields})", { fields: (Array.isArray(data.fields) ? data.fields : []).map((f) => t(String(f))).join(t(", ")) });
+    case "project.archived": return t("archived the project");
+    case "project.restored": return t("restored the project");
+    case "project.deleted": return t("deleted the project “{name}” ({key})", { name: s(data.name), key: s(data.key) });
+    case "share.created": return data.showBudget ? t("created a client link (with budget)") : t("created a client link");
+    case "share.revoked": return t("turned off the client link");
+    case "task.created": return t("created {ref}", { ref });
+    case "task.created_from_form":
+      return data.requester
+        ? t("request {ref} came in through “{form}” from {requester}", { ref: taskRef ?? "", form: s(data.form), requester: s(data.requester) })
+        : t("request {ref} came in through “{form}”", { ref: taskRef ?? "", form: s(data.form) });
+    case "form.created": return t("created the request form “{title}”", { title: s(data.title) });
+    case "automation.created": return t("added an automation: {rule}", { rule: localized(data, "rule", t) });
+    case "automation.updated": return t("changed an automation to: {rule}", { rule: localized(data, "rule", t) });
+    case "automation.enabled": return t("turned on an automation: {rule}", { rule: localized(data, "rule", t) });
+    case "automation.disabled": return t("turned off an automation: {rule}", { rule: localized(data, "rule", t) });
+    case "automation.deleted": return t("deleted an automation: {rule}", { rule: localized(data, "rule", t) });
+    case "task.deleted": return t("deleted task “{title}”", { title: s(data.title) });
+    case "task.restored": return t("restored {ref}", { ref });
+    case "task.renamed": return t("renamed {ref} to “{to}”", { ref, to: s(data.to) });
+    case "task.status_changed": return t("moved {ref} to {status}", { ref, status: s(data.toName) });
+    case "task.progress_changed": return on("set progress on {ref} to {to}%", "set progress to {to}%", { to: s(data.to) });
+    case "task.weight_changed":
+      return data.to !== null
+        ? on("set weight on {ref} to {to}%", "set weight to {to}%", { to: Number(data.to) })
+        : on("removed the weight on {ref}", "removed the weight");
+    case "task.budget_changed":
+      return data.to !== null ? on("set budget on {ref} to {to}", "set budget to {to}", { to: s(data.to) }) : on("removed the budget on {ref}", "removed the budget");
+    case "task.assignee_changed": return data.to ? on("changed the assignee on {ref}", "changed the assignee") : on("removed the assignee on {ref}", "removed the assignee");
+    case "task.priority_changed": return on("set priority on {ref} to {to}", "set priority to {to}", { to: t(s(data.to)) });
+    case "task.start_date_changed": return on("changed the start date on {ref}", "changed the start date");
+    case "task.due_date_changed": return on("changed the end date on {ref}", "changed the end date");
+    case "task.description_changed": return on("edited the description on {ref}", "edited the description");
+    case "subtask.created": return on("added sub-task “{title}” on {ref}", "added sub-task “{title}”", { title: s(data.title) });
+    case "subtask.deleted": return on("deleted sub-task “{title}” on {ref}", "deleted sub-task “{title}”", { title: s(data.title) });
+    case "subtask.restored": return on("restored sub-task “{title}” on {ref}", "restored sub-task “{title}”", { title: s(data.title) });
+    case "comment.added": return on("commented on {ref}", "commented");
+    case "resource.added": return t("added resource “{name}”", { name: s(data.name) });
+    case "resource.removed": return t("removed resource “{name}”", { name: s(data.name) });
+    case "expense.added": return t("added expense “{description}” ({amount})", { description: s(data.description), amount: s(data.amount) });
+    case "expense.updated": return t("edited expense “{description}” ({amount})", { description: s(data.description), amount: s(data.amount) });
+    case "expense.deleted": return t("deleted expense “{description}” ({amount})", { description: s(data.description), amount: s(data.amount) });
+    case "expense.approved": return t("approved expense “{description}” ({amount})", { description: s(data.description), amount: s(data.amount) });
+    case "expense.rejected":
+      return data.note
+        ? t("rejected expense “{description}” ({amount}) — {note}", { description: s(data.description), amount: s(data.amount), note: s(data.note) })
+        : t("rejected expense “{description}” ({amount})", { description: s(data.description), amount: s(data.amount) });
+    case "project.approval_threshold_changed":
+      return data.to ? t("set expenses above {amount} to need approval", { amount: s(data.to) }) : t("turned off expense approvals");
+    case "task.recurred":
+      return s(data.number) ? t("finished a repeating task; created #{number}", { number: s(data.number) }) : t("finished a repeating task; created the next one");
+    case "task.recurrence_changed":
+      return data.to ? t("set {ref} to repeat {rule}", { ref, rule: t(s(data.to)) }) : t("stopped {ref} repeating", { ref });
+    case "task.made_milestone": return t("made {ref} a milestone", { ref });
+    case "task.unmade_milestone": return t("turned {ref} back into a normal task", { ref });
+    case "task.dependency_added": return t("made {ref} wait on “{title}”", { ref, title: s(data.title) });
+    case "task.dependency_removed": return on("removed a dependency on {ref}", "removed a dependency");
+    case "member.invited": return t("invited {email} as {role}", { email: s(data.email), role: t(s(data.role)) });
+    case "member.invitation_cancelled": return t("cancelled an invitation");
+    case "member.role_changed": return t("changed {email} from {from} to {to}", { email: s(data.email), from: t(s(data.from)), to: t(s(data.to)) });
+    case "member.removed": return t("removed {email} from the workspace", { email: s(data.email) });
+    case "subscription.payment_recorded":
+      return t("recorded a payment of {amount} {currency} ({method}), active until {until}", {
+        amount: s(data.amount),
+        currency: s(data.currency),
+        method: t(s(data.method)),
+        until: s(data.coversUntil),
+      });
+    case "subscription.complimentary": return t("gave the workspace free access");
+    case "subscription.cancel": return t("cancelled the subscription");
+    case "subscription.pending": return t("set the subscription to awaiting payment");
     default: return type;
   }
 }

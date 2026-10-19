@@ -78,7 +78,7 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
                   <div className="flex items-center gap-2">
                     <span aria-hidden className="size-3 shrink-0 rounded-sm" style={{ backgroundColor: p.color }} />
                     <span className="truncate font-medium">{p.name}</span>
-                    <span className="ml-auto font-mono text-xs text-muted-foreground">{p.key}</span>
+                    <span className="ms-auto font-mono text-xs text-muted-foreground">{p.key}</span>
                   </div>
                   <div className="mt-2">
                     <ProjectStatusBadge status={p.status} />

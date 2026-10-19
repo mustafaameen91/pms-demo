@@ -45,7 +45,9 @@ import {
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { NewProjectDialog } from "@/components/projects/new-project-dialog";
 import type { AccessState } from "@/lib/access";
+import { useT } from "@/i18n/client";
 import { CommandPalette, SearchButton } from "./command-palette";
+import { LanguageSwitcher } from "./language-switcher";
 
 type ShellProps = {
   user: { name: string; email: string; image: string | null };
@@ -61,6 +63,7 @@ type ShellProps = {
 };
 
 export function AppShell(props: ShellProps) {
+  const t = useT();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const openSearch = () => {
@@ -70,13 +73,13 @@ export function AppShell(props: ShellProps) {
 
   return (
     <div className="flex min-h-dvh">
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 border-r bg-sidebar text-sidebar-foreground lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 border-e bg-sidebar text-sidebar-foreground lg:flex">
         <SidebarContent {...props} onSearch={openSearch} />
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-64 bg-sidebar p-0">
-          <SheetTitle className="sr-only">Navigation</SheetTitle>
+          <SheetTitle className="sr-only">{t("Navigation")}</SheetTitle>
           <SidebarContent {...props} onNavigate={() => setMobileOpen(false)} onSearch={openSearch} />
         </SheetContent>
       </Sheet>
@@ -88,10 +91,10 @@ export function AppShell(props: ShellProps) {
             size="icon"
             className="relative"
             onClick={() => setMobileOpen(true)}
-            aria-label={props.unread > 0 ? `Open navigation, ${props.unread} unread notifications` : "Open navigation"}
+            aria-label={props.unread > 0 ? t("Open navigation, {count} unread notifications", { count: props.unread }) : t("Open navigation")}
           >
             <Menu className="size-5" />
-            {props.unread > 0 && <span aria-hidden className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary" />}
+            {props.unread > 0 && <span aria-hidden className="absolute top-1.5 inset-e-1.5 size-2 rounded-full bg-primary" />}
           </Button>
           <span className="truncate text-sm font-medium">{props.workspace.name}</span>
         </header>
@@ -124,6 +127,7 @@ function SidebarContent({
   onNavigate,
   onSearch,
 }: Omit<ShellProps, "children"> & { onNavigate?: () => void; onSearch: () => void }) {
+  const t = useT();
   const pathname = usePathname();
   const base = `/w/${workspace.slug}`;
   const [newProjectOpen, setNewProjectOpen] = useState(false);
@@ -136,17 +140,17 @@ function SidebarContent({
         {access.allowed && <SearchButton onClick={onSearch} />}
       </div>
 
-      <nav aria-label="Main" className="flex-1 overflow-y-auto px-2 pb-2">
+      <nav aria-label={t("Main")} className="flex-1 overflow-y-auto px-2 pb-2">
         {!access.allowed ? (
           <>
             <NavLink href={`${base}/billing`} active={pathname.startsWith(`${base}/billing`)} onNavigate={onNavigate}>
               <CreditCard className="size-4" />
-              Billing
+              {t("Billing")}
             </NavLink>
             {isPlatformAdmin && (
               <NavLink href="/admin" active={pathname.startsWith("/admin")} onNavigate={onNavigate}>
                 <ShieldCheck className="size-4" />
-                Platform admin
+                {t("Platform admin")}
               </NavLink>
             )}
           </>
@@ -154,85 +158,85 @@ function SidebarContent({
         <>
         <NavLink href={`${base}/my-tasks`} active={pathname.startsWith(`${base}/my-tasks`)} onNavigate={onNavigate}>
           <CheckSquare className="size-4" />
-          My tasks
+          {t("My tasks")}
         </NavLink>
         <NavLink href={`${base}/inbox`} active={pathname.startsWith(`${base}/inbox`)} onNavigate={onNavigate}>
           <Bell className="size-4" />
-          Inbox
+          {t("Inbox")}
           {unread > 0 && (
-            <span className="ml-auto rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground tabular-nums">
+            <span className="ms-auto rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground tabular-nums">
               {unread > 99 ? "99+" : unread}
-              <span className="sr-only"> unread</span>
+              <span className="sr-only"> {t("unread")}</span>
             </span>
           )}
         </NavLink>
         {approvals > 0 && (
           <NavLink href={`${base}/approvals`} active={pathname.startsWith(`${base}/approvals`)} onNavigate={onNavigate}>
             <BadgeCheck className="size-4" />
-            Approvals
-            <span className="ml-auto rounded-full bg-amber-400 px-1.5 text-xs font-semibold text-amber-950 tabular-nums">
+            {t("Approvals")}
+            <span className="ms-auto rounded-full bg-amber-400 px-1.5 text-xs font-semibold text-amber-950 tabular-nums">
               {approvals}
-              <span className="sr-only"> waiting</span>
+              <span className="sr-only"> {t("waiting")}</span>
             </span>
           </NavLink>
         )}
         <NavLink href={`${base}/dashboard`} active={pathname.startsWith(`${base}/dashboard`)} onNavigate={onNavigate}>
           <LayoutDashboard className="size-4" />
-          Dashboard
+          {t("Dashboard")}
         </NavLink>
         <NavLink href={base} active={pathname === base} onNavigate={onNavigate}>
           <FolderKanban className="size-4" />
-          Projects
+          {t("Projects")}
         </NavLink>
         <NavLink href={`${base}/resources`} active={pathname.startsWith(`${base}/resources`)} onNavigate={onNavigate}>
           <Package className="size-4" />
-          Resources
+          {t("Resources")}
         </NavLink>
         <NavLink href={`${base}/templates`} active={pathname.startsWith(`${base}/templates`)} onNavigate={onNavigate}>
           <LayoutTemplate className="size-4" />
-          Templates
+          {t("Templates")}
         </NavLink>
         <NavLink href={`${base}/workload`} active={pathname.startsWith(`${base}/workload`)} onNavigate={onNavigate}>
           <Gauge className="size-4" />
-          Workload
+          {t("Workload")}
         </NavLink>
         <NavLink href={`${base}/members`} active={pathname.startsWith(`${base}/members`)} onNavigate={onNavigate}>
           <Users className="size-4" />
-          Members
+          {t("Members")}
         </NavLink>
         {(workspace.role === "owner" || workspace.role === "admin") && (
           <NavLink href={`${base}/audit`} active={pathname.startsWith(`${base}/audit`)} onNavigate={onNavigate}>
             <ScrollText className="size-4" />
-            Audit log
+            {t("Audit log")}
           </NavLink>
         )}
         {(workspace.role === "owner" || workspace.role === "admin") && (
           <NavLink href={`${base}/billing`} active={pathname.startsWith(`${base}/billing`)} onNavigate={onNavigate}>
             <CreditCard className="size-4" />
-            Billing
+            {t("Billing")}
           </NavLink>
         )}
         {isPlatformAdmin && (
           <NavLink href="/admin" active={pathname.startsWith("/admin")} onNavigate={onNavigate}>
             <ShieldCheck className="size-4" />
-            Platform admin
+            {t("Platform admin")}
           </NavLink>
         )}
 
-        <div className="mt-5 mb-1 flex items-center justify-between pl-2.5 pr-1">
-          <span className="text-xs font-medium text-muted-foreground">Your projects</span>
+        <div className="mt-5 mb-1 flex items-center justify-between ps-2.5 pe-1">
+          <span className="text-xs font-medium text-muted-foreground">{t("Your projects")}</span>
           <Button
             variant="ghost"
             size="icon"
             className="size-7"
             onClick={() => setNewProjectOpen(true)}
-            aria-label="New project"
+            aria-label={t("New project")}
           >
             <Plus className="size-4" />
           </Button>
         </div>
         {projects.length === 0 ? (
-          <p className="px-2.5 py-1 text-xs text-muted-foreground">No projects yet.</p>
+          <p className="px-2.5 py-1 text-xs text-muted-foreground">{t("No projects yet.")}</p>
         ) : (
           <ul className="grid gap-px">
             {projects.map((p) => {
@@ -252,7 +256,8 @@ function SidebarContent({
         )}
       </nav>
 
-      <div className="border-t p-2">
+      <div className="grid gap-1 border-t p-2">
+        <LanguageSwitcher className="justify-start" />
         <UserMenu user={user} />
       </div>
 
@@ -297,17 +302,18 @@ function WorkspaceSwitcher({
   workspace,
   workspaces,
 }: Pick<ShellProps, "workspace" | "workspaces">) {
+  const t = useT();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex h-10 w-full items-center gap-2 rounded-md px-2 text-left hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-ring">
+        <button className="flex h-10 w-full items-center gap-2 rounded-md px-2 text-start hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-ring">
           <Logo compact />
           <span className="flex-1 truncate text-sm font-semibold">{workspace.name}</span>
           <ChevronsUpDown className="size-4 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Workspaces</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs text-muted-foreground">{t("Workspaces")}</DropdownMenuLabel>
         {workspaces.map((w) => (
           <DropdownMenuItem key={w.id} asChild>
             <Link href={`/w/${w.slug}`}>
@@ -320,7 +326,7 @@ function WorkspaceSwitcher({
         <DropdownMenuItem asChild>
           <Link href="/onboarding">
             <Plus className="size-4" />
-            Create workspace
+            {t("Create workspace")}
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -329,6 +335,7 @@ function WorkspaceSwitcher({
 }
 
 function UserMenu({ user }: Pick<ShellProps, "user">) {
+  const t = useT();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
 
@@ -341,7 +348,7 @@ function UserMenu({ user }: Pick<ShellProps, "user">) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex h-10 w-full items-center gap-2 rounded-md px-2 text-left hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-ring">
+        <button className="flex h-10 w-full items-center gap-2 rounded-md px-2 text-start hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-ring">
           <Avatar className="size-7">
             {user.image && <AvatarImage src={user.image} alt="" />}
             <AvatarFallback className="text-xs">{initials(user.name)}</AvatarFallback>
@@ -353,22 +360,22 @@ function UserMenu({ user }: Pick<ShellProps, "user">) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top" className="w-56">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Theme</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs text-muted-foreground">{t("Theme")}</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
           <DropdownMenuRadioItem value="light">
-            <Sun className="size-4" /> Light
+            <Sun className="size-4" /> {t("Light")}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="dark">
-            <Moon className="size-4" /> Dark
+            <Moon className="size-4" /> {t("Dark")}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="system">
-            <Monitor className="size-4" /> System
+            <Monitor className="size-4" /> {t("System")}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handleSignOut} variant="destructive">
-          <LogOut className="size-4" />
-          Sign out
+          <LogOut className="size-4 rtl:-scale-x-100" />
+          {t("Sign out")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -376,20 +383,21 @@ function UserMenu({ user }: Pick<ShellProps, "user">) {
 }
 
 function SubscriptionBanner({ access, billingHref }: { access: AccessState; billingHref: string }) {
+  const t = useT();
   if (access.allowed && access.kind === "complimentary") return null;
   if (access.allowed && !access.endingSoon && access.kind === "active") return null;
   const locked = !access.allowed;
   const text = !access.allowed
     ? access.kind === "pending"
-      ? "This workspace is waiting for payment. Projects open once the subscription is activated."
+      ? t("This workspace is waiting for payment. Projects open once the subscription is activated.")
       : access.kind === "expired"
-        ? "The subscription has ended, so this workspace is locked. Your data is safe — renew to continue."
-        : "This workspace's subscription was cancelled."
+        ? t("The subscription has ended, so this workspace is locked. Your data is safe — renew to continue.")
+        : t("This workspace's subscription was cancelled.")
     : access.kind === "trial"
-      ? `Trial: ${access.daysLeft} ${access.daysLeft === 1 ? "day" : "days"} left.`
+      ? t.plural(access.daysLeft, "Trial: {count} day left.", "Trial: {count} days left.")
       : access.daysLeft === 0
-        ? "The subscription ends today."
-        : `The subscription ends in ${access.daysLeft} ${access.daysLeft === 1 ? "day" : "days"}.`;
+        ? t("The subscription ends today.")
+        : t.plural(access.daysLeft, "The subscription ends in {count} day.", "The subscription ends in {count} days.");
   return (
     <div
       role={locked ? "alert" : "status"}
@@ -401,7 +409,7 @@ function SubscriptionBanner({ access, billingHref }: { access: AccessState; bill
       <AlertTriangle className="size-4 shrink-0" aria-hidden />
       <span className="flex-1">{text}</span>
       <Link href={billingHref} className="font-medium underline underline-offset-4">
-        {locked ? "Billing & payment" : "Renew"}
+        {locked ? t("Billing & payment") : t("Renew")}
       </Link>
     </div>
   );

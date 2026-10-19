@@ -6,6 +6,12 @@ import { member, notifications, organization, projects, taskStatuses, tasks, use
 import { appUrl, sendEmail } from "@/lib/email";
 import { todayISO } from "@/lib/accomplishment";
 import { formatDate } from "@/lib/utils";
+import { tFor } from "@/i18n/server";
+import type { T } from "@/i18n/translate";
+
+/** Text written in each recipient's own language: pass a function of their translator. */
+export type LocalText = string | ((t: T) => string);
+const render = (text: LocalText, t: T) => (typeof text === "function" ? text(t) : text);
 
 export type NotificationType =
   | "task.assigned"
@@ -25,8 +31,8 @@ type Notify = {
   /** Never notify the person who caused it. */
   actorId?: string | null;
   type: NotificationType;
-  title: string;
-  body?: string | null;
+  title: LocalText;
+  body?: LocalText | null;
   link: string;
   /** Same key per user = only one notification, ever. */
   dedupeKey?: string;
@@ -40,7 +46,7 @@ export async function notify(n: Notify): Promise<string[]> {
 
   // Only people who are still members of the workspace.
   const recipients = await db
-    .select({ id: user.id, email: user.email, name: user.name })
+    .select({ id: user.id, email: user.email, name: user.name, locale: user.locale })
     .from(member)
     .innerJoin(user, eq(user.id, member.userId))
     .where(and(eq(member.organizationId, n.workspaceId), inArray(member.userId, ids)));
@@ -54,8 +60,8 @@ export async function notify(n: Notify): Promise<string[]> {
         userId: r.id,
         actorId: n.actorId ?? null,
         type: n.type,
-        title: n.title,
-        body: n.body ?? null,
+        title: render(n.title, tFor(r.locale)),
+        body: n.body ? render(n.body, tFor(r.locale)) : null,
         link: n.link,
         dedupeKey: n.dedupeKey ?? null,
       })),
@@ -68,13 +74,16 @@ export async function notify(n: Notify): Promise<string[]> {
     await Promise.all(
       recipients
         .filter((r) => fresh.has(r.id))
-        .map((r) =>
-          sendEmail({
+        .map((r) => {
+          const t = tFor(r.locale);
+          const title = render(n.title, t);
+          const body = n.body ? render(n.body, t) : "";
+          return sendEmail({
             to: r.email,
-            subject: n.title,
-            text: `Hi ${r.name},\n\n${n.title}${n.body ? `\n\n${n.body}` : ""}\n\nOpen in PMS: ${appUrl(n.link)}`,
-          }),
-        ),
+            subject: title,
+            text: `${t("Hi {name},", { name: r.name })}\n\n${title}${body ? `\n\n${body}` : ""}\n\n${t("Open in PMS:")} ${appUrl(n.link)}`,
+          });
+        }),
     );
   }
   return [...fresh];
@@ -120,6 +129,8 @@ export async function syncLateTaskNotifications(userId: string, workspaceId: str
       ),
     );
   if (late.length === 0) return;
+  const [me] = await db.select({ locale: user.locale }).from(user).where(eq(user.id, userId));
+  const tr = tFor(me?.locale);
   await db
     .insert(notifications)
     .values(
@@ -127,8 +138,8 @@ export async function syncLateTaskNotifications(userId: string, workspaceId: str
         workspaceId,
         userId,
         type: "task.late",
-        title: `${t.projectKey}-${t.number} ${t.title} is late`,
-        body: `It was due ${formatDate(t.dueDate)}.`,
+        title: tr("{ref} {title} is late", { ref: `${t.projectKey}-${t.number}`, title: t.title }),
+        body: tr("It was due {date}.", { date: formatDate(t.dueDate, tr.intl) }),
         link: `/w/${t.slug}/p/${t.projectKey}?task=${t.projectKey}-${t.number}`,
         dedupeKey: `late:${t.id}:${t.dueDate}`,
       })),

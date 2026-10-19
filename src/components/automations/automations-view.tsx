@@ -205,7 +205,7 @@ export function AutomationsView(props: Props) {
             {canManage ? "Start from an idea below or build your own." : "When the project manager adds one, it will show here."}
           </p>
           {canManage && (
-            <div className="mx-auto mt-5 grid max-w-lg gap-2 text-left">
+            <div className="mx-auto mt-5 grid max-w-lg gap-2 text-start">
               {presets.map((p) => (
                 <button
                   key={p.label}
@@ -280,7 +280,7 @@ export function AutomationsView(props: Props) {
                       </div>
                       {canManage && (
                         // Own row on phones so the rule text keeps its width.
-                        <div className="-ml-2 flex w-full gap-1 pl-12 sm:ml-0 sm:w-auto sm:pl-0">
+                        <div className="-ms-2 flex w-full gap-1 ps-12 sm:ms-0 sm:w-auto sm:ps-0">
                           <Button size="sm" variant="ghost" onClick={() => open(rule.id, toDraft(rule, statuses))} aria-label={`Edit: ${label}`}>
                             <Pencil className="size-4" />
                             Edit
@@ -392,7 +392,7 @@ function RuleBuilder({
         {isNew ? "New automation" : "Edit automation"}
       </h2>
 
-      <fieldset className="mt-4 grid gap-3 rounded-lg border-l-4 border-primary bg-muted/40 p-4">
+      <fieldset className="mt-4 grid gap-3 rounded-lg border-s-4 border-primary bg-muted/40 p-4">
         <legend className="sr-only">When</legend>
         <p aria-hidden className="text-xs font-semibold tracking-wide text-primary uppercase">When</p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -454,7 +454,7 @@ function RuleBuilder({
         )}
       </fieldset>
 
-      <fieldset className="mt-3 grid gap-3 rounded-lg border-l-4 border-brand-accent bg-muted/40 p-4">
+      <fieldset className="mt-3 grid gap-3 rounded-lg border-s-4 border-brand-accent bg-muted/40 p-4">
         <legend className="sr-only">Then</legend>
         <p aria-hidden className="text-xs font-semibold tracking-wide uppercase">Then</p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -574,12 +574,12 @@ function RunHistory({ runs, rules, names, projectKey, basePath }: { runs: Run[];
       ) : (
         <div className="relative overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-left text-xs text-muted-foreground">
+            <thead className="text-start text-xs text-muted-foreground">
               <tr className="border-b">
                 <th scope="col" className="px-4 py-2 font-medium">Result</th>
                 <th scope="col" className="px-4 py-2 font-medium">What happened</th>
                 <th scope="col" className="hidden px-4 py-2 font-medium sm:table-cell">Rule</th>
-                <th scope="col" className="px-4 py-2 text-right font-medium">When</th>
+                <th scope="col" className="px-4 py-2 text-end font-medium">When</th>
               </tr>
             </thead>
             <tbody>
@@ -597,13 +597,13 @@ function RunHistory({ runs, rules, names, projectKey, basePath }: { runs: Run[];
                     <td className="px-4 py-2">
                       {run.message}
                       {run.taskNumber !== null && (
-                        <Link href={`${basePath}?task=${projectKey}-${run.taskNumber}`} className="ml-1.5 text-xs text-primary underline-offset-2 hover:underline">
+                        <Link href={`${basePath}?task=${projectKey}-${run.taskNumber}`} className="ms-1.5 text-xs text-primary underline-offset-2 hover:underline">
                           Open {projectKey}-{run.taskNumber}
                         </Link>
                       )}
                     </td>
                     <td className="hidden px-4 py-2 text-muted-foreground sm:table-cell">{ruleText(run.ruleId)}</td>
-                    <td className="px-4 py-2 text-right text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                    <td className="px-4 py-2 text-end text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                       <time dateTime={at.toISOString()} title={at.toLocaleString()} suppressHydrationWarning>
                         {at.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </time>

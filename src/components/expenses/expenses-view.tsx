@@ -155,14 +155,14 @@ export function ExpensesView({
           </h2>
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
-              <thead className="text-left text-xs text-muted-foreground">
+              <thead className="text-start text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
-                  <th scope="col" className="py-2 pr-3 pl-4 font-medium">Task</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">Budget</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">Resources</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">Expenses</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">Spent</th>
-                  <th scope="col" className="py-2 pr-4 pl-3 text-right font-medium">Remaining</th>
+                  <th scope="col" className="py-2 pe-3 ps-4 font-medium">Task</th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">Budget</th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">Resources</th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">Expenses</th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">Spent</th>
+                  <th scope="col" className="py-2 pe-4 ps-3 text-end font-medium">Remaining</th>
                 </tr>
               </thead>
               <tbody>
@@ -170,7 +170,7 @@ export function ExpensesView({
                   const task = taskById.get(t.taskId);
                   return (
                     <tr key={t.taskId} className="border-b last:border-b-0">
-                      <td className="py-2.5 pr-3 pl-4">
+                      <td className="py-2.5 pe-3 ps-4">
                         <Link href={`${base}?task=${project.key}-${task?.number}`} className="hover:underline">
                           <span className="font-mono text-xs text-muted-foreground">
                             {project.key}-{task?.number}
@@ -178,13 +178,13 @@ export function ExpensesView({
                           {task?.title}
                         </Link>
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">{t.budget === null ? "—" : money(t.budget)}</td>
-                      <td className="px-3 py-2.5 text-right text-muted-foreground tabular-nums">{money(t.resourceCost)}</td>
-                      <td className="px-3 py-2.5 text-right text-muted-foreground tabular-nums">{money(t.otherExpenses)}</td>
-                      <td className={cn("px-3 py-2.5 text-right font-medium tabular-nums", t.overBudget && "text-destructive")}>
+                      <td className="px-3 py-2.5 text-end tabular-nums">{t.budget === null ? "—" : money(t.budget)}</td>
+                      <td className="px-3 py-2.5 text-end text-muted-foreground tabular-nums">{money(t.resourceCost)}</td>
+                      <td className="px-3 py-2.5 text-end text-muted-foreground tabular-nums">{money(t.otherExpenses)}</td>
+                      <td className={cn("px-3 py-2.5 text-end font-medium tabular-nums", t.overBudget && "text-destructive")}>
                         {money(t.actual)}
                       </td>
-                      <td className="py-2.5 pr-4 pl-3 text-right tabular-nums">
+                      <td className="py-2.5 pe-4 ps-3 text-end tabular-nums">
                         {t.remaining === null ? (
                           <span className="text-muted-foreground">No budget</span>
                         ) : t.overBudget ? (
@@ -221,12 +221,12 @@ export function ExpensesView({
           </div>
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[600px] text-sm">
-              <thead className="text-left text-xs text-muted-foreground">
+              <thead className="text-start text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
-                  <th scope="col" className="py-2 pr-3 pl-4 font-medium">Resource</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">Cost so far</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">Paid</th>
-                  <th scope="col" className="py-2 pr-4 pl-3 text-right font-medium">Still owed</th>
+                  <th scope="col" className="py-2 pe-3 ps-4 font-medium">Resource</th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">Cost so far</th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">Paid</th>
+                  <th scope="col" className="py-2 pe-4 ps-3 text-end font-medium">Still owed</th>
                 </tr>
               </thead>
               <tbody>
@@ -236,13 +236,13 @@ export function ExpensesView({
                     const u = usageById.get(r.usageId);
                     return (
                       <tr key={r.usageId} className="border-b last:border-b-0">
-                        <td className="py-2.5 pr-3 pl-4">
+                        <td className="py-2.5 pe-3 ps-4">
                           {u?.name}
                           {u?.role && <span className="text-muted-foreground"> · {u.role}</span>}
                         </td>
-                        <td className="px-3 py-2.5 text-right tabular-nums">{money(r.usedCost)}</td>
-                        <td className="px-3 py-2.5 text-right text-muted-foreground tabular-nums">{money(r.paid)}</td>
-                        <td className={cn("py-2.5 pr-4 pl-3 text-right tabular-nums", r.owed > 0 && "font-medium")}>
+                        <td className="px-3 py-2.5 text-end tabular-nums">{money(r.usedCost)}</td>
+                        <td className="px-3 py-2.5 text-end text-muted-foreground tabular-nums">{money(r.paid)}</td>
+                        <td className={cn("py-2.5 pe-4 ps-3 text-end tabular-nums", r.owed > 0 && "font-medium")}>
                           {money(r.owed)}
                         </td>
                       </tr>
@@ -251,10 +251,10 @@ export function ExpensesView({
               </tbody>
               <tfoot>
                 <tr className="border-t bg-muted/40 text-xs">
-                  <th scope="row" className="py-2 pr-3 pl-4 text-left font-medium">Total</th>
-                  <td className="px-3 py-2 text-right font-medium tabular-nums">{money(summary.resourceCost)}</td>
-                  <td className="px-3 py-2 text-right font-medium tabular-nums">{money(summary.paidToResources)}</td>
-                  <td className="py-2 pr-4 pl-3 text-right font-medium tabular-nums">{money(summary.owedToResources)}</td>
+                  <th scope="row" className="py-2 pe-3 ps-4 text-start font-medium">Total</th>
+                  <td className="px-3 py-2 text-end font-medium tabular-nums">{money(summary.resourceCost)}</td>
+                  <td className="px-3 py-2 text-end font-medium tabular-nums">{money(summary.paidToResources)}</td>
+                  <td className="py-2 pe-4 ps-3 text-end font-medium tabular-nums">{money(summary.owedToResources)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -306,20 +306,20 @@ export function ExpensesView({
         ) : (
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[820px] text-sm">
-              <thead className="text-left text-xs text-muted-foreground">
+              <thead className="text-start text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
-                  <th scope="col" className="py-2 pr-3 pl-4 font-medium">Date</th>
+                  <th scope="col" className="py-2 pe-3 ps-4 font-medium">Date</th>
                   <th scope="col" className="px-3 py-2 font-medium">Description</th>
                   <th scope="col" className="px-3 py-2 font-medium">Category</th>
                   <th scope="col" className="px-3 py-2 font-medium">Task</th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">Amount</th>
-                  <th scope="col" className="py-2 pr-4 pl-3"><span className="sr-only">Receipt and actions</span></th>
+                  <th scope="col" className="px-3 py-2 text-end font-medium">Amount</th>
+                  <th scope="col" className="py-2 pe-4 ps-3"><span className="sr-only">Receipt and actions</span></th>
                 </tr>
               </thead>
               <tbody>
                 {expenses.map((e) => (
                   <tr key={e.id} className="border-b last:border-b-0">
-                    <td className="py-2.5 pr-3 pl-4 whitespace-nowrap text-muted-foreground tabular-nums">{formatDate(e.date)}</td>
+                    <td className="py-2.5 pe-3 ps-4 whitespace-nowrap text-muted-foreground tabular-nums">{formatDate(e.date)}</td>
                     <td className="px-3 py-2.5">
                       <div className="font-medium">{e.description}</div>
                       <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
@@ -340,14 +340,14 @@ export function ExpensesView({
                     </td>
                     <td
                       className={cn(
-                        "px-3 py-2.5 text-right font-medium whitespace-nowrap tabular-nums",
+                        "px-3 py-2.5 text-end font-medium whitespace-nowrap tabular-nums",
                         e.approvalStatus !== "approved" && "text-muted-foreground line-through decoration-1",
                       )}
                       title={e.approvalStatus !== "approved" ? "Not counted in spending" : undefined}
                     >
                       {formatMoney(e.amount, project.currency)}
                     </td>
-                    <td className="py-2 pr-4 pl-3">
+                    <td className="py-2 pe-4 ps-3">
                       <div className="flex justify-end gap-1">
                         {e.hasReceipt && (
                           <Button variant="ghost" size="sm" asChild>
@@ -596,7 +596,7 @@ function ExpenseForm({
           accept="application/pdf,image/jpeg,image/png,image/webp"
           aria-describedby="exp-receipt-help"
           aria-invalid={Boolean(errors.receipt)}
-          className="cursor-pointer file:mr-3 file:cursor-pointer"
+          className="cursor-pointer file:me-3 file:cursor-pointer"
         />
         <p id="exp-receipt-help" className="text-xs text-muted-foreground">
           {expense?.hasReceipt && !removeReceipt ? "Choosing a file replaces the current receipt. " : ""}

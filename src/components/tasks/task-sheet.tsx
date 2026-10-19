@@ -182,7 +182,7 @@ function TaskEditor({
             Sub-task of {projectKey}-{task.parent.number} · {task.parent.title}
           </Link>
         )}
-        <div className="flex items-center gap-2 pr-8 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 pe-8 text-xs text-muted-foreground">
           <span className="font-mono">{taskKey}</span>
           {pending && (
             <span className="flex items-center gap-1" role="status">
@@ -192,7 +192,7 @@ function TaskEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto h-7 text-muted-foreground hover:text-destructive"
+            className="ms-auto h-7 text-muted-foreground hover:text-destructive"
             onClick={handleDelete}
             disabled={pending}
           >
@@ -327,9 +327,9 @@ function TaskEditor({
                 onChange={(e) => setProgress(Number(e.target.value))}
                 onBlur={(e) => commitProgress(Number(e.target.value))}
                 onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                className="h-8 w-20 pr-6 tabular-nums"
+                className="h-8 w-20 pe-6 tabular-nums"
               />
-              <span className="pointer-events-none absolute top-1.5 right-2 text-sm text-muted-foreground">%</span>
+              <span className="pointer-events-none absolute top-1.5 inset-e-2 text-sm text-muted-foreground">%</span>
             </div>
           </dd>
           </>
@@ -351,9 +351,9 @@ function TaskEditor({
                       onBlur={(e) => save({ weight: e.target.value.trim() || null })}
                       onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                       aria-describedby="task-weight-help"
-                      className="h-8 w-24 pr-6 tabular-nums"
+                      className="h-8 w-24 pe-6 tabular-nums"
                     />
-                    <span className="pointer-events-none absolute top-1.5 right-2 text-sm text-muted-foreground">
+                    <span className="pointer-events-none absolute top-1.5 inset-e-2 text-sm text-muted-foreground">
                       %
                     </span>
                   </div>
@@ -559,7 +559,7 @@ function TaskEditor({
                   <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
                     {Number(r.usedQty).toLocaleString()} / {Number(r.plannedQty).toLocaleString()} {r.unit}
                   </span>
-                  <span className="w-24 text-right whitespace-nowrap tabular-nums">
+                  <span className="w-24 text-end whitespace-nowrap tabular-nums">
                     {formatMoney(Number(r.plannedQty) * Number(r.unitCost), currency)}
                   </span>
                 </li>
@@ -596,7 +596,7 @@ function TaskEditor({
                   <time
                     dateTime={new Date(a.createdAt).toISOString()}
                     title={new Date(a.createdAt).toLocaleString()}
-                    className="ml-1.5 text-xs whitespace-nowrap"
+                    className="ms-1.5 text-xs whitespace-nowrap"
                     suppressHydrationWarning
                   >
                     · {timeAgo(new Date(a.createdAt))}
@@ -716,7 +716,7 @@ function Subtasks({
                     isDone && "text-muted-foreground line-through",
                   )}
                 >
-                  <span className="mr-2 font-mono text-xs text-muted-foreground no-underline">{key}</span>
+                  <span className="me-2 font-mono text-xs text-muted-foreground no-underline">{key}</span>
                   {sub.title}
                 </Link>
                 <button

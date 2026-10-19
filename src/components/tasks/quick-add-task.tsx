@@ -82,9 +82,9 @@ export function QuickAddTask({
         maxLength={300}
         autoFocus
         disabled={pending}
-        className="h-9 w-full rounded-md border bg-card px-2.5 pr-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="h-9 w-full rounded-md border bg-card px-2.5 pe-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
       />
-      {pending && <Loader2 className="absolute top-2.5 right-2.5 size-4 animate-spin text-muted-foreground" />}
+      {pending && <Loader2 className="absolute top-2.5 inset-e-2.5 size-4 animate-spin text-muted-foreground" />}
     </form>
   );
 }

@@ -169,7 +169,7 @@ function DeadlineList({
             <Link href={taskHref(r.number)} className="flex items-center gap-3 px-3 py-2 hover:bg-accent/50">
               <span className="min-w-0 flex-1 truncate">{r.title}</span>
               <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">{formatDate(r.dueDate)}</span>
-              <span className={cn("w-24 text-right text-xs whitespace-nowrap", late ? "font-medium text-destructive" : "text-muted-foreground")}>
+              <span className={cn("w-24 text-end text-xs whitespace-nowrap", late ? "font-medium text-destructive" : "text-muted-foreground")}>
                 {when}
               </span>
             </Link>

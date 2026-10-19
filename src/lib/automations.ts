@@ -1,6 +1,9 @@
 /** Automation rules ("when … then …"): shapes, validation and matching (pure). */
 import { z } from "zod";
 import { PRIORITIES, type Priority } from "@/lib/constants";
+import { createT, type T } from "@/i18n/translate";
+
+const EN = createT("en", {});
 
 const PRIORITY_VALUES = PRIORITIES.map((p) => p.value) as [Priority, ...Priority[]];
 
@@ -90,46 +93,54 @@ export type RuleNames = {
   money: (amount: string) => string;
 };
 
-const priorityLabel = (p: Priority) => PRIORITIES.find((x) => x.value === p)?.label ?? p;
+const priorityLabel = (p: Priority, t: T) => t(PRIORITIES.find((x) => x.value === p)?.label ?? p);
 
-const column = (names: RuleNames, id: string) => (names.statuses[id] ? `“${names.statuses[id]}”` : "a deleted column");
-const person = (names: RuleNames, id: string | null) => (id && names.people[id]) || "a former member";
+const column = (names: RuleNames, id: string, t: T) =>
+  names.statuses[id] ? `“${names.statuses[id]}”` : t("a deleted column");
+const person = (names: RuleNames, id: string | null, t: T) => (id && names.people[id]) || t("a former member");
 
-export function describeTrigger(t: Trigger, names: RuleNames) {
-  switch (t.type) {
-    case "task.created": return "a task is created";
-    case "task.status_changed": return t.statusId ? `a task moves to ${column(names, t.statusId)}` : "a task moves to another column";
-    case "task.late": return "a task becomes late";
-    case "expense.added": return t.minAmount ? `an expense above ${names.money(t.minAmount)} is added` : "an expense is added";
+export function describeTrigger(tr: Trigger, names: RuleNames, t: T = EN) {
+  switch (tr.type) {
+    case "task.created": return t("a task is created");
+    case "task.status_changed":
+      return tr.statusId ? t("a task moves to {column}", { column: column(names, tr.statusId, t) }) : t("a task moves to another column");
+    case "task.late": return t("a task becomes late");
+    case "expense.added":
+      return tr.minAmount ? t("an expense above {amount} is added", { amount: names.money(tr.minAmount) }) : t("an expense is added");
   }
 }
 
-export function describeAction(a: Action, names: RuleNames) {
+export function describeAction(a: Action, names: RuleNames, t: T = EN) {
   switch (a.type) {
     case "notify": {
-      const who = { manager: "the project manager", assignee: "the assignee", admins: "workspace admins", user: person(names, a.userId) }[a.to];
-      return `notify ${who}${a.email ? " (in app + email)" : ""}`;
+      const who = {
+        manager: t("the project manager"),
+        assignee: t("the assignee"),
+        admins: t("workspace admins"),
+        user: person(names, a.userId, t),
+      }[a.to];
+      return a.email ? t("notify {who} (in app + email)", { who }) : t("notify {who}", { who });
     }
-    case "set_status": return `move it to ${column(names, a.statusId)}`;
-    case "assign": return `assign it to ${person(names, a.userId)}`;
-    case "set_priority": return `set priority to ${priorityLabel(a.priority)}`;
+    case "set_status": return t("move it to {column}", { column: column(names, a.statusId, t) });
+    case "assign": return t("assign it to {person}", { person: person(names, a.userId, t) });
+    case "set_priority": return t("set priority to {priority}", { priority: priorityLabel(a.priority, t) });
   }
 }
 
 /** "When a task moves to “Done”, notify the project manager." */
-export function describeRule(rule: { trigger: Trigger; action: Action }, names: RuleNames) {
-  return `When ${describeTrigger(rule.trigger, names)}, ${describeAction(rule.action, names)}.`;
+export function describeRule(rule: { trigger: Trigger; action: Action }, names: RuleNames, t: T = EN) {
+  return t("When {trigger}, {action}.", { trigger: describeTrigger(rule.trigger, names, t), action: describeAction(rule.action, names, t) });
 }
 
 /** A rule that points at a deleted column or a person who left can't run. */
-export function brokenReason(rule: { trigger: Trigger; action: Action }, names: RuleNames): string | null {
+export function brokenReason(rule: { trigger: Trigger; action: Action }, names: RuleNames, t: T = EN): string | null {
   if (rule.trigger.type === "task.status_changed" && rule.trigger.statusId && !names.statuses[rule.trigger.statusId]) {
-    return "Its column was deleted.";
+    return t("Its column was deleted.");
   }
   const a = rule.action;
-  if (a.type === "set_status" && !names.statuses[a.statusId]) return "Its target column was deleted.";
+  if (a.type === "set_status" && !names.statuses[a.statusId]) return t("Its target column was deleted.");
   if ((a.type === "assign" || (a.type === "notify" && a.to === "user")) && a.userId && !names.people[a.userId]) {
-    return "The person it names is no longer a member.";
+    return t("The person it names is no longer a member.");
   }
   return null;
 }

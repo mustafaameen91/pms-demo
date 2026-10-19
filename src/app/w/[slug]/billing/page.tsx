@@ -55,7 +55,7 @@ export default async function BillingPage({ params }: PageProps<"/w/[slug]/billi
             </p>
           </div>
           {settings.price && (
-            <p className="text-right">
+            <p className="text-end">
               <span className="text-2xl font-semibold">{formatMoney(settings.price, settings.currency)}</span>
               <span className="text-sm text-muted-foreground"> / {settings.billingPeriod}</span>
             </p>
@@ -111,24 +111,24 @@ export default async function BillingPage({ params }: PageProps<"/w/[slug]/billi
           ) : (
             <div className="relative overflow-x-auto">
               <table className="w-full min-w-[520px] text-sm">
-                <thead className="text-left text-xs text-muted-foreground">
+                <thead className="text-start text-xs text-muted-foreground">
                   <tr className="border-b bg-muted/40">
-                    <th scope="col" className="py-2 pr-3 pl-4 font-medium">Date</th>
+                    <th scope="col" className="py-2 pe-3 ps-4 font-medium">Date</th>
                     <th scope="col" className="px-3 py-2 font-medium">Method</th>
                     <th scope="col" className="px-3 py-2 font-medium">Covers until</th>
-                    <th scope="col" className="py-2 pr-4 pl-3 text-right font-medium">Amount</th>
+                    <th scope="col" className="py-2 pe-4 ps-3 text-end font-medium">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {history.map((p) => (
                     <tr key={p.id} className="border-b last:border-b-0">
-                      <td className="py-2.5 pr-3 pl-4 tabular-nums">{formatDate(p.createdAt.toISOString().slice(0, 10))}</td>
+                      <td className="py-2.5 pe-3 ps-4 tabular-nums">{formatDate(p.createdAt.toISOString().slice(0, 10))}</td>
                       <td className="px-3 py-2.5">
                         {p.method}
                         {p.reference && <span className="text-muted-foreground"> · {p.reference}</span>}
                       </td>
                       <td className="px-3 py-2.5 tabular-nums">{formatDate(p.coversUntil)}</td>
-                      <td className="py-2.5 pr-4 pl-3 text-right font-medium tabular-nums">{formatMoney(p.amount, p.currency)}</td>
+                      <td className="py-2.5 pe-4 ps-3 text-end font-medium tabular-nums">{formatMoney(p.amount, p.currency)}</td>
                     </tr>
                   ))}
                 </tbody>

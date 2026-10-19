@@ -287,13 +287,13 @@ function Composer({
             >
               <UserAvatar name={m.name} image={m.image} className="size-5" />
               <span className="truncate">{m.name}</span>
-              <span className="ml-auto truncate text-xs text-muted-foreground">{m.email}</span>
+              <span className="ms-auto truncate text-xs text-muted-foreground">{m.email}</span>
             </li>
           ))}
         </ul>
       )}
       <div className="mt-2 flex items-center justify-end gap-2">
-        <span className="mr-auto text-xs text-muted-foreground">Ctrl/⌘ + Enter to send</span>
+        <span className="me-auto text-xs text-muted-foreground">Ctrl/⌘ + Enter to send</span>
         {onCancel && (
           <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
             Cancel

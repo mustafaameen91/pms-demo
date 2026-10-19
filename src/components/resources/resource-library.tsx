@@ -78,14 +78,14 @@ export function ResourceLibrary({
       ) : (
         <div className="relative overflow-x-auto rounded-xl border bg-card">
           <table className="w-full min-w-[760px] text-sm">
-            <thead className="text-left text-xs text-muted-foreground">
+            <thead className="text-start text-xs text-muted-foreground">
               <tr className="border-b bg-muted/40">
-                <th scope="col" className="py-2 pr-3 pl-4 font-medium">Name</th>
+                <th scope="col" className="py-2 pe-3 ps-4 font-medium">Name</th>
                 <th scope="col" className="px-3 py-2 font-medium">Type</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">Price</th>
+                <th scope="col" className="px-3 py-2 text-end font-medium">Price</th>
                 <th scope="col" className="px-3 py-2 font-medium">Phone</th>
                 <th scope="col" className="px-3 py-2 font-medium">Used in</th>
-                <th scope="col" className="py-2 pr-4 pl-3 text-right font-medium">
+                <th scope="col" className="py-2 pe-4 ps-3 text-end font-medium">
                   <span className="sr-only">Actions</span>
                 </th>
               </tr>
@@ -93,14 +93,14 @@ export function ResourceLibrary({
             <tbody>
               {items.map((item) => (
                 <tr key={item.id} className="border-b last:border-b-0">
-                  <td className="py-2.5 pr-3 pl-4">
+                  <td className="py-2.5 pe-3 ps-4">
                     <div className="font-medium">{item.name}</div>
                     {item.role && <div className="text-xs text-muted-foreground">{item.role}</div>}
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     <ResourceTypeLabel type={item.type} />
                   </td>
-                  <td className="px-3 py-2.5 text-right whitespace-nowrap tabular-nums">
+                  <td className="px-3 py-2.5 text-end whitespace-nowrap tabular-nums">
                     {item.unitCost ? (
                       <>
                         {formatMoney(item.unitCost, item.currency)}
@@ -118,7 +118,7 @@ export function ResourceLibrary({
                       ? "No projects"
                       : `${item.projectCount} ${item.projectCount === 1 ? "project" : "projects"}`}
                   </td>
-                  <td className="py-2 pr-4 pl-3">
+                  <td className="py-2 pe-4 ps-3">
                     <div className="flex justify-end gap-1">
                       {!archived && (
                         <Button

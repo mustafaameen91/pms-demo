@@ -65,7 +65,7 @@ export default async function MyTasksPage({ params, searchParams }: PageProps<"/
                       {t.isMilestone && <MilestoneIcon />}
                       <span className={cn("min-w-0 flex-1 truncate font-medium", g === "done" && "text-muted-foreground line-through")}>
                         {t.title}
-                        {t.parentId && <span className="ml-1.5 text-xs font-normal text-muted-foreground">(sub-task)</span>}
+                        {t.parentId && <span className="ms-1.5 text-xs font-normal text-muted-foreground">(sub-task)</span>}
                       </span>
                       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <span aria-hidden className="size-2 rounded-sm" style={{ backgroundColor: t.projectColor }} />
@@ -76,7 +76,7 @@ export default async function MyTasksPage({ params, searchParams }: PageProps<"/
                         {t.statusName}
                       </span>
                       {!t.isMilestone && <ProgressBar value={t.progress} label={`${t.title} progress`} className="w-28" />}
-                      <span className={cn("w-24 text-right text-xs tabular-nums", g === "overdue" ? "font-medium text-destructive" : "text-muted-foreground")}>
+                      <span className={cn("w-24 text-end text-xs tabular-nums", g === "overdue" ? "font-medium text-destructive" : "text-muted-foreground")}>
                         {t.dueDate ? formatDate(t.dueDate) : "—"}
                       </span>
                     </Link>
