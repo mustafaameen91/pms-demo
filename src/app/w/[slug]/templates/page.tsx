@@ -23,7 +23,7 @@ export default async function TemplatesPage({ params }: PageProps<"/w/[slug]/tem
   const isAdmin = workspace.role === "owner" || workspace.role === "admin";
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
+    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
       <TemplatesView
         workspaceSlug={workspace.slug}
         builtins={BUILTIN_TEMPLATES}

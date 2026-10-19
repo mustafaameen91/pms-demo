@@ -18,7 +18,7 @@ export default async function ApprovalsPage({ params }: PageProps<"/w/[slug]/app
   const items = await listPendingApprovals(workspace.id, user.id, isAdmin);
 
   return (
-    <div className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-5 px-4 py-6 sm:px-6 lg:py-8">
+    <div className="grid w-full grid-cols-1 gap-5 px-4 py-6 sm:px-6 lg:py-8">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{t("Approvals")}</h1>
         <p className="text-sm text-muted-foreground">

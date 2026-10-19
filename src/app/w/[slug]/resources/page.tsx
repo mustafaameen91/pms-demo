@@ -27,7 +27,7 @@ export default async function ResourcesPage({ params, searchParams }: PageProps<
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
+    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">

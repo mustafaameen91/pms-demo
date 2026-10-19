@@ -73,7 +73,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
   const denominator = rows.filter((r) => !r.cancelled && !r.isMilestone).reduce((s, r) => s + weightOf(r.weight), 0);
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-6 px-4 py-6 sm:px-6">
+    <div className="grid w-full grid-cols-1 gap-6 px-4 py-6 sm:px-6">
       {/* Headline + KPIs */}
       <section aria-labelledby="accomplishment-heading" className="rounded-xl border bg-card p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -117,7 +117,8 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
                 a.schedule === "ahead" && "text-green-700 dark:text-green-400",
               )}
             >
-              {a.variance === null ? "—" : `${a.variance > 0 ? "+" : ""}${fmtPct(a.variance)}`}
+              {/* dir="ltr": keeps the sign in front of the number in Arabic (−57.1%, not 57.1%−). */}
+              <span dir="ltr">{a.variance === null ? "—" : `${a.variance > 0 ? "+" : ""}${fmtPct(a.variance)}`}</span>
             </dd>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {t("Done minus planned · ±{tolerance}% counts as on track", { tolerance: String(SCHEDULE_TOLERANCE) })}

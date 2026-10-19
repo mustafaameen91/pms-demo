@@ -48,7 +48,7 @@ export default async function WorkloadPage({ params, searchParams }: PageProps<"
   ];
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-5 px-4 py-6 sm:px-6 lg:py-8">
+    <div className="grid w-full grid-cols-1 gap-5 px-4 py-6 sm:px-6 lg:py-8">
       <WorkloadGrid
         slug={workspace.slug}
         limit={limit}

@@ -58,39 +58,8 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
     : [];
 
   return (
-    <div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-8 px-4 py-6 sm:px-6">
-      {canManage && (
-        <ClientShare
-          projectId={project.id}
-          share={share ?? null}
-          appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
-        />
-      )}
-      {canManage && <CustomFieldsManager projectId={project.id} fields={fields} />}
-      {canManage && (
-        <RequestForms
-          projectId={project.id}
-          forms={forms.map(({ form, submissions, lastSubmission }) => ({
-            id: form.id,
-            token: form.token,
-            title: form.title,
-            intro: form.intro,
-            config: form.config,
-            statusId: form.statusId,
-            assigneeId: form.assigneeId,
-            enabled: form.enabled,
-            submissions,
-            lastSubmission,
-          }))}
-          statuses={statuses}
-          members={members.map((m) => ({ id: m.id, name: m.name }))}
-          appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
-        />
-      )}
-      {canManage && (
-        <ApprovalThreshold projectId={project.id} currency={project.currency} current={project.approvalThreshold} />
-      )}
-      {canManage && <SaveAsTemplate projectId={project.id} projectName={project.name} />}
+    // Wide screens: project details on one side, project features on the other, so inputs keep a readable length.
+    <div className="grid w-full grid-cols-1 items-start gap-8 px-4 py-6 sm:px-6 xl:grid-cols-2">
       <ProjectSettings
         project={{
           id: project.id,
@@ -111,6 +80,36 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
         canManage={canManage}
         canDelete={workspace.role === "owner" || workspace.role === "admin"}
       />
+      {canManage && (
+        <div className="grid grid-cols-1 gap-8">
+          <ClientShare
+            projectId={project.id}
+            share={share ?? null}
+            appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
+          />
+          <CustomFieldsManager projectId={project.id} fields={fields} />
+          <RequestForms
+            projectId={project.id}
+            forms={forms.map(({ form, submissions, lastSubmission }) => ({
+              id: form.id,
+              token: form.token,
+              title: form.title,
+              intro: form.intro,
+              config: form.config,
+              statusId: form.statusId,
+              assigneeId: form.assigneeId,
+              enabled: form.enabled,
+              submissions,
+              lastSubmission,
+            }))}
+            statuses={statuses}
+            members={members.map((m) => ({ id: m.id, name: m.name }))}
+            appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
+          />
+          <ApprovalThreshold projectId={project.id} currency={project.currency} current={project.approvalThreshold} />
+          <SaveAsTemplate projectId={project.id} projectName={project.name} />
+        </div>
+      )}
     </div>
   );
 }

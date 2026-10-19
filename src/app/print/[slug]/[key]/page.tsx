@@ -9,6 +9,9 @@ import { PrintButton } from "./print-button";
 import { LightTheme } from "@/components/light-theme";
 import { getT } from "@/i18n/server";
 
+/** Keeps a signed number together left-to-right inside Arabic text (−57.1%, not 57.1%−). */
+const ltr = (text: string, locale: string) => (locale === "ar" ? `\u2066${text}\u2069` : text);
+
 export async function generateMetadata({ params }: PageProps<"/print/[slug]/[key]">) {
   const { key } = await params;
   const t = await getT();
@@ -72,7 +75,7 @@ export default async function ProjectReportPage({ params }: PageProps<"/print/[s
           {
             label: t("Schedule"),
             value: a.schedule ? t(SCHEDULE[a.schedule]) : "—",
-            sub: a.variance === null ? "" : t("{pct} vs plan", { pct: `${a.variance > 0 ? "+" : ""}${fmtPct(a.variance)}` }),
+            sub: a.variance === null ? "" : t("{pct} vs plan", { pct: ltr(`${a.variance > 0 ? "+" : ""}${fmtPct(a.variance)}`, t.locale) }),
           },
           {
             label: t("Spent"),

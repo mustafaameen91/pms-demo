@@ -46,7 +46,7 @@ export default async function BillingPage({ params }: PageProps<"/w/[slug]/billi
         };
 
   return (
-    <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:py-8">
+    <div className="grid w-full grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:py-8">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{t("Billing")}</h1>
         <p className="text-sm text-muted-foreground">{t("Subscription for {workspace}.", { workspace: workspace.name })}</p>

@@ -66,7 +66,7 @@ export function TemplatesView({
             {t("No saved templates yet. Open a project → Settings → “Save as template”.")}
           </p>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {custom.map((tpl) => (
               <TemplateDetails
                 key={tpl.id}
@@ -107,7 +107,7 @@ export function TemplatesView({
         <h2 id="builtin-heading" className="font-semibold">
           {t("Industry templates")}
         </h2>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {builtins.map((source) => localizeBuiltinTemplate(source, t)).map((tpl) => (
             <TemplateDetails
               key={tpl.id}

@@ -34,7 +34,7 @@ export default async function InboxPage({ params }: PageProps<"/w/[slug]/inbox">
   const unread = items.filter((n) => !n.readAt).length;
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:py-8">
+    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{t("Inbox")}</h1>

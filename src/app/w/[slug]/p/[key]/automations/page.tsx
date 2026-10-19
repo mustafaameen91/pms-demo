@@ -32,7 +32,7 @@ export default async function AutomationsPage({ params }: PageProps<"/w/[slug]/p
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
+    <div className="w-full px-4 py-6 sm:px-6">
       <AutomationsView
         projectId={project.id}
         projectKey={project.key}

@@ -26,7 +26,7 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
   const base = `/w/${workspace.slug}`;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
+    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
@@ -70,7 +70,7 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
           </div>
         )
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {projects.map((p) => {
             const accomplishment = computeAccomplishment(tasksByProject.get(p.id) ?? [], p);
             return (

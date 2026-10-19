@@ -73,7 +73,7 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
   ] as const;
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:py-8">
+    <div className="grid w-full grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:py-8">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{t("Dashboard")}</h1>
         <p className="text-sm text-muted-foreground">
@@ -100,7 +100,7 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
             <Wallet className="size-4 text-muted-foreground" aria-hidden />
             {t("Money across open projects")}
           </h2>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {[...totals].map(([currency, sum]) => {
               const pct = sum.budget > 0 ? Math.round((sum.spent / sum.budget) * 1000) / 10 : null;
               const over = sum.budget > 0 && sum.spent > sum.budget;

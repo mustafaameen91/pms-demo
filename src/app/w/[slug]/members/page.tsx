@@ -19,7 +19,7 @@ export default async function MembersPage({ params }: PageProps<"/w/[slug]/membe
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:py-8">
+    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
       <MembersView
         workspace={{ slug: workspace.slug, name: workspace.name, role: workspace.role }}
         currentUserId={user.id}

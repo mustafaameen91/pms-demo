@@ -256,7 +256,8 @@ function SidebarContent({
         )}
       </nav>
 
-      <div className="grid gap-1 border-t p-2">
+      {/* grid-cols-1 = minmax(0,1fr): a long email truncates instead of widening the sidebar. */}
+      <div className="grid grid-cols-1 gap-1 border-t p-2">
         <LanguageSwitcher className="justify-start" />
         <UserMenu user={user} />
       </div>

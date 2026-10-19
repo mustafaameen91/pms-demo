@@ -38,7 +38,7 @@ export default async function AuditPage({ params, searchParams }: PageProps<"/w/
   };
 
   return (
-    <div className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-5 px-4 py-6 sm:px-6 lg:py-8">
+    <div className="grid w-full grid-cols-1 gap-5 px-4 py-6 sm:px-6 lg:py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{t("Audit log")}</h1>
