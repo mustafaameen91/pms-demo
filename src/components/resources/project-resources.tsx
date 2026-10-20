@@ -71,7 +71,10 @@ export function ProjectResourcesView({
   usages,
   library,
   tasks,
+  canEdit,
 }: {
+  /** The project manager and admins add and edit resource use; others can look. */
+  canEdit: boolean;
   project: ProjectInfo;
   workspaceSlug: string;
   usages: ProjectResource[];
@@ -124,10 +127,12 @@ export function ProjectResourcesView({
             </p>
           </div>
         </dl>
-        <Button onClick={() => setAddOpen(true)}>
-          <Plus className="size-4" />
-          {t("Add resource")}
-        </Button>
+        {canEdit && (
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="size-4" />
+            {t("Add resource")}
+          </Button>
+        )}
       </div>
 
       {usages.length === 0 ? (
@@ -226,10 +231,12 @@ export function ProjectResourcesView({
                               {money(used * num(u.unitCost))}
                             </td>
                             <td className="py-2 pe-4 ps-3 text-end">
-                              <Button variant="ghost" size="sm" onClick={() => setEditing(u)} aria-label={t("Edit {name}", { name: u.name })}>
-                                <Pencil className="size-4" />
-                                {t("Edit")}
-                              </Button>
+                              {canEdit && (
+                                <Button variant="ghost" size="sm" onClick={() => setEditing(u)} aria-label={t("Edit {name}", { name: u.name })}>
+                                  <Pencil className="size-4" />
+                                  {t("Edit")}
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         );

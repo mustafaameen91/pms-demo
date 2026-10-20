@@ -6,12 +6,15 @@ import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { activities, member, projects, taskDependencies, taskStatuses, tasks } from "@/lib/db/schema";
-import { isFinished, startsTooEarly, wouldCreateCycle } from "@/lib/dependencies";
+import { startsTooEarly, wouldCreateCycle } from "@/lib/dependencies";
 import { defaultStatus, spawnNextOccurrence } from "@/lib/task-recurrence";
 import { POSITION_STEP, PRIORITIES } from "@/lib/constants";
 import { MAX_MONEY, optionalDecimal } from "@/lib/validation";
 import { notify, projectContext } from "@/lib/notifications";
 import { runAutomations } from "@/lib/automation-runner";
+import { canManageProject, type TaskEdit } from "@/lib/permissions";
+import { addToTeam } from "@/lib/data/project-access";
+import { authorizeTask, denied, listTitles, predecessorState } from "@/lib/task-access";
 import { getT } from "@/i18n/server";
 import type { T } from "@/i18n/translate";
 
@@ -19,18 +22,6 @@ import type { T } from "@/i18n/translate";
 type Result<T = undefined> =
   | { ok: true; data?: T; warning?: string; info?: string }
   | { ok: false; error: string };
-
-/** Loads a task and authorizes the current user against its workspace. */
-async function authorizeTask(taskId: string, { includeDeleted = false } = {}) {
-  const [task] = await db
-    .select()
-    .from(tasks)
-    .where(and(eq(tasks.id, taskId), includeDeleted ? undefined : isNull(tasks.deletedAt)))
-    .limit(1);
-  if (!task) return null;
-  const { user } = await requireWorkspaceById(task.workspaceId);
-  return { task, user };
-}
 
 async function statusInProject(statusId: string, projectId: string) {
   const [status] = await db
@@ -42,19 +33,6 @@ async function statusInProject(statusId: string, projectId: string) {
 }
 
 const isDone = (category: string) => category === "done" || category === "canceled";
-
-/** Unfinished predecessors of a task, and the latest end date among all its predecessors. */
-async function predecessorState(taskId: string) {
-  const rows = await db
-    .select({ number: tasks.number, title: tasks.title, dueDate: tasks.dueDate, category: taskStatuses.category })
-    .from(taskDependencies)
-    .innerJoin(tasks, and(eq(tasks.id, taskDependencies.dependsOnId), isNull(tasks.deletedAt)))
-    .innerJoin(taskStatuses, eq(taskStatuses.id, tasks.statusId))
-    .where(eq(taskDependencies.taskId, taskId));
-  return { open: rows.filter((r) => !isFinished(r.category)), all: rows };
-}
-
-const listTitles = (rows: { title: string }[], t: T) => rows.map((r) => `“${r.title}”`).join(t(", "));
 
 /** "Started before “A” is finished." — saved, but a predecessor isn't done yet. */
 const startedEarly = (open: { title: string }[], t: T) =>
@@ -78,16 +56,16 @@ export async function createTask(input: z.input<typeof createSchema>): Promise<R
 
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
   if (!project) return { ok: false, error: t("Project not found") };
-  const { user } = await requireWorkspaceById(project.workspaceId);
+  const { user, role } = await requireWorkspaceById(project.workspaceId);
 
   if (parentId) {
-    const [parent] = await db
-      .select({ parentId: tasks.parentId })
-      .from(tasks)
-      .where(and(eq(tasks.id, parentId), eq(tasks.projectId, projectId), isNull(tasks.deletedAt)))
-      .limit(1);
-    if (!parent) return { ok: false, error: t("Parent task not found") };
-    if (parent.parentId) return { ok: false, error: t("Sub-tasks can't have their own sub-tasks") };
+    const parentAuth = await authorizeTask(parentId);
+    if (!parentAuth || parentAuth.task.projectId !== projectId) return { ok: false, error: t("Parent task not found") };
+    if (parentAuth.task.parentId) return { ok: false, error: t("Sub-tasks can't have their own sub-tasks") };
+    const no = denied(parentAuth, "subtasks", t);
+    if (no) return { ok: false, error: no };
+  } else if (!canManageProject(role, user.id, project)) {
+    return { ok: false, error: t("Only the project manager or admins can add tasks.") };
   }
 
   const status = parsed.data.statusId
@@ -148,6 +126,8 @@ export async function moveTask(taskId: string, statusId: string, position: numbe
   const auth = await authorizeTask(taskId);
   if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
+  const no = denied(auth, "status", t);
+  if (no) return { ok: false, error: no };
   const status = await statusInProject(statusId, task.projectId);
   if (!status) return { ok: false, error: t("Invalid status") };
 
@@ -215,6 +195,22 @@ const updateSchema = z
 
 export type TaskPatch = z.input<typeof updateSchema>;
 
+/** Which permission each task field needs. */
+const PATCH_EDIT = {
+  title: "title",
+  description: "description",
+  statusId: "status",
+  priority: "priority",
+  assigneeId: "assignee",
+  startDate: "dates",
+  dueDate: "dates",
+  weight: "weight",
+  progress: "progress",
+  budget: "budget",
+  isMilestone: "milestone",
+  recurrence: "recurrence",
+} as const satisfies Record<keyof NonNullable<z.infer<typeof updateSchema>>, TaskEdit>;
+
 const sameNumber = (a: string | null, b: string | null) =>
   (a === null ? null : Number(a)) === (b === null ? null : Number(b));
 
@@ -226,6 +222,19 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
   const auth = await authorizeTask(taskId);
   if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
+
+  // Every field that actually changes must be allowed for this person on this task.
+  for (const [key, value] of Object.entries(changes) as [keyof typeof PATCH_EDIT, unknown][]) {
+    if (value === undefined) continue;
+    const current = task[key];
+    const same =
+      key === "weight" || key === "budget"
+        ? sameNumber(value as string | null, current as string | null)
+        : value === current || (key === "description" && (value || null) === current);
+    if (same) continue;
+    const no = denied(auth, PATCH_EDIT[key], t);
+    if (no) return { ok: false, error: no };
+  }
 
   const set: Partial<typeof tasks.$inferInsert> = {};
   const log: { type: string; data: Record<string, unknown> }[] = [];
@@ -331,6 +340,8 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
   });
 
   if (newAssignee) {
+    // Assigning someone brings them onto the project team so they can see it.
+    await addToTeam(task.projectId, task.workspaceId, newAssignee);
     const ctx = await projectContext(task.projectId);
     if (ctx) {
       await notify({
@@ -393,6 +404,8 @@ export async function addDependency(taskId: string, dependsOnId: string): Promis
   const auth = await authorizeTask(taskId);
   if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
+  const no = denied(auth, "dependencies", t);
+  if (no) return { ok: false, error: no };
   const [other] = await db
     .select()
     .from(tasks)
@@ -429,6 +442,8 @@ export async function removeDependency(taskId: string, dependsOnId: string): Pro
   const auth = await authorizeTask(taskId);
   if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
+  const no = denied(auth, "dependencies", t);
+  if (no) return { ok: false, error: no };
   const [other] = await db.select({ number: tasks.number, title: tasks.title }).from(tasks).where(eq(tasks.id, dependsOnId)).limit(1);
   await db.transaction(async (tx) => {
     await tx
@@ -453,6 +468,8 @@ export async function deleteTask(taskId: string): Promise<Result> {
   const auth = await authorizeTask(taskId);
   if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
+  const no = denied(auth, "delete", t);
+  if (no) return { ok: false, error: no };
   const now = new Date();
 
   await db.transaction(async (tx) => {
@@ -479,6 +496,7 @@ export async function restoreTask(taskId: string): Promise<Result> {
   const auth = await authorizeTask(taskId, { includeDeleted: true });
   if (!auth) return { ok: false, error: t("Task not found") };
   const { task, user } = auth;
+  if (!auth.manager) return { ok: false, error: t("Only the project manager or admins can change this.") };
   if (!task.deletedAt) return { ok: true };
 
   await db.transaction(async (tx) => {

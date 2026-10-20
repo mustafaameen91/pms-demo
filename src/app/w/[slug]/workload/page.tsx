@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { requireWorkspace } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { projects, taskStatuses, tasks } from "@/lib/db/schema";
@@ -7,6 +7,7 @@ import { todayISO } from "@/lib/accomplishment";
 import { buildWorkload, workloadColumns } from "@/lib/workload";
 import { WorkloadGrid } from "@/components/workload/workload-grid";
 import { getT } from "@/i18n/server";
+import { visibleProjectIds } from "@/lib/data/project-access";
 
 export async function generateMetadata() {
   const t = await getT();
@@ -15,7 +16,9 @@ export async function generateMetadata() {
 
 export default async function WorkloadPage({ params, searchParams }: PageProps<"/w/[slug]/workload">) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
-  const { workspace } = await requireWorkspace(slug);
+  const { user, workspace } = await requireWorkspace(slug);
+  // Members see the workload of their own projects only.
+  const only = await visibleProjectIds(workspace.id, user.id, workspace.role);
   const tr = await getT();
   const limit = Math.min(50, Math.max(1, Number(query.limit) || 5));
   const today = todayISO();
@@ -38,7 +41,14 @@ export default async function WorkloadPage({ params, searchParams }: PageProps<"
       .from(tasks)
       .innerJoin(taskStatuses, eq(taskStatuses.id, tasks.statusId))
       .innerJoin(projects, eq(projects.id, tasks.projectId))
-      .where(and(eq(tasks.workspaceId, workspace.id), isNull(tasks.deletedAt), isNull(projects.archivedAt))),
+      .where(
+        and(
+          eq(tasks.workspaceId, workspace.id),
+          isNull(tasks.deletedAt),
+          isNull(projects.archivedAt),
+          only ? inArray(projects.id, only.size ? [...only] : [""]) : undefined,
+        ),
+      ),
   ]);
   const grid = buildWorkload(rows, today, columns);
   const byId = new Map(rows.map((r) => [r.id, r]));

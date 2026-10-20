@@ -1,13 +1,15 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { requireWorkspaceById } from "@/lib/auth/session";
+import { requireWorkspaceById, type WorkspaceRole } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { activities, comments, member, tasks, user } from "@/lib/db/schema";
+import { activities, comments, member, user } from "@/lib/db/schema";
 import { notify, projectContext } from "@/lib/notifications";
 import { getT } from "@/i18n/server";
+import { authorizeTask } from "@/lib/task-access";
+import { canViewProject } from "@/lib/data/project-access";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -31,14 +33,20 @@ export async function addComment(taskId: string, input: z.input<typeof commentSc
   const t = await getT();
   const parsed = commentSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: t(parsed.error.issues[0].message) };
-  const [task] = await db
-    .select()
-    .from(tasks)
-    .where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)))
-    .limit(1);
-  if (!task) return { ok: false, error: t("Task not found") };
-  const { user: author } = await requireWorkspaceById(task.workspaceId);
-  const mentions = await validMentions(task.workspaceId, parsed.data.body, parsed.data.mentions);
+  // Anyone who can see the project may comment, even on tasks they can't change.
+  const auth = await authorizeTask(taskId);
+  if (!auth) return { ok: false, error: t("Task not found") };
+  const { task, user: author, project } = auth;
+  // Only people who can see this project can be mentioned (they'd get a link they can't open otherwise).
+  const mentions: string[] = [];
+  for (const id of await validMentions(task.workspaceId, parsed.data.body, parsed.data.mentions)) {
+    const [m] = await db
+      .select({ role: member.role })
+      .from(member)
+      .where(and(eq(member.organizationId, task.workspaceId), eq(member.userId, id)))
+      .limit(1);
+    if (m && (await canViewProject(m.role as WorkspaceRole, id, project))) mentions.push(id);
+  }
 
   await db.transaction(async (tx) => {
     await tx.insert(comments).values({

@@ -8,6 +8,8 @@ import { ensureLateTaskNotifications } from "@/lib/notifications";
 import { sweepLateTaskAutomations } from "@/lib/automation-runner";
 import { chosenLocale, syncUserLocale } from "@/lib/locale-sync";
 import { AppShell } from "@/components/shell/app-shell";
+import { visibleProjectIds } from "@/lib/data/project-access";
+import { pendingLoanRequestCount } from "@/lib/data/loans";
 
 export default async function WorkspaceLayout({ children, params }: LayoutProps<"/w/[slug]">) {
   const { slug } = await params;
@@ -22,12 +24,13 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
     after(() => syncUserLocale(user.id, chosen));
   }
   const isAdmin = workspace.role === "owner" || workspace.role === "admin";
-  const [workspaces, projects, unread, approvals] = await Promise.all([
+  const [workspaces, projects, unread, approvals, loanRequests] = await Promise.all([
     getUserWorkspaces(user.id),
     // A locked workspace shows no project data in the sidebar.
-    access.allowed ? listProjects(workspace.id) : [],
+    access.allowed ? listProjects(workspace.id, { only: await visibleProjectIds(workspace.id, user.id, workspace.role) }) : [],
     access.allowed ? unreadCount(user.id, workspace.id) : 0,
     access.allowed ? listPendingApprovals(workspace.id, user.id, isAdmin) : [],
+    access.allowed && isAdmin ? pendingLoanRequestCount(workspace.id) : 0,
   ]);
 
   return (
@@ -38,6 +41,7 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
       projects={projects.map((p) => ({ id: p.id, name: p.name, key: p.key, color: p.color }))}
       unread={unread}
       approvals={approvals.filter((a) => a.requesterId !== user.id).length}
+      loanRequests={loanRequests}
       access={access}
       isPlatformAdmin={isSuperAdmin(user.email)}
     >

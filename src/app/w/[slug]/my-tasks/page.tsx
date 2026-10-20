@@ -7,6 +7,7 @@ import { DUE_GROUP_LABELS, dueGroup, type DueGroup } from "@/lib/my-tasks-groups
 import { cn, formatDate } from "@/lib/utils";
 import { MilestoneIcon, PriorityIcon, ProgressBar, StatusDot } from "@/components/tasks/task-bits";
 import { getT } from "@/i18n/server";
+import { visibleProjectIds } from "@/lib/data/project-access";
 
 export async function generateMetadata() {
   const t = await getT();
@@ -21,7 +22,7 @@ export default async function MyTasksPage({ params, searchParams }: PageProps<"/
   const tr = await getT();
   const showDone = query.done === "1";
   const today = todayISO();
-  const all = await listMyTasks(workspace.id, user.id);
+  const all = await listMyTasks(workspace.id, user.id, await visibleProjectIds(workspace.id, user.id, workspace.role));
   const groups = new Map<DueGroup, typeof all>();
   for (const t of all) {
     const g = dueGroup(t, today);

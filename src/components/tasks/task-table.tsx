@@ -9,6 +9,7 @@ import { BlockedBadge, MilestoneIcon, RepeatIcon, ProgressBar, StatusDot, UserAv
 
 export async function TaskTable({
   projectId,
+  canAdd,
   projectKey,
   currency,
   statuses,
@@ -16,6 +17,8 @@ export async function TaskTable({
   accomplishment,
   fields,
 }: {
+  /** Managers can add tasks. */
+  canAdd: boolean;
   projectId: string;
   projectKey: string;
   currency: string;
@@ -185,7 +188,7 @@ export async function TaskTable({
         </p>
       )}
       <div className="px-2 py-1 sm:px-4">
-        <QuickAddTask projectId={projectId} className="max-w-xl" />
+        {canAdd && <QuickAddTask projectId={projectId} className="max-w-xl" />}
       </div>
     </div>
   );

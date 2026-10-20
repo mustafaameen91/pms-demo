@@ -1,9 +1,10 @@
 "use server";
 
-import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { requireWorkspace } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { member, projects, resources, taskStatuses, tasks, user } from "@/lib/db/schema";
+import { visibleProjectIds } from "@/lib/data/project-access";
 
 export type SearchResults = {
   tasks: { key: string; title: string; projectKey: string; projectName: string; statusName: string; done: boolean }[];
@@ -21,7 +22,9 @@ const like = (q: string) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 export async function searchWorkspace(slug: string, query: string): Promise<SearchResults> {
   const q = query.trim().slice(0, 100);
   if (q.length < 2) return EMPTY;
-  const { workspace } = await requireWorkspace(slug);
+  const { user: me, workspace } = await requireWorkspace(slug);
+  const only = await visibleProjectIds(workspace.id, me.id, workspace.role);
+  if (only && only.size === 0) return { ...EMPTY, people: [], resources: [] };
   const pattern = like(q);
   const keyMatch = /^([a-z][a-z0-9]{1,5})-(\d{1,7})$/i.exec(q);
 
@@ -33,7 +36,9 @@ export async function searchWorkspace(slug: string, query: string): Promise<Sear
     statusName: taskStatuses.name,
     category: taskStatuses.category,
   };
-  const live = and(eq(tasks.workspaceId, workspace.id), isNull(tasks.deletedAt), isNull(projects.archivedAt));
+  // Members only find what's in their own projects.
+  const mine = only ? inArray(projects.id, [...only]) : undefined;
+  const live = and(eq(tasks.workspaceId, workspace.id), isNull(tasks.deletedAt), isNull(projects.archivedAt), mine);
 
   const [byKey, byText, projectRows, resourceRows, peopleRows] = await Promise.all([
     keyMatch
@@ -65,6 +70,7 @@ export async function searchWorkspace(slug: string, query: string): Promise<Sear
         and(
           eq(projects.workspaceId, workspace.id),
           isNull(projects.archivedAt),
+          mine,
           or(ilike(projects.name, pattern), ilike(projects.key, pattern), ilike(projects.client, pattern)),
         ),
       )

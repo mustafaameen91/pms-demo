@@ -13,7 +13,7 @@ export type ActivityGroup = keyof typeof ACTIVITY_GROUPS;
 
 export function activityGroup(type: string): ActivityGroup {
   if (type.startsWith("task.") || type.startsWith("subtask.") || type.startsWith("comment.")) return "tasks";
-  if (type.startsWith("expense.") || type.startsWith("resource.")) return "money";
+  if (type.startsWith("expense.") || type.startsWith("resource.") || type.startsWith("loan.")) return "money";
   if (type.startsWith("member.")) return "members";
   if (type.startsWith("subscription.")) return "billing";
   return "projects";
@@ -23,7 +23,7 @@ export function activityGroup(type: string): ActivityGroup {
 export const GROUP_PREFIXES: Record<ActivityGroup, string[]> = {
   tasks: ["task.", "subtask.", "comment."],
   projects: ["project.", "share."],
-  money: ["expense.", "resource."],
+  money: ["expense.", "resource.", "loan."],
   members: ["member."],
   billing: ["subscription."],
 };
@@ -45,6 +45,8 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
   switch (type) {
     case "project.created": return t("created the project “{name}”", { name: s(data.name) });
     case "project.updated": return t("updated project details ({fields})", { fields: (Array.isArray(data.fields) ? data.fields : []).map((f) => t(String(f))).join(t(", ")) });
+    case "project.member_added": return t("added {name} to the project team", { name: s(data.name) });
+    case "project.member_removed": return t("removed {name} from the project team", { name: s(data.name) });
     case "project.archived": return t("archived the project");
     case "project.restored": return t("restored the project");
     case "project.deleted": return t("deleted the project “{name}” ({key})", { name: s(data.name), key: s(data.key) });
@@ -81,6 +83,13 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "subtask.deleted": return on("deleted sub-task “{title}” on {ref}", "deleted sub-task “{title}”", { title: s(data.title) });
     case "subtask.restored": return on("restored sub-task “{title}” on {ref}", "restored sub-task “{title}”", { title: s(data.title) });
     case "comment.added": return on("commented on {ref}", "commented");
+    case "loan.created": return t("lent {amount} {currency} to {name}", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower) });
+    case "loan.repayment_recorded": return t("recorded a repayment of {amount} {currency} from {name} (remaining {balance})", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower), balance: s(data.balance) });
+    case "loan.repayment_deleted": return t("removed a repayment of {amount} {currency} from {name}", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower) });
+    case "loan.deleted": return t("deleted a loan of {amount} {currency} to {name}", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower) });
+    case "loan.requested": return t("asked for a loan of {amount} {currency}", { amount: s(data.amount), currency: s(data.currency) });
+    case "loan.request_approved": return t("approved {name}'s loan request ({amount} {currency})", { name: s(data.borrower), amount: s(data.amount), currency: s(data.currency) });
+    case "loan.request_rejected": return t("rejected {name}'s loan request ({amount} {currency}) — {note}", { name: s(data.borrower), amount: s(data.amount), currency: s(data.currency), note: s(data.note) });
     case "resource.added": return t("added resource “{name}”", { name: s(data.name) });
     case "resource.removed": return t("removed resource “{name}”", { name: s(data.name) });
     case "expense.added": return t("added expense “{description}” ({amount})", { description: s(data.description), amount: s(data.amount) });

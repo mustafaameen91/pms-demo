@@ -69,7 +69,7 @@ export default async function ResourcesPage({ params, searchParams }: PageProps<
         items={items}
         type={type}
         archived={showArchived}
-        canArchive={workspace.role === "owner" || workspace.role === "admin"}
+        canEdit={workspace.role === "owner" || workspace.role === "admin"}
       />
     </div>
   );

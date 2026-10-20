@@ -1,7 +1,8 @@
+import { getVisibleProjectByKey } from "@/lib/data/project-access";
 import { notFound } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getT } from "@/i18n/server";
-import { getProjectByKey, listMembers } from "@/lib/data/projects";
+import { listMembers } from "@/lib/data/projects";
 import { canManageProject } from "@/lib/permissions";
 import { ProjectSettings } from "@/components/projects/project-settings";
 import { ClientShare } from "@/components/projects/client-share";
@@ -13,8 +14,9 @@ import { getProjectFields } from "@/lib/data/custom-fields";
 import { formSubmissions, requestForms, taskStatuses } from "@/lib/db/schema";
 import { asc, count, max } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { projectShares } from "@/lib/db/schema";
+import { projectMembers, projectShares } from "@/lib/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
+import { ProjectTeam } from "@/components/projects/project-team";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/settings">) {
   const [{ key }, t] = await Promise.all([params, getT()]);
@@ -24,9 +26,16 @@ export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/
 export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slug]/p/[key]/settings">) {
   const { slug, key } = await params;
   const { user, workspace } = await requireWorkspace(slug);
-  const project = await getProjectByKey(workspace.id, key);
+  const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project) notFound();
   const members = await listMembers(workspace.id);
+  const teamIds = new Set(
+    (await db.select({ userId: projectMembers.userId }).from(projectMembers).where(eq(projectMembers.projectId, project.id))).map((r) => r.userId),
+  );
+  if (project.leadId) teamIds.add(project.leadId);
+  const team = members.filter((m) => teamIds.has(m.id));
+  // Owners and admins already see every project, so they aren't offered.
+  const candidates = members.filter((m) => !teamIds.has(m.id) && m.role === "member");
   const canManage = canManageProject(workspace.role, user.id, project);
   const [forms, statuses] = canManage
     ? await Promise.all([
@@ -82,6 +91,12 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
       />
       {canManage && (
         <div className="grid grid-cols-1 gap-8">
+          <ProjectTeam
+            projectId={project.id}
+            leadId={project.leadId}
+            team={team.map((m) => ({ id: m.id, name: m.name, email: m.email, role: m.role }))}
+            candidates={candidates.map((m) => ({ id: m.id, name: m.name, email: m.email, role: m.role }))}
+          />
           <ClientShare
             projectId={project.id}
             share={share ?? null}

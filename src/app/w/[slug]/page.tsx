@@ -8,6 +8,7 @@ import { cn, formatDate, formatMoney } from "@/lib/utils";
 import { NewProjectButton } from "@/components/projects/new-project-button";
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
 import { getT } from "@/i18n/server";
+import { visibleProjectIds } from "@/lib/data/project-access";
 
 export async function generateMetadata() {
   const t = await getT();
@@ -16,11 +17,12 @@ export async function generateMetadata() {
 
 export default async function ProjectsPage({ params, searchParams }: PageProps<"/w/[slug]">) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
-  const { workspace } = await requireWorkspace(slug);
+  const { user, workspace } = await requireWorkspace(slug);
+  const isAdmin = workspace.role === "owner" || workspace.role === "admin";
   const t = await getT();
   const showArchived = query.archived === "1";
   const [projects, tasksByProject] = await Promise.all([
-    listProjects(workspace.id, { archived: showArchived }),
+    listProjects(workspace.id, { archived: showArchived, only: await visibleProjectIds(workspace.id, user.id, workspace.role) }),
     getWorkspaceAccomplishmentTasks(workspace.id),
   ]);
   const base = `/w/${workspace.slug}`;
@@ -46,7 +48,7 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
             {showArchived ? <FolderKanban className="size-4" /> : <Archive className="size-4" />}
             {showArchived ? t("Active projects") : t("Archived")}
           </Link>
-          {!showArchived && projects.length > 0 && <NewProjectButton workspaceSlug={workspace.slug} />}
+          {!showArchived && projects.length > 0 && isAdmin && <NewProjectButton workspaceSlug={workspace.slug} />}
         </div>
       </div>
 
@@ -60,13 +62,24 @@ export default async function ProjectsPage({ params, searchParams }: PageProps<"
             <div className="mb-4 grid size-12 place-items-center rounded-full bg-accent text-primary">
               <FolderKanban className="size-6" />
             </div>
-            <h2 className="font-semibold">{t("Create your first project")}</h2>
-            <p className="mt-1 mb-6 max-w-sm text-sm text-muted-foreground">
-              {t(
-                "A project holds its tasks, budget, resources and expenses — for example a new branch, a building, an event or a client contract.",
-              )}
-            </p>
-            <NewProjectButton workspaceSlug={workspace.slug} />
+            {isAdmin ? (
+              <>
+                <h2 className="font-semibold">{t("Create your first project")}</h2>
+                <p className="mt-1 mb-6 max-w-sm text-sm text-muted-foreground">
+                  {t(
+                    "A project holds its tasks, budget, resources and expenses — for example a new branch, a building, an event or a client contract.",
+                  )}
+                </p>
+                <NewProjectButton workspaceSlug={workspace.slug} />
+              </>
+            ) : (
+              <>
+                <h2 className="font-semibold">{t("You're not on any project yet")}</h2>
+                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                  {t("Projects appear here when a project manager adds you to the team or assigns you a task.")}
+                </p>
+              </>
+            )}
           </div>
         )
       ) : (

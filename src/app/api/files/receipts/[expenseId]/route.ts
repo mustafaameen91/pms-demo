@@ -2,10 +2,12 @@ import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { expenses, member } from "@/lib/db/schema";
+import { expenses, member, projects } from "@/lib/db/schema";
 import { readStoredFile } from "@/lib/uploads";
 import { getWorkspaceAccess } from "@/lib/billing";
 import { getT } from "@/i18n/server";
+import { canViewProject } from "@/lib/data/project-access";
+import type { WorkspaceRole } from "@/lib/auth/session";
 
 // Receipts are only served to members of the expense's workspace.
 export async function GET(_request: Request, ctx: RouteContext<"/api/files/receipts/[expenseId]">) {
@@ -20,6 +22,8 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/files/recei
       name: expenses.receiptName,
       type: expenses.receiptType,
       workspaceId: expenses.workspaceId,
+      role: member.role,
+      projectId: expenses.projectId,
     })
     .from(expenses)
     .innerJoin(
@@ -29,6 +33,11 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/files/recei
     .where(eq(expenses.id, expenseId))
     .limit(1);
   if (!row?.path || !row.type) return new Response(t("Not found"), { status: 404 });
+  // Only people who can see the project see its receipts.
+  const [project] = await db.select({ id: projects.id, leadId: projects.leadId }).from(projects).where(eq(projects.id, row.projectId));
+  if (!project || !(await canViewProject(row.role as WorkspaceRole, session.user.id, project))) {
+    return new Response(t("Not found"), { status: 404 });
+  }
   if (!(await getWorkspaceAccess(row.workspaceId)).allowed) {
     return new Response(t("This workspace's subscription isn't active."), { status: 402 });
   }

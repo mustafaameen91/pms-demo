@@ -16,6 +16,7 @@ import { runAutomations } from "@/lib/automation-runner";
 import { formatMoney } from "@/lib/utils";
 import { getT } from "@/i18n/server";
 import type { T } from "@/i18n/translate";
+import { canViewProject } from "@/lib/data/project-access";
 
 export type ExpenseResult =
   | { ok: true; pending?: boolean }
@@ -46,10 +47,12 @@ function fieldErrorsOf(error: z.ZodError, t: T): ExpenseResult {
   return { ok: false, error: t(error.issues[0].message), fieldErrors };
 }
 
+/** The project, if the current user can see it (team members may add expenses to their projects). */
 async function loadProject(projectId: string) {
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
   if (!project) return null;
-  return { project, ...(await requireWorkspaceById(project.workspaceId)) };
+  const auth = await requireWorkspaceById(project.workspaceId);
+  return (await canViewProject(auth.role, auth.user.id, project)) ? { project, ...auth } : null;
 }
 
 /** Create (no expenseId) or update an expense. Accepts an optional receipt file. */

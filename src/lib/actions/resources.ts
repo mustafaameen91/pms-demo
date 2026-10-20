@@ -11,6 +11,10 @@ import { MAX_MONEY, MAX_QTY, decimalOrZero, optionalDecimal } from "@/lib/valida
 import { checkOverBudget } from "@/lib/budget-alerts";
 import { getT } from "@/i18n/server";
 import type { T } from "@/i18n/translate";
+import { canManageProject, isWorkspaceAdmin } from "@/lib/permissions";
+
+const ADMINS_ONLY = "Only workspace owners and admins can change the resource library.";
+const MANAGERS_ONLY = "Only the project manager or admins can change this project's resources.";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
@@ -49,6 +53,7 @@ export async function createResource(workspaceSlug: string, input: ResourceInput
   const parsed = resourceSchema.safeParse(input);
   if (!parsed.success) return fail(parsed.error, t);
   const { user, workspace } = await requireWorkspace(workspaceSlug);
+  if (!isWorkspaceAdmin(workspace.role)) return { ok: false, error: t(ADMINS_ONLY) };
   const [row] = await db
     .insert(resources)
     .values({
@@ -75,6 +80,7 @@ export async function updateResource(resourceId: string, input: ResourceInput): 
   if (!parsed.success) return fail(parsed.error, t);
   const auth = await authorizeResource(resourceId);
   if (!auth) return { ok: false, error: t("Resource not found") };
+  if (!isWorkspaceAdmin(auth.role)) return { ok: false, error: t(ADMINS_ONLY) };
   await db
     .update(resources)
     .set({ ...parsed.data, type: parsed.data.type as ResourceTypeValue })
@@ -111,11 +117,12 @@ const usageSchema = z.object({
 
 export type UsageInput = z.input<typeof usageSchema>;
 
+/** Using resources on a project is the project manager's (or an admin's) job. */
 async function authorizeProject(projectId: string) {
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
   if (!project) return null;
   const auth = await requireWorkspaceById(project.workspaceId);
-  return { project, ...auth };
+  return canManageProject(auth.role, auth.user.id, project) ? { project, ...auth } : null;
 }
 
 async function taskBelongsToProject(taskId: string, projectId: string) {
@@ -138,7 +145,7 @@ export async function addProjectResource(
 ): Promise<Result> {
   const t = await getT();
   const auth = await authorizeProject(projectId);
-  if (!auth) return { ok: false, error: t("Project not found") };
+  if (!auth) return { ok: false, error: t(MANAGERS_ONLY) };
   const { project, user } = auth;
 
   const parsedUsage = usageSchema.safeParse(usage);
@@ -198,8 +205,8 @@ export async function addProjectResource(
 async function authorizeUsage(usageId: string) {
   const [usage] = await db.select().from(projectResources).where(eq(projectResources.id, usageId)).limit(1);
   if (!usage) return null;
-  const auth = await requireWorkspaceById(usage.workspaceId);
-  return { usage, ...auth };
+  const auth = await authorizeProject(usage.projectId);
+  return auth ? { usage, ...auth } : null;
 }
 
 export async function updateProjectResource(usageId: string, input: UsageInput): Promise<Result> {
@@ -207,7 +214,7 @@ export async function updateProjectResource(usageId: string, input: UsageInput):
   const parsed = usageSchema.safeParse(input);
   if (!parsed.success) return fail(parsed.error, t);
   const auth = await authorizeUsage(usageId);
-  if (!auth) return { ok: false, error: t("Not found") };
+  if (!auth) return { ok: false, error: t(MANAGERS_ONLY) };
   if (parsed.data.taskId && !(await taskBelongsToProject(parsed.data.taskId, auth.usage.projectId))) {
     return { ok: false, error: t("Task not found in this project"), fieldErrors: { taskId: t("Task not found") } };
   }
@@ -220,7 +227,7 @@ export async function updateProjectResource(usageId: string, input: UsageInput):
 export async function removeProjectResource(usageId: string): Promise<Result> {
   const t = await getT();
   const auth = await authorizeUsage(usageId);
-  if (!auth) return { ok: false, error: t("Not found") };
+  if (!auth) return { ok: false, error: t(MANAGERS_ONLY) };
   const [resource] = await db
     .select({ name: resources.name })
     .from(resources)

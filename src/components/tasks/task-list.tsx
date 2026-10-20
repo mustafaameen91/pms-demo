@@ -7,10 +7,13 @@ import { BlockedBadge, MilestoneIcon, RepeatIcon, PriorityIcon, StatusDot, UserA
 
 export async function TaskList({
   projectId,
+  canAdd,
   projectKey,
   statuses,
   tasks,
 }: {
+  /** Managers can add tasks. */
+  canAdd: boolean;
   projectId: string;
   projectKey: string;
   statuses: BoardStatus[];
@@ -70,7 +73,7 @@ export async function TaskList({
               })}
             </ul>
             <div className="px-2 py-1 sm:px-4">
-              <QuickAddTask projectId={projectId} statusId={status.id} className="max-w-xl" />
+              {canAdd && <QuickAddTask projectId={projectId} statusId={status.id} className="max-w-xl" />}
             </div>
           </section>
         );

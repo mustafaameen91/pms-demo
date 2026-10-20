@@ -1,13 +1,18 @@
 import "server-only";
 import { cache } from "react";
-import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { member, projects, taskDependencies, taskStatuses, tasks, user } from "@/lib/db/schema";
 import { alias } from "drizzle-orm/pg-core";
 
 // All functions take an already-authorized workspaceId (see requireWorkspace).
 
-export async function listProjects(workspaceId: string, { archived = false } = {}) {
+/** Projects of a workspace; `only` limits it to the ids a member can see (null = all). */
+export async function listProjects(
+  workspaceId: string,
+  { archived = false, only = null }: { archived?: boolean; only?: Set<string> | null } = {},
+) {
+  if (only && only.size === 0) return [];
   return db
     .select({
       id: projects.id,
@@ -28,6 +33,7 @@ export async function listProjects(workspaceId: string, { archived = false } = {
       and(
         eq(projects.workspaceId, workspaceId),
         archived ? isNotNull(projects.archivedAt) : isNull(projects.archivedAt),
+        only ? inArray(projects.id, [...only]) : undefined,
       ),
     )
     .orderBy(asc(projects.name));

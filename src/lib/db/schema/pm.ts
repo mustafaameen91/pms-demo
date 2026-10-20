@@ -691,3 +691,88 @@ export const automationRuns = pgTable(
     uniqueIndex("automation_runs_dedupe_uidx").on(t.ruleId, t.dedupeKey),
   ],
 );
+
+// --- Project team (Phase 17): who can see a project. Owners/admins and the manager see every project they manage. ---
+
+export const projectMembers = pgTable(
+  "project_members",
+  {
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.projectId, t.userId] }), index("project_members_user_idx").on(t.userId)],
+);
+
+// --- Loans (Phase 17): the company lends money to a member or a worker, repaid freely until the balance is zero. ---
+
+export const loanRequestStatus = pgEnum("loan_request_status", ["pending", "approved", "rejected"]);
+
+export const loanRequests = pgTable(
+  "loan_requests",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    currency: text("currency").notNull(),
+    reason: text("reason").notNull(),
+    status: loanRequestStatus("status").notNull().default("pending"),
+    decidedById: text("decided_by_id").references(() => user.id, { onDelete: "set null" }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decisionNote: text("decision_note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("loan_requests_workspace_idx").on(t.workspaceId, t.status)],
+);
+
+export const loans = pgTable(
+  "loans",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    // Exactly one borrower: a workspace member (has an account) or a worker from the resource library.
+    borrowerUserId: text("borrower_user_id").references(() => user.id, { onDelete: "restrict" }),
+    borrowerResourceId: text("borrower_resource_id").references(() => resources.id, { onDelete: "restrict" }),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    currency: text("currency").notNull(),
+    issuedOn: date("issued_on").notNull(),
+    reason: text("reason"),
+    // Set when repayments reach the amount (and cleared if a repayment is removed).
+    paidOffAt: timestamp("paid_off_at", { withTimezone: true }),
+    requestId: text("request_id").references(() => loanRequests.id, { onDelete: "set null" }),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("loans_workspace_idx").on(t.workspaceId, t.issuedOn),
+    index("loans_borrower_user_idx").on(t.borrowerUserId),
+    index("loans_borrower_resource_idx").on(t.borrowerResourceId),
+  ],
+);
+
+export const loanRepayments = pgTable(
+  "loan_repayments",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    loanId: text("loan_id")
+      .notNull()
+      .references(() => loans.id, { onDelete: "cascade" }),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    paidOn: date("paid_on").notNull(),
+    // "cash" | "bank_transfer" | "salary_deduction" | "other"
+    method: text("method").notNull(),
+    note: text("note"),
+    recordedById: text("recorded_by_id").references(() => user.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("loan_repayments_loan_idx").on(t.loanId, t.paidOn)],
+);

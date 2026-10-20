@@ -1,8 +1,9 @@
+import { getVisibleProjectByKey } from "@/lib/data/project-access";
 import { notFound } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getT } from "@/i18n/server";
-import { getProjectByKey, listMembers } from "@/lib/data/projects";
+import { listMembers } from "@/lib/data/projects";
 import { getAutomationRuns, getProjectAutomations } from "@/lib/data/automations";
 import { db } from "@/lib/db";
 import { taskStatuses } from "@/lib/db/schema";
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/
 export default async function AutomationsPage({ params }: PageProps<"/w/[slug]/p/[key]/automations">) {
   const { slug, key } = await params;
   const { user, workspace } = await requireWorkspace(slug);
-  const project = await getProjectByKey(workspace.id, key);
+  const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project) notFound();
 
   const [members, statuses, rules, runs] = await Promise.all([

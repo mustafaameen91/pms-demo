@@ -6,6 +6,8 @@ import tasks from "./tasks";
 import projects from "./projects";
 import money from "./money";
 import server from "./server";
+import access from "./access";
+import loans from "./loans";
 
 /**
  * Arabic dictionary, keyed by the English text. Split by area so several
@@ -20,4 +22,6 @@ export const ar: Dictionary = {
   ...tasks,
   ...projects,
   ...money,
+  ...access,
+  ...loans,
 };

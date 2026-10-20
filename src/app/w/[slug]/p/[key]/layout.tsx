@@ -1,7 +1,8 @@
+import { getVisibleProjectByKey } from "@/lib/data/project-access";
 import { notFound } from "next/navigation";
 import { AlertTriangle, Calendar, User, Wallet, Building2 } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
-import { getAccomplishmentTasks, getProjectByKey } from "@/lib/data/projects";
+import { getAccomplishmentTasks } from "@/lib/data/projects";
 import { computeAccomplishment } from "@/lib/accomplishment";
 import { computeBudget } from "@/lib/budget";
 import { getProjectResources } from "@/lib/data/resources";
@@ -19,7 +20,7 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
   const { slug, key } = await params;
   const { user, workspace } = await requireWorkspace(slug);
   const t = await getT();
-  const project = await getProjectByKey(workspace.id, key);
+  const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project) notFound();
 
   const basePath = `/w/${workspace.slug}/p/${project.key}`;

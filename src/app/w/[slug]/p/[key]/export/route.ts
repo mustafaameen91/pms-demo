@@ -7,6 +7,8 @@ import { getProjectReport } from "@/lib/data/report";
 import { buildProjectWorkbook } from "@/lib/excel";
 import { getWorkspaceAccess } from "@/lib/billing";
 import { getT } from "@/i18n/server";
+import { getVisibleProjectByKey } from "@/lib/data/project-access";
+import type { WorkspaceRole } from "@/lib/auth/session";
 
 // GET /w/[slug]/p/[key]/export → project report as an Excel file (members only).
 export async function GET(_request: Request, ctx: RouteContext<"/w/[slug]/p/[key]/export">) {
@@ -17,7 +19,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/w/[slug]/p/[key
   if (!session) return new Response(t("Unauthorized"), { status: 401 });
 
   const [workspace] = await db
-    .select({ id: organization.id })
+    .select({ id: organization.id, role: member.role })
     .from(organization)
     .innerJoin(member, and(eq(member.organizationId, organization.id), eq(member.userId, session.user.id)))
     .where(eq(organization.slug, slug))
@@ -27,7 +29,8 @@ export async function GET(_request: Request, ctx: RouteContext<"/w/[slug]/p/[key
     return new Response(t("This workspace's subscription isn't active."), { status: 402 });
   }
 
-  const report = await getProjectReport(workspace.id, key);
+  const visible = await getVisibleProjectByKey({ id: workspace.id, role: workspace.role as WorkspaceRole }, session.user.id, key);
+  const report = visible && (await getProjectReport(workspace.id, key));
   if (!report) return new Response(t("Not found"), { status: 404 });
 
   const file = await buildProjectWorkbook(report, t);

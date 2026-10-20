@@ -1,6 +1,7 @@
+import { getVisibleProjectByKey } from "@/lib/data/project-access";
 import { notFound } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth/session";
-import { getBoard, getProjectByKey } from "@/lib/data/projects";
+import { getBoard } from "@/lib/data/projects";
 import { getProjectResources } from "@/lib/data/resources";
 import { getProjectExpenses } from "@/lib/data/expenses";
 import { computeBudget } from "@/lib/budget";
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/
 export default async function ExpensesPage({ params }: PageProps<"/w/[slug]/p/[key]/expenses">) {
   const { slug, key } = await params;
   const { user, workspace } = await requireWorkspace(slug);
-  const project = await getProjectByKey(workspace.id, key);
+  const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project) notFound();
 
   const [board, usages, expenseRows] = await Promise.all([

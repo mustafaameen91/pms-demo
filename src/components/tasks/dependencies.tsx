@@ -21,7 +21,10 @@ export function Dependencies({
   links,
   options,
   taskHref,
+  canEdit = true,
 }: {
+  /** Admins and the project manager add/remove dependencies; others just see them. */
+  canEdit?: boolean;
   taskId: string;
   projectKey: string;
   links: TaskLinks;
@@ -88,11 +91,11 @@ export function Dependencies({
         {links.predecessors.length > 0 && (
           <ul className="grid divide-y rounded-lg border">
             {links.predecessors.map((p) =>
-              row(p, () => run(() => removeDependency(taskId, p.id), t("No longer waiting on {title}", { title: p.title }))),
+              row(p, canEdit ? () => run(() => removeDependency(taskId, p.id), t("No longer waiting on {title}", { title: p.title })) : undefined),
             )}
           </ul>
         )}
-        <form
+        {canEdit && <form
           className="flex gap-2"
           onSubmit={(e) => {
             e.preventDefault();
@@ -116,7 +119,7 @@ export function Dependencies({
           <Button type="submit" size="sm" variant="outline" disabled={pending || !pick}>
             {t("Add")}
           </Button>
-        </form>
+        </form>}
       </div>
 
       {links.successors.length > 0 && (

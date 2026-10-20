@@ -8,6 +8,7 @@ import { fmtPct } from "@/components/projects/accomplishment";
 import { PrintButton } from "./print-button";
 import { LightTheme } from "@/components/light-theme";
 import { getT } from "@/i18n/server";
+import { getVisibleProjectByKey } from "@/lib/data/project-access";
 
 /** Keeps a signed number together left-to-right inside Arabic text (−57.1%, not 57.1%−). */
 const ltr = (text: string, locale: string) => (locale === "ar" ? `\u2066${text}\u2069` : text);
@@ -24,8 +25,8 @@ const SCHEDULE = { ahead: "Ahead of plan", on_track: "On track", behind: "Behind
 export default async function ProjectReportPage({ params }: PageProps<"/print/[slug]/[key]">) {
   const { slug, key } = await params;
   const t = await getT();
-  const { workspace } = await requireWorkspace(slug);
-  const report = await getProjectReport(workspace.id, key);
+  const { user, workspace } = await requireWorkspace(slug);
+  const report = (await getVisibleProjectByKey(workspace, user.id, key)) && (await getProjectReport(workspace.id, key));
   if (!report) notFound();
   const { project, accomplishment: a, budget } = report;
   const money = (v: number | string | null) => (v === null ? "—" : formatMoney(v, project.currency, t.intl))

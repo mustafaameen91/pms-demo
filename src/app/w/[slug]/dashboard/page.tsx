@@ -11,6 +11,7 @@ import { cn, formatDate, formatMoney } from "@/lib/utils";
 import { AccomplishmentMeter, ScheduleBadge, fmtPct } from "@/components/projects/accomplishment";
 import { ProjectStatusBadge } from "@/components/projects/project-status-badge";
 import { getT } from "@/i18n/server";
+import { visibleProjectIds } from "@/lib/data/project-access";
 
 export async function generateMetadata() {
   const t = await getT();
@@ -19,10 +20,10 @@ export async function generateMetadata() {
 
 export default async function DashboardPage({ params }: PageProps<"/w/[slug]/dashboard">) {
   const { slug } = await params;
-  const { workspace } = await requireWorkspace(slug);
+  const { user, workspace } = await requireWorkspace(slug);
   const t = await getT();
   const [projects, tasksByProject, usagesByProject, expensesByProject] = await Promise.all([
-    listProjects(workspace.id),
+    listProjects(workspace.id, { only: await visibleProjectIds(workspace.id, user.id, workspace.role) }),
     getWorkspaceAccomplishmentTasks(workspace.id),
     getWorkspaceUsages(workspace.id),
     getWorkspaceExpenses(workspace.id),

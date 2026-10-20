@@ -1,9 +1,11 @@
+import { getVisibleProjectByKey } from "@/lib/data/project-access";
 import { notFound } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth/session";
-import { getAccomplishmentTasks, getProjectByKey } from "@/lib/data/projects";
+import { getAccomplishmentTasks } from "@/lib/data/projects";
 import { getProjectResources, listResources } from "@/lib/data/resources";
 import { ProjectResourcesView } from "@/components/resources/project-resources";
 import { getT } from "@/i18n/server";
+import { canManageProject } from "@/lib/permissions";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/resources">) {
   const [{ key }, t] = await Promise.all([params, getT()]);
@@ -12,8 +14,8 @@ export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/
 
 export default async function ProjectResourcesPage({ params }: PageProps<"/w/[slug]/p/[key]/resources">) {
   const { slug, key } = await params;
-  const { workspace } = await requireWorkspace(slug);
-  const project = await getProjectByKey(workspace.id, key);
+  const { user, workspace } = await requireWorkspace(slug);
+  const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project) notFound();
 
   const [usages, library, tasks] = await Promise.all([
@@ -25,6 +27,7 @@ export default async function ProjectResourcesPage({ params }: PageProps<"/w/[sl
   return (
     <div className="w-full px-4 py-6 sm:px-6">
       <ProjectResourcesView
+        canEdit={canManageProject(workspace.role, user.id, project)}
         project={{
           id: project.id,
           key: project.key,

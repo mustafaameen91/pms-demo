@@ -19,6 +19,8 @@ import { spawnNextOccurrence } from "@/lib/task-recurrence";
 import { formatMoney } from "@/lib/utils";
 import { tFor } from "@/i18n/server";
 import type { T } from "@/i18n/translate";
+import { addToTeam } from "@/lib/data/project-access";
+import { predecessorState } from "@/lib/task-access";
 
 const EN = tFor("en");
 
@@ -209,6 +211,10 @@ async function perform(
       }
       const [status] = await db.select().from(taskStatuses).where(and(eq(taskStatuses.id, action.statusId), eq(taskStatuses.projectId, ctx.id)));
       if (!status) return { status: "skipped", message: t("Its target column was deleted.") };
+      // Blocked tasks can't be moved, not even by a rule.
+      if ((await predecessorState(task!.parentId ?? task!.id)).open.length > 0) {
+        return { status: "skipped", message: t("{ref} is blocked by unfinished tasks, so it wasn't moved.", { ref }) };
+      }
       const [{ maxPos }] = await db
         .select({ maxPos: max(tasks.position) })
         .from(tasks)
@@ -237,6 +243,7 @@ async function perform(
         return { status: "skipped", message: t("{ref} was already assigned to {name}.", { ref, name: names.people[action.userId] }) };
       }
       await db.update(tasks).set({ assigneeId: action.userId }).where(eq(tasks.id, task!.id));
+      await addToTeam(ctx.id, ctx.workspaceId, action.userId);
       await log("task.assignee_changed", { from: task!.assigneeId, to: action.userId });
       await notify({
         workspaceId: ctx.workspaceId,

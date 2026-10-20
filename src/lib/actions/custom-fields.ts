@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { and, eq, isNull, max, sql } from "drizzle-orm";
+import { and, eq, max, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -10,6 +10,7 @@ import { FIELD_TYPES, parseFieldValue, type FieldDef } from "@/lib/custom-fields
 import { POSITION_STEP } from "@/lib/constants";
 import { canManageProject } from "@/lib/permissions";
 import { getT } from "@/i18n/server";
+import { authorizeTask, denied } from "@/lib/task-access";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -83,9 +84,11 @@ export async function deleteCustomField(fieldId: string): Promise<Result> {
 /** Sets one field's value on a task (any member who can edit tasks). */
 export async function setTaskField(taskId: string, fieldId: string, raw: unknown): Promise<Result> {
   const t = await getT();
-  const [task] = await db.select().from(tasks).where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt))).limit(1);
-  if (!task) return { ok: false, error: t("Task not found") };
-  const { user } = await requireWorkspaceById(task.workspaceId);
+  const auth = await authorizeTask(taskId);
+  if (!auth) return { ok: false, error: t("Task not found") };
+  const { task, user } = auth;
+  const no = denied(auth, "fields", t);
+  if (no) return { ok: false, error: no };
   const [field] = await db
     .select()
     .from(customFields)

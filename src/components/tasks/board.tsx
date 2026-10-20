@@ -42,6 +42,10 @@ type Props = {
   projectKey: string;
   statuses: BoardStatus[];
   tasks: BoardTask[];
+  /** Ids of cards this person may drag (their own unblocked tasks; all unblocked ones for managers). */
+  movable: string[];
+  /** Managers can add tasks. */
+  canAdd: boolean;
 };
 
 const COLUMN_PREFIX = "column:";
@@ -57,7 +61,8 @@ const collisionDetection: CollisionDetection = (args) => {
   return cards.length ? cards : hits;
 };
 
-export function Board({ projectId, projectKey, statuses, tasks }: Props) {
+export function Board({ projectId, projectKey, statuses, tasks, movable, canAdd }: Props) {
+  const canMove = new Set(movable);
   const t = useT();
   const router = useRouter();
   const pathname = usePathname();
@@ -219,11 +224,12 @@ export function Board({ projectId, projectKey, statuses, tasks }: Props) {
                       projectKey={projectKey}
                       done={doneStatusIds.has(task.statusId)}
                       onOpen={() => openTask(task.number)}
+                      locked={!canMove.has(task.id)}
                     />
                   ))}
                 </ul>
               </SortableContext>
-              <QuickAddTask projectId={projectId} statusId={status.id} />
+              {canAdd && <QuickAddTask projectId={projectId} statusId={status.id} />}
             </Column>
           );
         })}
@@ -277,15 +283,19 @@ function SortableCard({
   projectKey,
   done,
   onOpen,
+  locked,
 }: {
   task: BoardTask;
   projectKey: string;
   done: boolean;
   onOpen: () => void;
+  /** Can't be moved by this person (not theirs, or blocked); it still opens on click. */
+  locked: boolean;
 }) {
   const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
+    disabled: locked,
   });
 
   return (

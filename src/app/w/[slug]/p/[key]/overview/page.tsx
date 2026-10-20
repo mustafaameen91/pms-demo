@@ -1,8 +1,9 @@
+import { getVisibleProjectByKey } from "@/lib/data/project-access";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle, Info } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
-import { getAccomplishmentTasks, getBoard, getProjectByKey } from "@/lib/data/projects";
+import { getAccomplishmentTasks, getBoard } from "@/lib/data/projects";
 import { getProjectResources } from "@/lib/data/resources";
 import { getProjectExpenses } from "@/lib/data/expenses";
 import { computeBudget } from "@/lib/budget";
@@ -51,9 +52,9 @@ export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/
 
 export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[key]/overview">) {
   const { slug, key } = await params;
-  const { workspace } = await requireWorkspace(slug);
+  const { user, workspace } = await requireWorkspace(slug);
   const t = await getT();
-  const project = await getProjectByKey(workspace.id, key);
+  const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project) notFound();
 
   const [rows, board, usages, expenseRows] = await Promise.all([

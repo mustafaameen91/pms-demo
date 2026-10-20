@@ -19,6 +19,7 @@ import {
 import { canManageProject } from "@/lib/permissions";
 import { getT } from "@/i18n/server";
 import type { T } from "@/i18n/translate";
+import { addToTeam } from "@/lib/data/project-access";
 
 export type ProjectFormState =
   | { error?: string; fieldErrors?: Record<string, string>; saved?: boolean }
@@ -103,6 +104,9 @@ export async function createProject(
   }
 
   const { user, workspace } = await requireWorkspace(String(formData.get("workspaceSlug")));
+  if (workspace.role !== "owner" && workspace.role !== "admin") {
+    return { error: t("Only workspace owners and admins can create projects.") };
+  }
 
   const [existing] = await db
     .select({ id: projects.id })
@@ -274,6 +278,8 @@ export async function updateProject(
       data: { fields: changed },
     });
   });
+  // A new project manager joins the team (and stays on it if replaced later).
+  await addToTeam(project.id, project.workspaceId, changes.leadId);
 
   refresh();
   return { saved: true };

@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ClipboardList, CornerLeftUp, Loader2, Lock, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createTask, deleteTask, restoreTask, updateTask, type TaskPatch } from "@/lib/actions/tasks";
+import type { TaskEdit } from "@/lib/permissions";
 import type { BoardStatus, TaskDetail, TaskLinks, WorkspaceMember } from "@/lib/data/projects";
 import type { ProjectResource } from "@/lib/data/resources";
 import { PRIORITIES, type Priority } from "@/lib/constants";
@@ -42,6 +43,10 @@ type SheetProps = {
   resourcesHref: string;
   currentUserId: string;
   isAdmin: boolean;
+  /** What the viewer may change on this task (from the server); comments are always allowed. */
+  edits: TaskEdit[];
+  /** Unfinished tasks this one waits on (it's locked until they're done). */
+  blockers: { number: number; title: string }[];
   links: TaskLinks | null;
   /** Set when the task came in through a public request form. */
   request: { formTitle: string; name: string | null; email: string | null; phone: string | null; createdAt: Date } | null;
@@ -103,6 +108,8 @@ function TaskEditor({
   resourcesHref,
   currentUserId,
   isAdmin,
+  edits,
+  blockers,
   links,
   request,
   fields,
@@ -122,6 +129,8 @@ function TaskEditor({
   }
   const taskHref = useTaskHref();
   const isSubtask = Boolean(task.parentId);
+  const can = (edit: TaskEdit) => edits.includes(edit);
+  const blockerTitles = blockers.map((b) => `${projectKey}-${b.number} “${b.title}”`).join(t(", "));
 
   function save(patch: TaskPatch) {
     startTransition(async () => {
@@ -193,16 +202,18 @@ function TaskEditor({
               <Loader2 className="size-3 animate-spin" /> {t("Saving…")}
             </span>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ms-auto h-7 text-muted-foreground hover:text-destructive"
-            onClick={handleDelete}
-            disabled={pending}
-          >
-            <Trash2 className="size-3.5" />
-            {t("Delete")}
-          </Button>
+          {can("delete") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ms-auto h-7 text-muted-foreground hover:text-destructive"
+              onClick={handleDelete}
+              disabled={pending}
+            >
+              <Trash2 className="size-3.5" />
+              {t("Delete")}
+            </Button>
+          )}
         </div>
         <SheetTitle className="sr-only">{task.title}</SheetTitle>
         <SheetDescription className="sr-only">{t("Edit task details")}</SheetDescription>
@@ -221,11 +232,26 @@ function TaskEditor({
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), e.currentTarget.blur())}
           rows={1}
           maxLength={300}
+          readOnly={!can("title")}
           className="field-sizing-content w-full min-w-0 resize-none rounded-md bg-transparent text-xl font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </SheetHeader>
 
       <div className="grid min-w-0 gap-5 px-4 pb-8">
+        {blockers.length > 0 && (
+          <div role="status" className="flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
+            <Lock className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <p>
+              <span className="font-medium">
+                {t.plural(blockers.length, "Blocked by {count} unfinished task.", "Blocked by {count} unfinished tasks.")}
+              </span>{" "}
+              {blockers.length === 1
+                ? t("It can't be started, updated or finished until {titles} is finished.", { titles: blockerTitles })
+                : t("It can't be started, updated or finished until {titles} are finished.", { titles: blockerTitles })}{" "}
+              {can("dates") ? t("You can still plan it (dates, assignee, weight, priority).") : t("You can still comment.")}
+            </p>
+          </div>
+        )}
         {request && (
           <div className="rounded-lg border bg-muted/50 px-3 py-2 text-sm">
             <p className="flex items-center gap-2 font-medium">
@@ -277,7 +303,8 @@ function TaskEditor({
                     save({ isMilestone: e.target.checked });
                   }}
                   aria-describedby="task-milestone-help"
-                  className="size-4 cursor-pointer accent-[var(--primary)]"
+                  disabled={!can("milestone")}
+                  className="size-4 cursor-pointer accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <span id="task-milestone-help" className="text-xs text-muted-foreground">
                   {t("A key date (e.g. permit approved). One date, no weight; not counted in the %.")}
@@ -289,7 +316,7 @@ function TaskEditor({
             <Label htmlFor="task-status">{t("Status")}</Label>
           </dt>
           <dd>
-            <Select value={task.statusId} onValueChange={(statusId) => save({ statusId })}>
+            <Select value={task.statusId} onValueChange={(statusId) => save({ statusId })} disabled={!can("status")}>
               <SelectTrigger id="task-status" className="h-8 w-full sm:w-56">
                 <SelectValue />
               </SelectTrigger>
@@ -319,7 +346,8 @@ function TaskEditor({
               onPointerUp={(e) => commitProgress(Number(e.currentTarget.value))}
               onKeyUp={(e) => commitProgress(Number(e.currentTarget.value))}
               aria-label={t("Progress slider")}
-              className="h-2 w-full cursor-pointer accent-[var(--primary)] sm:w-40"
+              disabled={!can("progress")}
+              className="h-2 w-full cursor-pointer accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-40"
             />
             <div className="relative">
               <Input
@@ -331,6 +359,7 @@ function TaskEditor({
                 onChange={(e) => setProgress(Number(e.target.value))}
                 onBlur={(e) => commitProgress(Number(e.target.value))}
                 onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                disabled={!can("progress")}
                 className="h-8 w-20 pe-6 tabular-nums"
               />
               <span className="pointer-events-none absolute top-1.5 inset-e-2 text-sm text-muted-foreground">%</span>
@@ -355,6 +384,7 @@ function TaskEditor({
                       onBlur={(e) => save({ weight: e.target.value.trim() || null })}
                       onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                       aria-describedby="task-weight-help"
+                      disabled={!can("weight")}
                       className="h-8 w-24 pe-6 tabular-nums"
                     />
                     <span className="pointer-events-none absolute top-1.5 inset-e-2 text-sm text-muted-foreground">
@@ -385,6 +415,7 @@ function TaskEditor({
                   type="date"
                   defaultValue={task.startDate ?? ""}
                   onChange={(e) => save({ startDate: e.target.value || null })}
+                  disabled={!can("dates")}
                   className="h-8 w-full sm:w-56"
                 />
               </dd>
@@ -400,6 +431,7 @@ function TaskEditor({
               type="date"
               defaultValue={task.dueDate ?? ""}
               onChange={(e) => save({ dueDate: e.target.value || null })}
+              disabled={!can("dates")}
               className="h-8 w-full sm:w-56"
             />
           </dd>
@@ -417,6 +449,7 @@ function TaskEditor({
               placeholder="0"
               onBlur={(e) => save({ budget: e.target.value.trim() || null })}
               onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+              disabled={!can("budget")}
               className="h-8 w-full tabular-nums sm:w-40"
             />
             <span className="text-sm text-muted-foreground">{currency}</span>
@@ -435,6 +468,7 @@ function TaskEditor({
                   value={task.recurrence ?? ""}
                   onChange={(e) => save({ recurrence: (e.target.value || null) as TaskPatch["recurrence"] })}
                   aria-describedby="task-repeat-help"
+                  disabled={!can("recurrence")}
                   className={cn(nativeSelectClass, "w-full sm:w-56")}
                 >
                   <option value="">{t("Doesn't repeat")}</option>
@@ -457,7 +491,7 @@ function TaskEditor({
             <Label htmlFor="task-priority">{t("Priority")}</Label>
           </dt>
           <dd>
-            <Select value={task.priority} onValueChange={(priority) => save({ priority })}>
+            <Select value={task.priority} onValueChange={(priority) => save({ priority })} disabled={!can("priority")}>
               <SelectTrigger id="task-priority" className="h-8 w-full sm:w-56">
                 <SelectValue />
               </SelectTrigger>
@@ -476,6 +510,7 @@ function TaskEditor({
           </dt>
           <dd>
             <Select
+              disabled={!can("assignee")}
               value={task.assigneeId ?? UNASSIGNED}
               onValueChange={(v) => save({ assigneeId: v === UNASSIGNED ? null : v })}
             >
@@ -506,7 +541,7 @@ function TaskEditor({
           )}
         </dl>
 
-        <TaskFields taskId={task.id} fields={fields} values={task.customFields ?? {}} />
+        <TaskFields taskId={task.id} fields={fields} values={task.customFields ?? {}} readOnly={!can("fields")} />
 
         <div className="grid gap-1.5">
           <Label htmlFor="task-description">{t("Description")}</Label>
@@ -515,7 +550,8 @@ function TaskEditor({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onBlur={() => description !== (task.description ?? "") && save({ description })}
-            placeholder={t("Add more detail…")}
+            placeholder={can("description") ? t("Add more detail…") : ""}
+            readOnly={!can("description")}
             rows={5}
             className="field-sizing-content w-full min-w-0 min-h-28"
           />
@@ -523,6 +559,8 @@ function TaskEditor({
 
         {!isSubtask && (
           <Subtasks
+            canAdd={can("subtasks")}
+            canDelete={can("delete")}
             task={task}
             projectId={projectId}
             projectKey={projectKey}
@@ -538,6 +576,7 @@ function TaskEditor({
             links={links}
             options={mainTasks.filter((t) => t.id !== task.id)}
             taskHref={taskHref}
+            canEdit={can("dependencies")}
           />
         )}
 
@@ -616,12 +655,17 @@ function TaskEditor({
 }
 
 function Subtasks({
+  canAdd,
+  canDelete,
   task,
   projectId,
   projectKey,
   statuses,
   taskHref,
 }: {
+  /** Add sub-tasks and tick them off (the assignee or a manager, when not blocked). */
+  canAdd: boolean;
+  canDelete: boolean;
   task: TaskDetail;
   projectId: string;
   projectKey: string;
@@ -710,8 +754,9 @@ function Subtasks({
                   type="checkbox"
                   checked={isDone}
                   onChange={(e) => toggle(sub, e.target.checked)}
+                  disabled={!canAdd}
                   aria-label={isDone ? t("Mark “{title}” as not done", { title: sub.title }) : t("Mark “{title}” as done", { title: sub.title })}
-                  className="size-4 cursor-pointer accent-[var(--primary)]"
+                  className="size-4 cursor-pointer accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <Link
                   href={taskHref(key)}
@@ -724,20 +769,20 @@ function Subtasks({
                   <span className="me-2 font-mono text-xs text-muted-foreground no-underline">{key}</span>
                   {sub.title}
                 </Link>
-                <button
+                {canDelete && <button
                   type="button"
                   onClick={() => remove(sub)}
                   aria-label={t("Delete sub-task “{title}”", { title: sub.title })}
                   className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-60 hover:bg-accent hover:text-destructive hover:opacity-100 focus-visible:opacity-100"
                 >
                   <X className="size-4" />
-                </button>
+                </button>}
               </li>
             );
           })}
         </ul>
       )}
-      <form onSubmit={add} className="flex gap-2">
+      {canAdd && <form onSubmit={add} className="flex gap-2">
         <label htmlFor="new-subtask" className="sr-only">
           {t("New sub-task")}
         </label>
@@ -752,7 +797,7 @@ function Subtasks({
         <Button type="submit" size="sm" variant="outline" disabled={pending || !title.trim()}>
           {t("Add")}
         </Button>
-      </form>
+      </form>}
     </section>
   );
 }

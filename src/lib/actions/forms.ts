@@ -16,6 +16,7 @@ import { notify, projectContext } from "@/lib/notifications";
 import { runAutomations } from "@/lib/automation-runner";
 import { canManageProject } from "@/lib/permissions";
 import { getT } from "@/i18n/server";
+import { addToTeam } from "@/lib/data/project-access";
 
 type Result<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
@@ -96,6 +97,7 @@ export async function saveForm(projectId: string, formId: string | null, input: 
       });
     });
   }
+  await addToTeam(auth.project.id, auth.project.workspaceId, d.assigneeId);
   refresh();
   return { ok: true };
 }

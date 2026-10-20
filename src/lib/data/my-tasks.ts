@@ -1,10 +1,10 @@
 import "server-only";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { projects, taskStatuses, tasks } from "@/lib/db/schema";
 
 /** Main tasks and sub-tasks assigned to a user, across the workspace's active projects. */
-export async function listMyTasks(workspaceId: string, userId: string) {
+export async function listMyTasks(workspaceId: string, userId: string, only: Set<string> | null = null) {
   return db
     .select({
       id: tasks.id,
@@ -32,6 +32,8 @@ export async function listMyTasks(workspaceId: string, userId: string) {
         eq(tasks.assigneeId, userId),
         isNull(tasks.deletedAt),
         isNull(projects.archivedAt),
+        // Not projects they were taken off.
+        only ? inArray(projects.id, only.size ? [...only] : [""]) : undefined,
       ),
     )
     .orderBy(asc(tasks.dueDate), asc(projects.name), asc(tasks.number));

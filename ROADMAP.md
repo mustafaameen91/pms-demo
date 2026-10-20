@@ -135,13 +135,21 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Dates, money and numbers formatted per language; Excel export in your language
 - [x] Tests: everything still passes in English, plus an Arabic check
 
-## Phase 17 — AI assistant & integrations *(needs a decision: free AI services vs paid vs own server — discussed, to decide later)*
+## Phase 17 — Blocked tasks, member permissions & loans
+- [x] Blocked tasks are locked until what they wait on is finished: nobody can start them, change progress or finish them; members can only comment; admins / project manager can still plan them (dates, assignee, weight, priority) and fix dependencies
+- [x] Project team: each project has a list of members (manager adds/removes them); existing projects get their manager and current assignees
+- [x] Strict member role: sees only their projects; updates only tasks assigned to them (status, progress, sub-tasks), comments, adds expenses; cannot create projects, create/delete tasks, change weights/budgets/dates, or edit the resource library — enforced on the server, and the screens hide what they can't do
+- [x] Loans: owners/admins lend money to a member or a worker; free repayments of any amount until the balance is zero; "Paid off" when finished; full history
+- [x] Loan requests: a member asks for a loan (amount, reason) → admins approve (it becomes a loan) or reject with a reason; notifications both ways
+- [x] Members see their own loans and balance; Loans page for admins (who owes what, totals); audit log; Arabic & English
+
+## Phase 18 — AI assistant & integrations *(needs a decision: free AI services vs paid vs own server — discussed, to decide later)*
 - [ ] AI: turn a project brief into weighted tasks
 - [ ] AI: weekly status summary and risk list per project
 - [ ] "Continue with Google" sign-in
 - [ ] Outgoing webhooks / API for other systems
 
-## Phase 18 — Going live on your Ubuntu servers
+## Phase 19 — Going live on your Ubuntu servers
 - [ ] **Turn on real email** (SMTP settings in `.env`) — chosen to postpone; currently printed to terminal
 - [ ] Automated tests, production Docker setup
 - [ ] Deploy with HTTPS

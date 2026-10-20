@@ -43,13 +43,14 @@ export function ResourceLibrary({
   items,
   type,
   archived,
-  canArchive,
+  canEdit,
 }: {
   workspaceSlug: string;
   items: LibraryResource[];
   type?: ResourceType;
   archived: boolean;
-  canArchive: boolean;
+  /** Owners and admins manage the library; members can only look. */
+  canEdit: boolean;
 }) {
   const t = useT();
   const [dialog, setDialog] = useState<{ open: boolean; id?: string; initial?: ResourceDraft }>({ open: false });
@@ -67,7 +68,7 @@ export function ResourceLibrary({
 
   return (
     <>
-      {!archived && (
+      {!archived && canEdit && (
         <div className="mb-4 flex justify-end">
           <Button onClick={() => setDialog({ open: true })}>
             <Plus className="size-4" />
@@ -131,7 +132,7 @@ export function ResourceLibrary({
                   </td>
                   <td className="py-2 pe-4 ps-3">
                     <div className="flex justify-end gap-1">
-                      {!archived && (
+                      {!archived && canEdit && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -157,7 +158,7 @@ export function ResourceLibrary({
                           {t("Edit")}
                         </Button>
                       )}
-                      {canArchive && (
+                      {canEdit && (
                         <Button
                           variant="ghost"
                           size="sm"

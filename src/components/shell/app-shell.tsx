@@ -15,6 +15,7 @@ import {
   CheckSquare,
   ChevronsUpDown,
   FolderKanban,
+  HandCoins,
   Gauge,
   LayoutDashboard,
   LayoutTemplate,
@@ -57,6 +58,8 @@ type ShellProps = {
   unread: number;
   /** Expenses this user can approve; null-ish = not an approver anywhere. */
   approvals: number;
+  /** Loan requests waiting (owners/admins only; 0 for members). */
+  loanRequests: number;
   access: AccessState;
   isPlatformAdmin: boolean;
   children: React.ReactNode;
@@ -122,6 +125,7 @@ function SidebarContent({
   projects,
   unread,
   approvals,
+  loanRequests,
   access,
   isPlatformAdmin,
   onNavigate,
@@ -192,6 +196,16 @@ function SidebarContent({
           <Package className="size-4" />
           {t("Resources")}
         </NavLink>
+        <NavLink href={`${base}/loans`} active={pathname.startsWith(`${base}/loans`)} onNavigate={onNavigate}>
+          <HandCoins className="size-4" />
+          {t("Loans")}
+          {loanRequests > 0 && (
+            <span className="ms-auto rounded-full bg-amber-400 px-1.5 text-xs font-semibold text-amber-950 tabular-nums">
+              {loanRequests}
+              <span className="sr-only"> {t("waiting")}</span>
+            </span>
+          )}
+        </NavLink>
         <NavLink href={`${base}/templates`} active={pathname.startsWith(`${base}/templates`)} onNavigate={onNavigate}>
           <LayoutTemplate className="size-4" />
           {t("Templates")}
@@ -225,15 +239,17 @@ function SidebarContent({
 
         <div className="mt-5 mb-1 flex items-center justify-between ps-2.5 pe-1">
           <span className="text-xs font-medium text-muted-foreground">{t("Your projects")}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7"
-            onClick={() => setNewProjectOpen(true)}
-            aria-label={t("New project")}
-          >
-            <Plus className="size-4" />
-          </Button>
+          {(workspace.role === "owner" || workspace.role === "admin") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => setNewProjectOpen(true)}
+              aria-label={t("New project")}
+            >
+              <Plus className="size-4" />
+            </Button>
+          )}
         </div>
         {projects.length === 0 ? (
           <p className="px-2.5 py-1 text-xs text-muted-foreground">{t("No projects yet.")}</p>

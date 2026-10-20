@@ -1,9 +1,10 @@
+import { getVisibleProjectByKey } from "@/lib/data/project-access";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarDays, CalendarRange, Columns3, List, Table2 } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { computeAccomplishment } from "@/lib/accomplishment";
-import { getBoard, getDependencies, getProjectByKey, getTaskDetail, getTaskLinks, listMembers } from "@/lib/data/projects";
+import { getBoard, getDependencies, getTaskDetail, getTaskLinks, listMembers } from "@/lib/data/projects";
 import { getProjectResources } from "@/lib/data/resources";
 import { getProjectFields } from "@/lib/data/custom-fields";
 import { db } from "@/lib/db";
@@ -18,6 +19,8 @@ import { TaskCalendar } from "@/components/tasks/task-calendar";
 import { todayISO } from "@/lib/accomplishment";
 import { TaskSheet } from "@/components/tasks/task-sheet";
 import { getT } from "@/i18n/server";
+import { canManageProject, taskEdits } from "@/lib/permissions";
+import { authorizeTask } from "@/lib/task-access";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]">) {
   const { key } = await params;
@@ -27,7 +30,7 @@ export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]"
 export default async function ProjectPage({ params, searchParams }: PageProps<"/w/[slug]/p/[key]">) {
   const [{ slug, key }, query] = await Promise.all([params, searchParams]);
   const { user, workspace } = await requireWorkspace(slug);
-  const project = await getProjectByKey(workspace.id, key);
+  const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project) notFound();
 
   const view =
@@ -67,6 +70,12 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
 
   const basePath = `/w/${workspace.slug}/p/${project.key}`;
   const t = await getT();
+  // What the viewer may do: managers everything; members only their own tasks; nobody starts a blocked task.
+  const manager = canManageProject(workspace.role, user.id, project);
+  const access = selectedTask ? await authorizeTask(selectedTask.id) : null;
+  const movable = board.tasks
+    .filter((task) => taskEdits({ manager, assignee: task.assigneeId === user.id, blocked: task.blockedBy > 0 }).has("status"))
+    .map((task) => task.id);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -99,6 +108,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
 
       {view === "table" && (
         <TaskTable
+          canAdd={manager}
           projectId={project.id}
           projectKey={project.key}
           currency={project.currency}
@@ -130,10 +140,10 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
         <TaskCalendar projectKey={project.key} month={month} statuses={board.statuses} tasks={board.tasks} />
       )}
       {view === "board" && (
-        <Board projectId={project.id} projectKey={project.key} statuses={board.statuses} tasks={board.tasks} />
+        <Board projectId={project.id} projectKey={project.key} statuses={board.statuses} tasks={board.tasks} movable={movable} canAdd={manager} />
       )}
       {view === "list" && (
-        <TaskList projectId={project.id} projectKey={project.key} statuses={board.statuses} tasks={board.tasks} />
+        <TaskList projectId={project.id} projectKey={project.key} statuses={board.statuses} tasks={board.tasks} canAdd={manager} />
       )}
 
       {taskParam && (
@@ -154,6 +164,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           fields={fields}
           mainTasks={board.tasks.map((t) => ({ id: t.id, number: t.number, title: t.title }))}
           isAdmin={workspace.role === "owner" || workspace.role === "admin"}
+          edits={access ? [...access.edits] : []}
+          blockers={access?.blockers.map((b) => ({ number: b.number, title: b.title })) ?? []}
           // Weight already given to the other main tasks, to show what's left of 100%.
           otherWeight={board.tasks
             .filter((t) => t.id !== selectedTask?.id)

@@ -15,8 +15,10 @@ export function TaskFields({
   taskId,
   fields,
   values,
+  readOnly = false,
 }: {
   taskId: string;
+  readOnly?: boolean;
   fields: FieldDef[];
   values: Record<string, unknown>;
 }) {
@@ -34,6 +36,8 @@ export function TaskFields({
       <h3 id="task-fields-heading" className="text-sm font-medium">
         {t("Fields")}
       </h3>
+      {/* A disabled fieldset makes every field read-only at once. */}
+      <fieldset disabled={readOnly} className="contents">
       <dl className="grid grid-cols-[7rem_1fr] items-center gap-x-3 gap-y-2 text-sm">
         {fields.map((f) => {
           const id = `cf-${f.id}`;
@@ -77,6 +81,7 @@ export function TaskFields({
           );
         })}
       </dl>
+      </fieldset>
     </section>
   );
 }
