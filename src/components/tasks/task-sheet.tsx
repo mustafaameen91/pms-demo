@@ -3,7 +3,7 @@
 import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ClipboardList, CornerLeftUp, Loader2, Lock, Trash2, X } from "lucide-react";
+import { ClipboardList, CornerLeftUp, Eye, Loader2, Lock, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createTask, deleteTask, restoreTask, updateTask, type TaskPatch } from "@/lib/actions/tasks";
 import type { TaskEdit } from "@/lib/permissions";
@@ -130,6 +130,7 @@ function TaskEditor({
   const taskHref = useTaskHref();
   const isSubtask = Boolean(task.parentId);
   const can = (edit: TaskEdit) => edits.includes(edit);
+  const assigneeName = members.find((m) => m.id === task.assigneeId)?.name ?? null;
   const blockerTitles = blockers.map((b) => `${projectKey}-${b.number} “${b.title}”`).join(t(", "));
 
   function save(patch: TaskPatch) {
@@ -217,24 +218,29 @@ function TaskEditor({
         </div>
         <SheetTitle className="sr-only">{task.title}</SheetTitle>
         <SheetDescription className="sr-only">{t("Edit task details")}</SheetDescription>
-        <label htmlFor="task-title" className="sr-only">
-          {t("Title")}
-        </label>
-        <textarea
-          id="task-title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value.replace(/\n/g, ""))}
-          onBlur={() => {
-            const value = title.trim();
-            if (!value) setTitle(task.title);
-            else if (value !== task.title) save({ title: value });
-          }}
-          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), e.currentTarget.blur())}
-          rows={1}
-          maxLength={300}
-          readOnly={!can("title")}
-          className="field-sizing-content w-full min-w-0 resize-none rounded-md bg-transparent text-xl font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        />
+        {can("title") ? (
+          <>
+            <label htmlFor="task-title" className="sr-only">
+              {t("Title")}
+            </label>
+            <textarea
+              id="task-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value.replace(/\n/g, ""))}
+              onBlur={() => {
+                const value = title.trim();
+                if (!value) setTitle(task.title);
+                else if (value !== task.title) save({ title: value });
+              }}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), e.currentTarget.blur())}
+              rows={1}
+              maxLength={300}
+              className="field-sizing-content w-full min-w-0 resize-none rounded-md bg-transparent text-xl font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </>
+        ) : (
+          <p className="min-w-0 text-xl font-semibold break-words">{task.title}</p>
+        )}
       </SheetHeader>
 
       <div className="grid min-w-0 gap-5 px-4 pb-8">
@@ -249,6 +255,27 @@ function TaskEditor({
                 ? t("It can't be started, updated or finished until {titles} is finished.", { titles: blockerTitles })
                 : t("It can't be started, updated or finished until {titles} are finished.", { titles: blockerTitles })}{" "}
               {can("dates") ? t("You can still plan it (dates, assignee, weight, priority).") : t("You can still comment.")}
+            </p>
+          </div>
+        )}
+        {blockers.length === 0 && !can("title") && (
+          <div role="status" className="flex gap-2 rounded-lg border bg-muted/50 px-3 py-2 text-sm">
+            <Eye className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <p>
+              {edits.length > 0 ? (
+                <>
+                  <span className="font-medium">{t("You can update the status, progress and sub-tasks.")}</span>{" "}
+                  {t("Dates, weight and the other details are set by the project manager.")}
+                </>
+              ) : (
+                <>
+                  <span className="font-medium">{t("View only.")}</span>{" "}
+                  {assigneeName
+                    ? t("Only {name} (assigned) or the project manager can update this task.", { name: assigneeName })
+                    : t("Only the project manager can update this task.")}{" "}
+                  {t("You can still comment.")}
+                </>
+              )}
             </p>
           </div>
         )}
@@ -544,17 +571,27 @@ function TaskEditor({
         <TaskFields taskId={task.id} fields={fields} values={task.customFields ?? {}} readOnly={!can("fields")} />
 
         <div className="grid gap-1.5">
-          <Label htmlFor="task-description">{t("Description")}</Label>
-          <Textarea
-            id="task-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={() => description !== (task.description ?? "") && save({ description })}
-            placeholder={can("description") ? t("Add more detail…") : ""}
-            readOnly={!can("description")}
-            rows={5}
-            className="field-sizing-content w-full min-w-0 min-h-28"
-          />
+          {can("description") ? (
+            <>
+              <Label htmlFor="task-description">{t("Description")}</Label>
+              <Textarea
+                id="task-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={() => description !== (task.description ?? "") && save({ description })}
+                placeholder={t("Add more detail…")}
+                rows={5}
+                className="field-sizing-content w-full min-w-0 min-h-28"
+              />
+            </>
+          ) : (
+            <>
+              <h3 className="text-sm font-medium">{t("Description")}</h3>
+              <p className={cn("text-sm whitespace-pre-wrap break-words", !task.description && "text-muted-foreground")}>
+                {task.description || t("No description.")}
+              </p>
+            </>
+          )}
         </div>
 
         {!isSubtask && (

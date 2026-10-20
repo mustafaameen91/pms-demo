@@ -30,6 +30,13 @@ export default {
     "لا يمكن بدؤها أو تحديثها أو إنهاؤها حتى تنتهي {titles}.",
   "You can still plan it (dates, assignee, weight, priority).": "ما زال بإمكانك تخطيطها (التواريخ، المكلَّف، الوزن، الأولوية).",
   "You can still comment.": "ما زال بإمكانك التعليق.",
+  "View only.": "للعرض فقط.",
+  "Only {name} (assigned) or the project manager can update this task.":
+    "فقط {name} (المكلَّف بها) أو مدير المشروع يمكنهم تحديث هذه المهمة.",
+  "Only the project manager can update this task.": "فقط مدير المشروع يمكنه تحديث هذه المهمة.",
+  "You can update the status, progress and sub-tasks.": "يمكنك تحديث الحالة ونسبة الإنجاز والمهام الفرعية.",
+  "Dates, weight and the other details are set by the project manager.": "التواريخ والوزن وباقي التفاصيل يحددها مدير المشروع.",
+  "No description.": "لا يوجد وصف.",
   "Only the project manager or admins can change the team.": "مدير المشروع أو المسؤولون فقط يمكنهم تعديل الفريق.",
   "That person isn't a member of this workspace.": "هذا الشخص ليس عضوًا في مساحة العمل.",
   "The project manager is always on the team. Change the manager first.": "مدير المشروع ضمن الفريق دائمًا. غيّر المدير أولًا.",
