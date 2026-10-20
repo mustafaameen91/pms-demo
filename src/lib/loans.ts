@@ -13,21 +13,45 @@ const fromCents = (c: number) => (c / 100).toFixed(2);
 
 export type LoanBalance = {
   amount: string;
+  /** Everything that settles it: repayments (cash returned) + approved receipts. */
   paid: string;
+  /** Repayments / cash brought back. */
+  returned: string;
+  /** Approved receipts (advances only). */
+  spent: string;
+  /** Receipts waiting for approval (advances only); not settled yet. */
+  pending: string;
   balance: string;
+  /** What can still be returned or claimed with receipts: balance minus receipts waiting for approval. */
+  open: string;
   /** 0–100, for a progress bar. */
   paidPct: number;
   paidOff: boolean;
 };
 
-export function loanBalance(amount: string | number, repayments: { amount: string | number }[]): LoanBalance {
+/**
+ * Where a loan stands. A personal loan is settled by repayments; a project
+ * advance also by receipts (expenses) bought with it, once they're approved.
+ */
+export function loanBalance(
+  amount: string | number,
+  repayments: { amount: string | number }[],
+  receipts: { amount: string | number; approvalStatus: string }[] = [],
+): LoanBalance {
   const total = cents(amount);
-  const paid = repayments.reduce((sum, r) => sum + cents(r.amount), 0);
+  const returned = repayments.reduce((sum, r) => sum + cents(r.amount), 0);
+  const spent = receipts.filter((r) => r.approvalStatus === "approved").reduce((sum, r) => sum + cents(r.amount), 0);
+  const pending = receipts.filter((r) => r.approvalStatus === "pending").reduce((sum, r) => sum + cents(r.amount), 0);
+  const paid = returned + spent;
   const balance = Math.max(0, total - paid);
   return {
     amount: fromCents(total),
     paid: fromCents(paid),
+    returned: fromCents(returned),
+    spent: fromCents(spent),
+    pending: fromCents(pending),
     balance: fromCents(balance),
+    open: fromCents(Math.max(0, balance - pending)),
     paidPct: total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0,
     paidOff: total > 0 && paid >= total,
   };

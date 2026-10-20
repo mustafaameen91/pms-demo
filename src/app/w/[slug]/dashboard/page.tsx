@@ -4,6 +4,7 @@ import { requireWorkspace } from "@/lib/auth/session";
 import { getWorkspaceAccomplishmentTasks, listProjects } from "@/lib/data/projects";
 import { getWorkspaceUsages } from "@/lib/data/resources";
 import { getWorkspaceExpenses } from "@/lib/data/expenses";
+import { getWorkspaceAdvances } from "@/lib/data/loans";
 import { computeAccomplishment, todayISO } from "@/lib/accomplishment";
 import { computeBudget } from "@/lib/budget";
 import { daysBetween, lateTasks } from "@/lib/schedule";
@@ -22,11 +23,12 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
   const { slug } = await params;
   const { user, workspace } = await requireWorkspace(slug);
   const t = await getT();
-  const [projects, tasksByProject, usagesByProject, expensesByProject] = await Promise.all([
+  const [projects, tasksByProject, usagesByProject, expensesByProject, advancesByProject] = await Promise.all([
     listProjects(workspace.id, { only: await visibleProjectIds(workspace.id, user.id, workspace.role) }),
     getWorkspaceAccomplishmentTasks(workspace.id),
     getWorkspaceUsages(workspace.id),
     getWorkspaceExpenses(workspace.id),
+    getWorkspaceAdvances(workspace.id),
   ]);
   const today = todayISO();
 
@@ -34,7 +36,7 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
     .map((p) => {
       const tasks = tasksByProject.get(p.id) ?? [];
       const accomplishment = computeAccomplishment(tasks, p, today);
-      const money = computeBudget(p.budget, usagesByProject.get(p.id) ?? [], expensesByProject.get(p.id) ?? []);
+      const money = computeBudget(p.budget, usagesByProject.get(p.id) ?? [], expensesByProject.get(p.id) ?? [], [], advancesByProject.get(p.id) ?? []);
       const late = lateTasks(tasks, today).length;
       const finished = p.status === "completed" || p.status === "cancelled";
       const daysLeft = p.endDate ? daysBetween(today, p.endDate) : null;

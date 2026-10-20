@@ -14,6 +14,7 @@ import {
   uniqueIndex,
   foreignKey,
   boolean,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { organization, user } from "./auth";
 import type { Action, Trigger } from "@/lib/automations";
@@ -442,6 +443,8 @@ export const expenses = pgTable(
     receiptPath: text("receipt_path"),
     receiptName: text("receipt_name"),
     receiptType: text("receipt_type"),
+    // Bought with a cash advance (a loan with a project): counts toward settling it.
+    loanId: text("loan_id").references((): AnyPgColumn => loans.id, { onDelete: "set null" }),
     // Only approved expenses count as spent (see lib/budget.ts).
     approvalStatus: approvalStatus("approval_status").notNull().default("approved"),
     decidedById: text("decided_by_id").references(() => user.id, { onDelete: "set null" }),
@@ -454,6 +457,7 @@ export const expenses = pgTable(
     index("expenses_project_idx").on(t.projectId, t.date),
     index("expenses_task_idx").on(t.taskId),
     index("expenses_resource_idx").on(t.projectResourceId),
+    index("expenses_loan_idx").on(t.loanId),
   ],
 );
 
@@ -745,7 +749,9 @@ export const loans = pgTable(
     currency: text("currency").notNull(),
     issuedOn: date("issued_on").notNull(),
     reason: text("reason"),
-    // Set when repayments reach the amount (and cleared if a repayment is removed).
+    // Set for a cash advance from a project's budget (receipts become that project's expenses).
+    projectId: text("project_id").references(() => projects.id, { onDelete: "cascade" }),
+    // Set when repayments (and, for advances, approved receipts) reach the amount; cleared if that changes.
     paidOffAt: timestamp("paid_off_at", { withTimezone: true }),
     requestId: text("request_id").references(() => loanRequests.id, { onDelete: "set null" }),
     createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
@@ -755,6 +761,7 @@ export const loans = pgTable(
     index("loans_workspace_idx").on(t.workspaceId, t.issuedOn),
     index("loans_borrower_user_idx").on(t.borrowerUserId),
     index("loans_borrower_resource_idx").on(t.borrowerResourceId),
+    index("loans_project_idx").on(t.projectId),
   ],
 );
 

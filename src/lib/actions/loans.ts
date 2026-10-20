@@ -5,9 +5,12 @@ import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspace, requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { activities, loanRepayments, loanRequests, loans, member, organization, resources, user } from "@/lib/db/schema";
+import { activities, expenses, loanRepayments, loanRequests, loans, member, organization, projects, resources, user } from "@/lib/db/schema";
 import { CURRENCIES } from "@/lib/constants";
-import { REPAYMENT_METHODS, checkRepayment, loanBalance } from "@/lib/loans";
+import { REPAYMENT_METHODS, checkRepayment } from "@/lib/loans";
+import { currentBalance, syncPaidOff } from "@/lib/loan-settlement";
+import { addToTeam } from "@/lib/data/project-access";
+import { checkOverBudget } from "@/lib/budget-alerts";
 import { isWorkspaceAdmin } from "@/lib/permissions";
 import { notify, projectManagers } from "@/lib/notifications";
 import { todayISO } from "@/lib/accomplishment";
@@ -59,6 +62,8 @@ const loanSchema = z.object({
   currency,
   issuedOn: isoDate,
   reason: z.string().trim().max(500).optional().transform((v) => v || null),
+  // A cash advance from this project's budget (empty = a personal loan).
+  projectId: z.string().optional().transform((v) => v || null),
 });
 export type LoanInput = z.input<typeof loanSchema>;
 
@@ -92,20 +97,40 @@ export async function createLoan(slug: string, input: LoanInput): Promise<Result
   const borrower = await resolveBorrower(workspace.id, d.borrower);
   if (!borrower) return { ok: false, error: t("Choose who is borrowing"), fieldErrors: { borrower: t("Choose who is borrowing") } };
 
+  // An advance comes out of a project's budget, in that project's currency.
+  let project: { id: string; name: string; currency: string } | null = null;
+  if (d.projectId) {
+    [project] = await db
+      .select({ id: projects.id, name: projects.name, currency: projects.currency })
+      .from(projects)
+      .where(and(eq(projects.id, d.projectId), eq(projects.workspaceId, workspace.id), isNull(projects.archivedAt)))
+      .limit(1);
+    if (!project) return { ok: false, error: t("Project not found"), fieldErrors: { projectId: t("Project not found") } };
+  }
+  const currency = project?.currency ?? d.currency;
+
   const [loan] = await db
     .insert(loans)
-    .values({ workspaceId: workspace.id, ...borrower, amount: d.amount, currency: d.currency, issuedOn: d.issuedOn, reason: d.reason, createdById: me.id })
+    .values({ workspaceId: workspace.id, ...borrower, amount: d.amount, currency, issuedOn: d.issuedOn, reason: d.reason, projectId: project?.id ?? null, createdById: me.id })
     .returning({ id: loans.id });
   const who = await borrowerOf(borrower);
-  await log(workspace.id, me.id, "loan.created", { borrower: who.name, amount: d.amount, currency: d.currency });
+  await log(workspace.id, me.id, "loan.created", { borrower: who.name, amount: d.amount, currency, project: project?.name ?? null });
+  if (project) {
+    // So they can open the project and add their receipts.
+    await addToTeam(project.id, workspace.id, who.userId);
+    await checkOverBudget(project.id, me.id);
+  }
   if (who.userId) {
     await notify({
       workspaceId: workspace.id,
       userIds: [who.userId],
       actorId: me.id,
       type: "loan",
-      title: (tr) => tr("You received a loan of {amount}", { amount: formatMoney(d.amount, d.currency, tr.intl) }),
-      body: d.reason,
+      title: (tr) =>
+        project
+          ? tr("You received an advance of {amount} for {project}", { amount: formatMoney(d.amount, currency, tr.intl), project: project.name })
+          : tr("You received a loan of {amount}", { amount: formatMoney(d.amount, currency, tr.intl) }),
+      body: project ? (tr) => tr("Add your receipts as expenses on the project, and bring back what's left.") : d.reason,
       link: `/w/${workspace.slug}/loans/${loan.id}`,
       email: true,
     });
@@ -119,16 +144,6 @@ async function adminLoan(loanId: string) {
   if (!loan) return null;
   const { user: me, role } = await requireWorkspaceById(loan.workspaceId);
   return isWorkspaceAdmin(role) ? { loan, me } : null;
-}
-
-/** Keeps "paid off" in step with the repayments, and tells the borrower when it's done. */
-async function syncPaidOff(loanId: string) {
-  const [loan] = await db.select().from(loans).where(eq(loans.id, loanId)).limit(1);
-  const repayments = await db.select({ amount: loanRepayments.amount }).from(loanRepayments).where(eq(loanRepayments.loanId, loanId));
-  const b = loanBalance(loan.amount, repayments);
-  if (b.paidOff && !loan.paidOffAt) await db.update(loans).set({ paidOffAt: new Date() }).where(eq(loans.id, loanId));
-  if (!b.paidOff && loan.paidOffAt) await db.update(loans).set({ paidOffAt: null }).where(eq(loans.id, loanId));
-  return { loan, balance: b, justPaidOff: b.paidOff && !loan.paidOffAt };
 }
 
 const repaymentSchema = z.object({
@@ -148,11 +163,11 @@ export async function recordRepayment(loanId: string, input: RepaymentInput): Pr
   if (!parsed.success) return fieldErrors(parsed.error, t);
   const d = parsed.data;
 
-  const existing = await db.select({ amount: loanRepayments.amount }).from(loanRepayments).where(eq(loanRepayments.loanId, loanId));
-  const before = loanBalance(auth.loan.amount, existing);
-  const problem = checkRepayment(d.amount, before.balance);
+  // Receipts waiting for approval are held back, so the advance can't be settled twice.
+  const before = await currentBalance(auth.loan);
+  const problem = checkRepayment(d.amount, before.open);
   if (problem) {
-    const msg = t(problem, { balance: formatMoney(before.balance, auth.loan.currency, t.intl) });
+    const msg = t(problem, { balance: formatMoney(before.open, auth.loan.currency, t.intl) });
     return { ok: false, error: msg, fieldErrors: { amount: msg } };
   }
   if (d.paidOn < auth.loan.issuedOn) {
@@ -161,7 +176,7 @@ export async function recordRepayment(loanId: string, input: RepaymentInput): Pr
   }
 
   await db.insert(loanRepayments).values({ workspaceId: auth.loan.workspaceId, loanId, amount: d.amount, paidOn: d.paidOn, method: d.method, note: d.note, recordedById: auth.me.id });
-  const { balance, justPaidOff } = await syncPaidOff(loanId);
+  const { balance, justPaidOff } = (await syncPaidOff(loanId))!;
   const who = await borrowerOf(auth.loan);
   await log(auth.loan.workspaceId, auth.me.id, "loan.repayment_recorded", {
     borrower: who.name,
@@ -177,9 +192,13 @@ export async function recordRepayment(loanId: string, input: RepaymentInput): Pr
       actorId: auth.me.id,
       type: "loan",
       title: (tr) =>
-        justPaidOff
-          ? tr("Your loan is fully repaid")
-          : tr("Repayment of {amount} recorded", { amount: formatMoney(d.amount, auth.loan.currency, tr.intl) }),
+        auth.loan.projectId
+          ? justPaidOff
+            ? tr("Your advance is fully settled")
+            : tr("{amount} brought back from your advance", { amount: formatMoney(d.amount, auth.loan.currency, tr.intl) })
+          : justPaidOff
+            ? tr("Your loan is fully repaid")
+            : tr("Repayment of {amount} recorded", { amount: formatMoney(d.amount, auth.loan.currency, tr.intl) }),
       body: (tr) => tr("Remaining: {balance}", { balance: formatMoney(balance.balance, auth.loan.currency, tr.intl) }),
       link: `/w/${slug}/loans/${loanId}`,
       email: true,
@@ -198,6 +217,7 @@ export async function deleteRepayment(repaymentId: string): Promise<Result> {
   if (!auth) return { ok: false, error: t(ADMINS_ONLY) };
   await db.delete(loanRepayments).where(eq(loanRepayments.id, repaymentId));
   await syncPaidOff(rep.loanId);
+  if (auth.loan.projectId) await checkOverBudget(auth.loan.projectId, auth.me.id);
   const who = await borrowerOf(auth.loan);
   await log(auth.loan.workspaceId, auth.me.id, "loan.repayment_deleted", { borrower: who.name, amount: rep.amount, currency: auth.loan.currency });
   refresh();
@@ -211,6 +231,8 @@ export async function deleteLoan(loanId: string): Promise<Result> {
   if (!auth) return { ok: false, error: t(ADMINS_ONLY) };
   const [rep] = await db.select({ id: loanRepayments.id }).from(loanRepayments).where(eq(loanRepayments.loanId, loanId)).limit(1);
   if (rep) return { ok: false, error: t("This loan has repayments. Remove them first if it was entered by mistake.") };
+  const [receipt] = await db.select({ id: expenses.id }).from(expenses).where(eq(expenses.loanId, loanId)).limit(1);
+  if (receipt) return { ok: false, error: t("This advance has receipts. Remove them from the project's expenses first.") };
   const who = await borrowerOf(auth.loan);
   await db.delete(loans).where(eq(loans.id, loanId));
   await log(auth.loan.workspaceId, auth.me.id, "loan.deleted", { borrower: who.name, amount: auth.loan.amount, currency: auth.loan.currency });

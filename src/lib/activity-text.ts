@@ -83,7 +83,10 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "subtask.deleted": return on("deleted sub-task “{title}” on {ref}", "deleted sub-task “{title}”", { title: s(data.title) });
     case "subtask.restored": return on("restored sub-task “{title}” on {ref}", "restored sub-task “{title}”", { title: s(data.title) });
     case "comment.added": return on("commented on {ref}", "commented");
-    case "loan.created": return t("lent {amount} {currency} to {name}", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower) });
+    case "loan.created":
+      return data.project
+        ? t("gave {name} an advance of {amount} {currency} from {project}'s budget", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower), project: s(data.project) })
+        : t("lent {amount} {currency} to {name}", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower) });
     case "loan.repayment_recorded": return t("recorded a repayment of {amount} {currency} from {name} (remaining {balance})", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower), balance: s(data.balance) });
     case "loan.repayment_deleted": return t("removed a repayment of {amount} {currency} from {name}", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower) });
     case "loan.deleted": return t("deleted a loan of {amount} {currency} to {name}", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower) });

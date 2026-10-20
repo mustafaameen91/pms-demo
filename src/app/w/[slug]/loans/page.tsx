@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { requireWorkspace } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
@@ -31,11 +31,19 @@ export default async function LoansPage({ params, searchParams }: PageProps<"/w/
   const { user, workspace } = await requireWorkspace(slug);
   const isAdmin = isWorkspaceAdmin(workspace.role);
   // Admins see every loan; members only their own.
-  const [loans, requests, borrowers, currency] = await Promise.all([
+  const [loans, requests, borrowers, currency, projectChoices] = await Promise.all([
     listLoans(workspace.id, isAdmin ? {} : { borrowerUserId: user.id }),
     listLoanRequests(workspace.id, isAdmin ? { status: "pending" } : { userId: user.id }),
     isAdmin ? listBorrowers(workspace.id) : { people: [], workers: [] },
     usualCurrency(workspace.id),
+    // Projects an advance can come out of.
+    isAdmin
+      ? db
+          .select({ id: projects.id, name: projects.name, key: projects.key, currency: projects.currency })
+          .from(projects)
+          .where(and(eq(projects.workspaceId, workspace.id), isNull(projects.archivedAt)))
+          .orderBy(asc(projects.name))
+      : [],
   ]);
   const filter = query.show === "paid" || query.show === "all" ? query.show : "active";
 
@@ -59,7 +67,9 @@ export default async function LoansPage({ params, searchParams }: PageProps<"/w/
           issuedOn: l.issuedOn,
           reason: l.reason,
           lastPaidOn: l.lastPaidOn,
+          project: l.projectId ? { name: l.projectName ?? "", key: l.projectKey ?? "" } : null,
         }))}
+        projects={projectChoices}
         requests={requests}
         totals={totalsByCurrency(loans)}
         borrowers={borrowers}

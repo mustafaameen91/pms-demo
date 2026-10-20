@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { AlertTriangle, FileText, Link2, Loader2, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { AlertTriangle, FileText, HandCoins, Link2, Loader2, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteExpense, saveExpense } from "@/lib/actions/expenses";
 import type { BudgetSummary } from "@/lib/budget";
@@ -33,7 +34,10 @@ type ProjectInfo = {
   slug: string;
   approvalThreshold: string | null;
   isApprover: boolean;
+  isAdmin: boolean;
 };
+/** A cash advance given from this project's budget. `usable` = this person can add receipts to it. */
+type AdvanceOption = { id: string; borrowerName: string; open: string; settled: boolean; usable: boolean };
 type TaskOption = { id: string; number: number; title: string };
 type UsageOption = { id: string; name: string; role: string | null; type: ResourceType; taskId: string | null };
 type ExpenseRow = Omit<ProjectExpense, "hasReceipt" | "createdById"> & { hasReceipt: boolean; canEdit: boolean };
@@ -46,15 +50,26 @@ export function ExpensesView({
   tasks,
   usages,
   expenses,
+  advances,
+  startWithAdvance,
 }: {
   project: ProjectInfo;
   summary: BudgetSummary;
   tasks: TaskOption[];
   usages: UsageOption[];
   expenses: ExpenseRow[];
+  advances: AdvanceOption[];
+  /** Opened from an advance's "Add a receipt": start a new expense on it. */
+  startWithAdvance?: string;
 }) {
   const t = useT();
-  const [dialog, setDialog] = useState<{ open: boolean; expense?: ExpenseRow }>({ open: false });
+  const router = useRouter();
+  const pathname = usePathname();
+  const [dialog, setDialog] = useState<{ open: boolean; expense?: ExpenseRow; advanceId?: string }>({
+    open: Boolean(startWithAdvance),
+    advanceId: startWithAdvance,
+  });
+  const advanceById = new Map(advances.map((a) => [a.id, a]));
   const money = (v: number) => formatMoney(v, project.currency, t.intl);
   const taskById = new Map(tasks.map((task) => [task.id, task]));
   const usageById = new Map(usages.map((u) => [u.id, u]));
@@ -112,6 +127,14 @@ export function ExpensesView({
             <p className="mt-0.5 text-xs text-muted-foreground">
               {t("Resources {resources} · Other expenses {other}", { resources: money(summary.resourceCost), other: money(summary.otherExpenses) })}
             </p>
+            {summary.advancesOut > 0 && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t("Includes {amount} in cash advances not yet accounted for by receipts", { amount: money(summary.advancesOut) })} ·{" "}
+                <Link href={`/w/${project.slug}/loans`} className="text-primary underline-offset-4 hover:underline">
+                  {t("Loans")}
+                </Link>
+              </p>
+            )}
             {summary.pendingApproval > 0 && (
               <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
                 {t("+ {amount} waiting for approval (not counted yet)", { amount: money(summary.pendingApproval) })}
@@ -267,14 +290,14 @@ export function ExpensesView({
       )}
 
       {/* Expense list */}
-      {project.isApprover && expenses.some((e) => e.approvalStatus === "pending") && (
+      {project.isApprover && expenses.some((e) => e.approvalStatus === "pending" && (!e.loanId || project.isAdmin)) && (
         <section aria-labelledby="approve-heading" className="overflow-hidden rounded-xl border border-amber-500/40 bg-card">
           <h2 id="approve-heading" className="border-b bg-amber-500/10 px-4 py-3 font-semibold">
             {t("Waiting for your approval")}
           </h2>
           <ul className="divide-y">
             {expenses
-              .filter((e) => e.approvalStatus === "pending")
+              .filter((e) => e.approvalStatus === "pending" && (!e.loanId || project.isAdmin))
               .map((e) => (
                 <li key={e.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
                   <div className="min-w-0 flex-1">
@@ -298,7 +321,7 @@ export function ExpensesView({
           <h2 id="expense-list" className="font-semibold">
             {t("Expenses & payments")} <span className="text-xs font-normal text-muted-foreground">{expenses.length}</span>
           </h2>
-          <Button onClick={() => setDialog({ open: true })}>
+          <Button onClick={() => setDialog({ open: true, advanceId: undefined })}>
             <Plus className="size-4" />
             {t("Add expense")}
           </Button>
@@ -333,6 +356,15 @@ export function ExpensesView({
                             {t("Payment · {name}", { name: e.resourceName ?? t("removed resource") })}
                           </span>
                         )}
+                        {e.loanId && (
+                          <Link
+                            href={`/w/${project.slug}/loans/${e.loanId}`}
+                            className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 font-medium text-amber-900 hover:underline dark:text-amber-200"
+                          >
+                            <HandCoins className="size-3" aria-hidden />
+                            {t("From advance · {name}", { name: advanceById.get(e.loanId)?.borrowerName ?? "" })}
+                          </Link>
+                        )}
                         {e.payee && <span>{t("Paid to {name}", { name: e.payee })}</span>}
                         {e.createdByName && <span>{t("Added by {name}", { name: e.createdByName })}</span>}
                       </div>
@@ -362,7 +394,7 @@ export function ExpensesView({
                           </Button>
                         )}
                         {e.canEdit && (
-                          <Button variant="ghost" size="sm" onClick={() => setDialog({ open: true, expense: e })} aria-label={t("Edit {name}", { name: e.description })}>
+                          <Button variant="ghost" size="sm" onClick={() => setDialog({ open: true, expense: e, advanceId: undefined })} aria-label={t("Edit {name}", { name: e.description })}>
                             <Pencil className="size-4" />
                             {t("Edit")}
                           </Button>
@@ -379,11 +411,17 @@ export function ExpensesView({
 
       <ExpenseDialog
         open={dialog.open}
-        onOpenChange={(open) => setDialog((d) => ({ ...d, open }))}
+        onOpenChange={(open) => {
+          setDialog((d) => ({ ...d, open }));
+          // Don't reopen it on the next refresh.
+          if (!open && startWithAdvance) router.replace(pathname, { scroll: false });
+        }}
         expense={dialog.expense}
+        advanceId={dialog.advanceId}
         project={project}
         tasks={tasks}
         usages={usages}
+        advances={advances}
       />
     </div>
   );
@@ -393,16 +431,20 @@ function ExpenseDialog({
   open,
   onOpenChange,
   expense,
+  advanceId,
   project,
   tasks,
   usages,
+  advances,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   expense?: ExpenseRow;
+  advanceId?: string;
   project: ProjectInfo;
   tasks: TaskOption[];
   usages: UsageOption[];
+  advances: AdvanceOption[];
 }) {
   const t = useT();
   return (
@@ -414,11 +456,13 @@ function ExpenseDialog({
         </DialogHeader>
         {open && (
           <ExpenseForm
-            key={expense?.id ?? "new"}
+            key={expense?.id ?? `new-${advanceId ?? ""}`}
             expense={expense}
+            advanceId={advanceId}
             project={project}
             tasks={tasks}
             usages={usages}
+            advances={advances}
             onDone={() => onOpenChange(false)}
           />
         )}
@@ -429,18 +473,25 @@ function ExpenseDialog({
 
 function ExpenseForm({
   expense,
+  advanceId,
   project,
   tasks,
   usages,
+  advances,
   onDone,
 }: {
   expense?: ExpenseRow;
+  advanceId?: string;
   project: ProjectInfo;
   tasks: TaskOption[];
   usages: UsageOption[];
+  advances: AdvanceOption[];
   onDone: () => void;
 }) {
   const t = useT();
+  const [loanId, setLoanId] = useState(expense ? (expense.loanId ?? "") : (advanceId ?? ""));
+  // Advances this person can file receipts on, plus the one this expense is already on.
+  const advanceChoices = advances.filter((a) => a.usable || a.id === expense?.loanId);
   const [usageId, setUsageId] = useState(expense?.projectResourceId ?? "");
   const [category, setCategory] = useState<string>(expense?.category ?? "other");
   const [taskId, setTaskId] = useState(expense?.taskId && !expense.taskDeleted ? expense.taskId : "");
@@ -506,7 +557,7 @@ function ExpenseForm({
             aria-invalid={Boolean(errors.amount)}
           />
           <FieldError message={errors.amount} />
-          {project.approvalThreshold && !project.isApprover && (
+          {!loanId && project.approvalThreshold && !project.isApprover && (
             <p className="text-xs text-muted-foreground">
               {t("Above {amount} needs a manager's approval.", {
                 amount: formatMoney(project.approvalThreshold, project.currency, t.intl),
@@ -531,6 +582,37 @@ function ExpenseForm({
         />
         <FieldError message={errors.description} />
       </div>
+
+      {advanceChoices.length > 0 && (
+        <div className="grid gap-1.5">
+          <Label htmlFor="exp-advance">{t("Paid from a cash advance?")}</Label>
+          <select
+            id="exp-advance"
+            name="loanId"
+            value={loanId}
+            onChange={(e) => setLoanId(e.target.value)}
+            className={nativeSelectClass}
+            aria-invalid={Boolean(errors.loanId)}
+          >
+            <option value="">{t("No")}</option>
+            {advanceChoices.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.settled
+                  ? t("Advance to {name} (settled)", { name: a.borrowerName })
+                  : t("Advance to {name} · {amount} left", { name: a.borrowerName, amount: formatMoney(a.open, project.currency, t.intl) })}
+              </option>
+            ))}
+          </select>
+          <FieldError message={errors.loanId} />
+          {loanId && (
+            <p className="text-xs text-foreground">
+              {project.isAdmin
+                ? t("Counts toward settling the advance.")
+                : t("Counts toward settling the advance once an owner or admin approves it.")}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-1.5">
         <Label htmlFor="exp-usage">{t("Payment for a project resource?")}</Label>

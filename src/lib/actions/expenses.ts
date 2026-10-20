@@ -5,9 +5,10 @@ import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { activities, expenses, projectResources, projects, tasks } from "@/lib/db/schema";
+import { activities, expenses, loans, projectResources, projects, tasks } from "@/lib/db/schema";
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
-import { canManageProject } from "@/lib/permissions";
+import { canManageProject, isWorkspaceAdmin } from "@/lib/permissions";
+import { currentBalance, syncPaidOff } from "@/lib/loan-settlement";
 import { deleteStoredFile, saveReceipt } from "@/lib/uploads";
 import { MAX_MONEY, optionalDecimal } from "@/lib/validation";
 import { checkOverBudget } from "@/lib/budget-alerts";
@@ -37,6 +38,7 @@ const expenseSchema = z.object({
     .transform((v) => v || null),
   taskId: z.string().nullish().transform((v) => v || null),
   projectResourceId: z.string().nullish().transform((v) => v || null),
+  loanId: z.string().nullish().transform((v) => v || null),
 });
 
 type Category = (typeof expenses.$inferInsert)["category"];
@@ -72,6 +74,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
     payee: formData.get("payee"),
     taskId: formData.get("taskId"),
     projectResourceId: formData.get("projectResourceId"),
+    loanId: formData.get("loanId"),
   });
   if (!parsed.success) return fieldErrorsOf(parsed.error, t);
   const data = parsed.data;
@@ -109,6 +112,31 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
     }
   }
 
+  // Bought with a cash advance from this project: the borrower (or an admin, e.g. for a worker)
+  // links it, and it can't be more than what's left of the advance.
+  if (data.loanId) {
+    const [loan] = await db
+      .select()
+      .from(loans)
+      .where(and(eq(loans.id, data.loanId), eq(loans.projectId, projectId)))
+      .limit(1);
+    const linkedBefore = existing?.loanId === data.loanId;
+    if (!loan || (!isWorkspaceAdmin(role) && loan.borrowerUserId !== user.id && !linkedBefore)) {
+      const msg = t("Choose one of your advances from this project.");
+      return { ok: false, error: msg, fieldErrors: { loanId: msg } };
+    }
+    const balance = await currentBalance(loan);
+    // When editing a receipt already on this advance, its own amount is free to reuse.
+    const own = linkedBefore && existing!.approvalStatus !== "rejected" ? Math.round(Number(existing!.amount) * 100) : 0;
+    const left = Math.round(Number(balance.open) * 100) + own;
+    if (Math.round(Number(data.amount) * 100) > left) {
+      const msg = t("That's more than what's left of the advance ({amount}). Record the rest as a separate expense.", {
+        amount: formatMoney(left / 100, project.currency, t.intl),
+      });
+      return { ok: false, error: msg, fieldErrors: { amount: msg } };
+    }
+  }
+
   // Receipt: new upload replaces the old file; "removeReceipt" clears it.
   const file = formData.get("receipt");
   let receipt: { receiptPath: string | null; receiptName: string | null; receiptType: string | null } | undefined;
@@ -121,9 +149,11 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
   }
 
   // Above the project's approval limit, non-approvers' expenses wait for approval.
+  // Receipts for a cash advance always wait for an owner or admin.
   const isApprover = canManageProject(role, user.id, project);
-  const needsApproval =
-    !isApprover && project.approvalThreshold !== null && Number(data.amount) > Number(project.approvalThreshold);
+  const needsApproval = data.loanId
+    ? !isWorkspaceAdmin(role)
+    : !isApprover && project.approvalThreshold !== null && Number(data.amount) > Number(project.approvalThreshold);
   const approval = needsApproval
     ? { approvalStatus: "pending" as const, decidedById: null, decidedAt: null, decisionNote: null }
     : { approvalStatus: "approved" as const };
@@ -167,7 +197,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
   if (needsApproval) {
     await notify({
       workspaceId: project.workspaceId,
-      userIds: await projectManagers(project.workspaceId, project.leadId),
+      userIds: await projectManagers(project.workspaceId, data.loanId ? null : project.leadId),
       actorId: user.id,
       type: "expense.approval_requested",
       title: (tr) =>
@@ -183,6 +213,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
   } else {
     await checkOverBudget(projectId, user.id);
   }
+  for (const loanId of new Set([data.loanId, existing?.loanId])) if (loanId) await syncPaidOff(loanId);
   if (newExpenseId) {
     await runAutomations(
       { type: "expense.added", projectId, expenseId: newExpenseId, amount: values.amount, description: data.description },
@@ -214,6 +245,9 @@ export async function decideExpense(expenseId: string, input: z.input<typeof dec
   const { project, user, role, slug } = auth;
   if (!canManageProject(role, user.id, project)) {
     return { ok: false, error: t("Only workspace admins or the project manager can approve expenses.") };
+  }
+  if (expense.loanId && !isWorkspaceAdmin(role)) {
+    return { ok: false, error: t("Receipts for a cash advance are approved by workspace owners and admins.") };
   }
   if (expense.approvalStatus !== "pending") return { ok: false, error: t("This expense was already decided.") };
   if (parsed.data.decision === "rejected" && !parsed.data.note) {
@@ -254,6 +288,7 @@ export async function decideExpense(expenseId: string, input: z.input<typeof dec
     link: `/w/${slug}/p/${project.key}/expenses`,
     email: true,
   });
+  if (expense.loanId) await syncPaidOff(expense.loanId);
   if (parsed.data.decision === "approved") await checkOverBudget(expense.projectId, user.id);
   refresh();
   return { ok: true };
@@ -306,6 +341,7 @@ export async function deleteExpense(expenseId: string): Promise<ExpenseResult> {
     });
   });
   await deleteStoredFile(expense.receiptPath);
+  if (expense.loanId) await syncPaidOff(expense.loanId);
   refresh();
   return { ok: true };
 }

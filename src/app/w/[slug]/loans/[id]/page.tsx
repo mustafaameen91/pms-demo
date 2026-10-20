@@ -25,19 +25,31 @@ export default async function LoanPage({ params }: PageProps<"/w/[slug]/loans/[i
         isAdmin={isAdmin}
         backHref={`/w/${workspace.slug}/loans`}
         today={todayISO()}
+        // The borrower files receipts on their advance; admins can too (e.g. for a worker).
+        receiptHref={
+          loan.projectKey && !loan.paidOff && (isAdmin || loan.borrowerUserId === user.id)
+            ? `/w/${workspace.slug}/p/${loan.projectKey}/expenses?advance=${loan.id}`
+            : null
+        }
         loan={{
           id: loan.id,
           borrowerName: loan.borrowerName,
           borrowerKind: loan.borrowerKind,
           amount: loan.amount,
           paid: loan.paid,
+          returned: loan.returned,
+          spent: loan.spent,
+          pending: loan.pending,
           balance: loan.balance,
+          open: loan.open,
           paidPct: loan.paidPct,
           paidOff: loan.paidOff,
           currency: loan.currency,
           issuedOn: loan.issuedOn,
           reason: loan.reason,
+          project: loan.projectId ? { name: loan.projectName ?? "", href: `/w/${workspace.slug}/p/${loan.projectKey}/expenses` } : null,
           repayments: loan.repayments,
+          receipts: loan.receipts.map((r) => ({ ...r, hasReceipt: Boolean(r.hasReceipt) })),
         }}
       />
     </div>

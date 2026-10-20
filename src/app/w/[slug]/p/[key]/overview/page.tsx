@@ -6,6 +6,7 @@ import { requireWorkspace } from "@/lib/auth/session";
 import { getAccomplishmentTasks, getBoard } from "@/lib/data/projects";
 import { getProjectResources } from "@/lib/data/resources";
 import { getProjectExpenses } from "@/lib/data/expenses";
+import { getProjectAdvances } from "@/lib/data/loans";
 import { computeBudget } from "@/lib/budget";
 import { lateTasks, upcomingTasks } from "@/lib/schedule";
 import { DeadlinesPanel, MilestonesPanel, MoneyPanel } from "@/components/projects/overview-panels";
@@ -57,14 +58,15 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
   const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project) notFound();
 
-  const [rows, board, usages, expenseRows] = await Promise.all([
+  const [rows, board, usages, expenseRows, advances] = await Promise.all([
     getAccomplishmentTasks(project.id),
     getBoard(project.id),
     getProjectResources(project.id),
     getProjectExpenses(project.id),
+    getProjectAdvances(workspace.id, project.id),
   ]);
   const today = todayISO();
-  const money = computeBudget(project.budget, usages, expenseRows, board.tasks);
+  const money = computeBudget(project.budget, usages, expenseRows, board.tasks, advances);
   const overPlanCount = usages.filter((u) => Number(u.plannedQty) > 0 && Number(u.usedQty) > Number(u.plannedQty)).length;
   const a = computeAccomplishment(rows, project, today);
   const warnings = weightWarnings(a, t);

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FolderKanban, Loader2, Paperclip, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteLoan, deleteRepayment, recordRepayment } from "@/lib/actions/loans";
 import { REPAYMENT_METHODS } from "@/lib/loans";
@@ -14,24 +14,54 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
+import { ApprovalBadge, type ApprovalState } from "@/components/expenses/approval";
 
 type Repayment = { id: string; amount: string; paidOn: string; method: string; note: string | null; recordedBy: string | null };
+type Receipt = {
+  id: string;
+  date: string;
+  amount: string;
+  description: string;
+  approvalStatus: ApprovalState;
+  decisionNote: string | null;
+  hasReceipt: boolean;
+};
 type Loan = {
   id: string;
   borrowerName: string;
   borrowerKind: "member" | "worker";
   amount: string;
   paid: string;
+  returned: string;
+  spent: string;
+  pending: string;
   balance: string;
+  open: string;
   paidPct: number;
   paidOff: boolean;
   currency: string;
   issuedOn: string;
   reason: string | null;
+  /** Set for a cash advance from a project's budget. */
+  project: { name: string; href: string } | null;
   repayments: Repayment[];
+  receipts: Receipt[];
 };
 
-export function LoanDetail({ loan, isAdmin, backHref, today }: { loan: Loan; isAdmin: boolean; backHref: string; today: string }) {
+export function LoanDetail({
+  loan,
+  isAdmin,
+  backHref,
+  today,
+  receiptHref,
+}: {
+  loan: Loan;
+  isAdmin: boolean;
+  backHref: string;
+  today: string;
+  /** Where to add a receipt for this advance (null when it can't take more). */
+  receiptHref: string | null;
+}) {
   const t = useT();
   const router = useRouter();
   const money = (v: string) => formatMoney(v, loan.currency, t.intl);
@@ -49,7 +79,7 @@ export function LoanDetail({ loan, isAdmin, backHref, today }: { loan: Loan; isA
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight">
-            {t("Loan to {name}", { name: loan.borrowerName })}
+            {loan.project ? t("Advance to {name}", { name: loan.borrowerName }) : t("Loan to {name}", { name: loan.borrowerName })}
             <span className="ms-2 rounded-full border px-2 py-0.5 align-middle text-xs font-normal text-muted-foreground">
               {loan.borrowerKind === "member" ? t("Member") : t("Worker")}
             </span>
@@ -58,8 +88,14 @@ export function LoanDetail({ loan, isAdmin, backHref, today }: { loan: Loan; isA
             {t("Given on {date}", { date: formatDate(loan.issuedOn, t.intl) })}
             {loan.reason && <> · “{loan.reason}”</>}
           </p>
+          {loan.project && (
+            <Link href={loan.project.href} className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs text-amber-900 hover:underline dark:text-amber-200">
+              <FolderKanban className="size-3.5" aria-hidden />
+              {t("From the budget of {project}", { project: loan.project.name })}
+            </Link>
+          )}
         </div>
-        {isAdmin && loan.repayments.length === 0 && (
+        {isAdmin && loan.repayments.length === 0 && loan.receipts.length === 0 && (
           <Button
             variant={confirm === "loan" ? "destructive" : "ghost"}
             size="sm"
@@ -82,22 +118,40 @@ export function LoanDetail({ loan, isAdmin, backHref, today }: { loan: Loan; isA
       </header>
 
       <section aria-label={t("Balance")} className="rounded-xl border bg-card p-5">
-        <dl className="grid gap-4 sm:grid-cols-3">
+        <dl className={cn("grid gap-4", loan.project ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3")}>
           <div>
             <dt className="text-xs text-muted-foreground">{t("Amount")}</dt>
             <dd className="mt-1 text-xl font-semibold tabular-nums">{money(loan.amount)}</dd>
           </div>
+          {loan.project ? (
+            <>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("Spent (approved receipts)")}</dt>
+                <dd className="mt-1 text-xl font-semibold tabular-nums">{money(loan.spent)}</dd>
+                {Number(loan.pending) > 0 && (
+                  <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
+                    {t("+ {amount} waiting for approval", { amount: money(loan.pending) })}
+                  </p>
+                )}
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t("Brought back")}</dt>
+                <dd className="mt-1 text-xl font-semibold tabular-nums">{money(loan.returned)}</dd>
+              </div>
+            </>
+          ) : (
+            <div>
+              <dt className="text-xs text-muted-foreground">{t("Repaid")}</dt>
+              <dd className="mt-1 text-xl font-semibold tabular-nums">{money(loan.paid)}</dd>
+            </div>
+          )}
           <div>
-            <dt className="text-xs text-muted-foreground">{t("Repaid")}</dt>
-            <dd className="mt-1 text-xl font-semibold tabular-nums">{money(loan.paid)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">{t("Balance")}</dt>
+            <dt className="text-xs text-muted-foreground">{loan.project ? t("Still with them") : t("Balance")}</dt>
             <dd className={cn("mt-1 text-xl font-semibold tabular-nums", loan.paidOff && "text-primary")}>
               {loan.paidOff ? (
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="size-5" aria-hidden />
-                  {t("Paid off")}
+                  {loan.project ? t("Settled") : t("Paid off")}
                 </span>
               ) : (
                 money(loan.balance)
@@ -112,7 +166,7 @@ export function LoanDetail({ loan, isAdmin, backHref, today }: { loan: Loan; isA
             aria-valuenow={loan.paidPct}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={t("Repaid")}
+            aria-label={loan.project ? t("Settled") : t("Repaid")}
           >
             <div className="h-full rounded-full bg-primary" style={{ width: `${loan.paidPct}%` }} />
           </div>
@@ -120,14 +174,65 @@ export function LoanDetail({ loan, isAdmin, backHref, today }: { loan: Loan; isA
         </div>
       </section>
 
+      {loan.project && (
+        <section aria-labelledby="receipts-heading" className="rounded-xl border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+            <h2 id="receipts-heading" className="font-semibold">
+              {t("Receipts")} <span className="text-muted-foreground tabular-nums">{loan.receipts.length}</span>
+            </h2>
+            {receiptHref && (
+              <Button asChild size="sm">
+                <Link href={receiptHref}>
+                  <Plus className="size-4" />
+                  {t("Add a receipt")}
+                </Link>
+              </Button>
+            )}
+          </div>
+          {loan.receipts.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              {t("No receipts yet. Each purchase made with this advance is added as an expense of the project.")}
+            </p>
+          ) : (
+            <ul className="divide-y">
+              {loan.receipts.map((r) => (
+                <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 text-sm">
+                  <span className="w-28 shrink-0 text-muted-foreground tabular-nums">{formatDate(r.date, t.intl)}</span>
+                  <span className="min-w-0 flex-1">
+                    {r.description} <ApprovalBadge status={r.approvalStatus} note={r.decisionNote} />
+                  </span>
+                  {r.hasReceipt && (
+                    <a
+                      href={`/api/files/receipts/${r.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      aria-label={t("Open receipt for {name}", { name: r.description })}
+                    >
+                      <Paperclip className="size-3.5" aria-hidden />
+                      {t("Receipt")}
+                    </a>
+                  )}
+                  <span
+                    className={cn("text-end font-medium tabular-nums", r.approvalStatus !== "approved" && "text-muted-foreground line-through decoration-1")}
+                  >
+                    {money(r.amount)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       {isAdmin && !loan.paidOff && <RepaymentForm loan={loan} today={today} />}
 
       <section aria-labelledby="repayments-heading" className="rounded-xl border bg-card">
         <h2 id="repayments-heading" className="border-b px-4 py-3 font-semibold">
-          {t("Repayments")} <span className="text-muted-foreground tabular-nums">{loan.repayments.length}</span>
+          {loan.project ? t("Cash brought back") : t("Repayments")} <span className="text-muted-foreground tabular-nums">{loan.repayments.length}</span>
         </h2>
         {loan.repayments.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("Nothing repaid yet.")}</p>
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">{loan.project ? t("Nothing brought back yet.") : t("Nothing repaid yet.")}</p>
         ) : (
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
@@ -199,23 +304,30 @@ function RepaymentForm({ loan, today }: { loan: Loan; today: string }) {
         startTransition(async () => {
           const res = await recordRepayment(loan.id, form);
           if (!res.ok) return setErrors(res.fieldErrors ?? { form: res.error });
-          toast.success(res.data?.paidOff ? t("Loan fully repaid") : t("Repayment recorded"));
+          toast.success(
+            res.data?.paidOff
+              ? loan.project ? t("Advance settled") : t("Loan fully repaid")
+              : loan.project ? t("Cash brought back recorded") : t("Repayment recorded"),
+          );
           setForm({ amount: "", paidOn: today, method: form.method, note: "" });
         });
       }}
     >
       <h2 id="repay-heading" className="font-semibold">
-        {t("Record a repayment")}
+        {loan.project ? t("Record cash brought back") : t("Record a repayment")}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        {t("Any amount up to the remaining {balance}.", { balance: formatMoney(loan.balance, loan.currency, t.intl) })}
+        {loan.project
+          ? t("Money they didn't spend goes back to the project's budget. Up to {balance}.", { balance: formatMoney(loan.open, loan.currency, t.intl) })
+          : t("Any amount up to the remaining {balance}.", { balance: formatMoney(loan.open, loan.currency, t.intl) })}
+        {Number(loan.pending) > 0 && ` ${t("Receipts waiting for approval ({amount}) are held back.", { amount: formatMoney(loan.pending, loan.currency, t.intl) })}`}
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_auto_auto_1.5fr_auto] xl:items-end">
         <div className="grid gap-1.5">
           <Label htmlFor="repay-amount">{t("Amount ({currency})", { currency: loan.currency })}</Label>
           <div className="flex gap-2">
             <Input id="repay-amount" inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="tabular-nums" aria-invalid={Boolean(errors.amount)} />
-            <Button type="button" variant="outline" size="sm" className="h-9 shrink-0" onClick={() => setForm({ ...form, amount: String(Number(loan.balance)) })}>
+            <Button type="button" variant="outline" size="sm" className="h-9 shrink-0" onClick={() => setForm({ ...form, amount: String(Number(loan.open)) })}>
               {t("All")}
             </Button>
           </div>

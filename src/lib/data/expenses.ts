@@ -20,6 +20,7 @@ export async function getProjectExpenses(projectId: string) {
       taskTitle: tasks.title,
       taskDeleted: tasks.deletedAt,
       projectResourceId: expenses.projectResourceId,
+      loanId: expenses.loanId,
       resourceName: linkedResource.name,
       hasReceipt: expenses.receiptPath,
       receiptName: expenses.receiptName,
@@ -50,6 +51,7 @@ export async function getWorkspaceExpenses(workspaceId: string) {
       amount: expenses.amount,
       taskId: expenses.taskId,
       projectResourceId: expenses.projectResourceId,
+      loanId: expenses.loanId,
       approvalStatus: expenses.approvalStatus,
     })
     .from(expenses)
@@ -76,11 +78,13 @@ export async function listPendingApprovals(workspaceId: string, userId: string, 
       currency: projects.currency,
       threshold: projects.approvalThreshold,
       leadId: projects.leadId,
+      loanId: expenses.loanId,
     })
     .from(expenses)
     .innerJoin(projects, eq(projects.id, expenses.projectId))
     .leftJoin(user, eq(user.id, expenses.createdById))
     .where(and(eq(expenses.workspaceId, workspaceId), eq(expenses.approvalStatus, "pending")))
     .orderBy(asc(expenses.createdAt));
-  return rows.filter((r) => isAdmin || r.leadId === userId);
+  // Receipts for a cash advance are approved by owners/admins only.
+  return rows.filter((r) => isAdmin || (r.leadId === userId && !r.loanId));
 }

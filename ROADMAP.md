@@ -142,6 +142,7 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Loans: owners/admins lend money to a member or a worker; free repayments of any amount until the balance is zero; "Paid off" when finished; full history
 - [x] Loan requests: a member asks for a loan (amount, reason) → admins approve (it becomes a loan) or reject with a reason; notifications both ways
 - [x] Members see their own loans and balance; Loans page for admins (who owes what, totals); audit log; Arabic & English
+- [x] Project cash advances: a loan can come from a project's budget (counted as spent right away); the borrower adds receipts as project expenses linked to the advance (owners/admins approve them); cash brought back returns to the budget; settled when receipts + cash = the amount
 
 ## Phase 18 — AI assistant & integrations *(needs a decision: free AI services vs paid vs own server — discussed, to decide later)*
 - [ ] AI: turn a project brief into weighted tasks

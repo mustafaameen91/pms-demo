@@ -6,6 +6,11 @@
  * Expenses linked to a resource are payments for it: they reduce what is still
  * owed, but are not added to spending again (that would count it twice).
  * Only approved expenses count; pending and rejected ones are ignored.
+ *
+ * Cash advances (loans given from the project's budget) count as spent the day
+ * they're given: what's still out with the person is added to spending. As
+ * receipts bought with it are approved they count as normal expenses instead,
+ * and cash brought back simply stops counting — it's back in the budget.
  */
 
 export type BudgetUsage = {
@@ -22,7 +27,12 @@ export type BudgetExpense = {
   projectResourceId: string | null;
   /** Pending / rejected expenses don't count. Missing = approved. */
   approvalStatus?: "approved" | "pending" | "rejected";
+  /** The cash advance it was bought with, if any. */
+  loanId?: string | null;
 };
+
+/** A cash advance given from this project's budget, and the cash already brought back. */
+export type BudgetAdvance = { id: string; amount: string | number; returned: string | number };
 
 export type BudgetTask = { id: string; budget: string | number | null };
 
@@ -52,6 +62,8 @@ export type BudgetSummary = {
   owedToResources: number;
   /** Total of expenses waiting for approval (not counted in `actual`). */
   pendingApproval: number;
+  /** Cash advances still out with people, not yet accounted for by approved receipts (part of `actual`). */
+  advancesOut: number;
   tasks: TaskBudgetLine[];
   resources: ResourcePaymentLine[];
 };
@@ -64,6 +76,7 @@ export function computeBudget(
   usages: BudgetUsage[],
   expenses: BudgetExpense[],
   tasks: BudgetTask[] = [],
+  advances: BudgetAdvance[] = [],
 ): BudgetSummary {
   const budget = projectBudget === null || projectBudget === "" ? null : Number(projectBudget);
   const allExpenses = expenses;
@@ -83,7 +96,14 @@ export function computeBudget(
   const resourceCost = cents(resources.reduce((s, r) => s + r.usedCost, 0));
   const plannedResourceCost = cents(usages.reduce((s, u) => s + n(u.plannedQty) * n(u.unitCost), 0));
   const otherExpenses = cents(expenses.filter((e) => !e.projectResourceId).reduce((s, e) => s + n(e.amount), 0));
-  const actual = cents(resourceCost + otherExpenses);
+  const receiptsByAdvance = new Map<string, number>();
+  for (const e of expenses) {
+    if (e.loanId) receiptsByAdvance.set(e.loanId, (receiptsByAdvance.get(e.loanId) ?? 0) + n(e.amount));
+  }
+  const advancesOut = cents(
+    advances.reduce((s, a) => s + Math.max(0, n(a.amount) - n(a.returned) - (receiptsByAdvance.get(a.id) ?? 0)), 0),
+  );
+  const actual = cents(resourceCost + otherExpenses + advancesOut);
   // Payments only count against resources that exist in this project.
   const paidToResources = cents(resources.reduce((s, r) => s + r.paid, 0));
 
@@ -118,6 +138,7 @@ export function computeBudget(
     overBudget: budget !== null && actual > budget,
     paidToResources,
     owedToResources: cents(resources.reduce((s, r) => s + r.owed, 0)),
+    advancesOut,
     pendingApproval: cents(allExpenses.filter((e) => e.approvalStatus === "pending").reduce((s, e) => s + n(e.amount), 0)),
     tasks: taskLines,
     resources,

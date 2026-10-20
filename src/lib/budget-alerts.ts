@@ -3,6 +3,7 @@ import { computeBudget } from "@/lib/budget";
 import { todayISO } from "@/lib/accomplishment";
 import { getProjectResources } from "@/lib/data/resources";
 import { getProjectExpenses } from "@/lib/data/expenses";
+import { getProjectAdvances } from "@/lib/data/loans";
 import { formatMoney } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
@@ -13,12 +14,13 @@ import { notify, projectContext, projectManagers } from "@/lib/notifications";
 export async function checkOverBudget(projectId: string, actorId: string) {
   const ctx = await projectContext(projectId);
   if (!ctx?.budget) return;
-  const [[project], usages, expenses] = await Promise.all([
+  const [[project], usages, expenses, advances] = await Promise.all([
     db.select({ currency: projects.currency }).from(projects).where(eq(projects.id, projectId)).limit(1),
     getProjectResources(projectId),
     getProjectExpenses(projectId),
+    getProjectAdvances(ctx.workspaceId, projectId),
   ]);
-  const summary = computeBudget(ctx.budget, usages, expenses);
+  const summary = computeBudget(ctx.budget, usages, expenses, [], advances);
   if (!summary.overBudget) return;
   await notify({
     workspaceId: ctx.workspaceId,

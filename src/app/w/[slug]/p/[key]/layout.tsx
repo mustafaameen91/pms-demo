@@ -7,6 +7,7 @@ import { computeAccomplishment } from "@/lib/accomplishment";
 import { computeBudget } from "@/lib/budget";
 import { getProjectResources } from "@/lib/data/resources";
 import { getProjectExpenses } from "@/lib/data/expenses";
+import { getProjectAdvances } from "@/lib/data/loans";
 import { AccomplishmentMeter, AccomplishmentSummary } from "@/components/projects/accomplishment";
 import { canManageProject } from "@/lib/permissions";
 import { formatDate, formatMoney } from "@/lib/utils";
@@ -24,13 +25,14 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
   if (!project) notFound();
 
   const basePath = `/w/${workspace.slug}/p/${project.key}`;
-  const [accomplishmentTasks, usages, expenseRows] = await Promise.all([
+  const [accomplishmentTasks, usages, expenseRows, advances] = await Promise.all([
     getAccomplishmentTasks(project.id),
     getProjectResources(project.id),
     getProjectExpenses(project.id),
+    getProjectAdvances(workspace.id, project.id),
   ]);
   const accomplishment = computeAccomplishment(accomplishmentTasks, project);
-  const budget = computeBudget(project.budget, usages, expenseRows);
+  const budget = computeBudget(project.budget, usages, expenseRows, [], advances);
   const hasDates = project.startDate || project.endDate;
 
   return (

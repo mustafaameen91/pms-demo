@@ -76,3 +76,27 @@ test("only approved expenses count; pending total is reported", () => {
   assert.equal(b.paidToResources, 0); // pending payment not counted
   assert.equal(b.pendingApproval, 500);
 });
+
+test("a cash advance counts as spent right away; receipts replace it, cash brought back returns it", () => {
+  const advance = { id: "a1", amount: "10000", returned: "0" };
+  // Given, nothing accounted yet: the whole advance is out of the budget.
+  let s = computeBudget("50000", [], [], [], [advance]);
+  assert.equal(s.advancesOut, 10000);
+  assert.equal(s.actual, 10000);
+  assert.equal(s.remaining, 40000);
+  // 9,000 of approved receipts: counted as expenses, not twice.
+  const receipts = [
+    { amount: "6000", taskId: null, projectResourceId: null, loanId: "a1" },
+    { amount: "3000", taskId: null, projectResourceId: null, loanId: "a1" },
+    { amount: "700", taskId: null, projectResourceId: null, loanId: "a1", approvalStatus: "pending" as const },
+  ];
+  s = computeBudget("50000", [], receipts, [], [advance]);
+  assert.equal(s.otherExpenses, 9000);
+  assert.equal(s.advancesOut, 1000);
+  assert.equal(s.actual, 10000);
+  // 1,000 brought back: it's back in the budget.
+  s = computeBudget("50000", [], receipts, [], [{ ...advance, returned: "1000" }]);
+  assert.equal(s.advancesOut, 0);
+  assert.equal(s.actual, 9000);
+  assert.equal(s.remaining, 41000);
+});

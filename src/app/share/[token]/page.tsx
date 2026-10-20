@@ -6,6 +6,7 @@ import { organization, projectShares, projects } from "@/lib/db/schema";
 import { getBoard } from "@/lib/data/projects";
 import { getProjectResources } from "@/lib/data/resources";
 import { getProjectExpenses } from "@/lib/data/expenses";
+import { getProjectAdvances } from "@/lib/data/loans";
 import { computeAccomplishment, todayISO } from "@/lib/accomplishment";
 import { computeBudget } from "@/lib/budget";
 import { getWorkspaceAccess } from "@/lib/billing";
@@ -63,10 +64,11 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
       ),
     );
 
-  const [board, usages, expenses] = await Promise.all([
+  const [board, usages, expenses, advances] = await Promise.all([
     getBoard(project.id),
     share.showBudget ? getProjectResources(project.id) : [],
     share.showBudget ? getProjectExpenses(project.id) : [],
+    share.showBudget ? getProjectAdvances(project.workspaceId, project.id) : [],
   ]);
   const today = todayISO();
   const statusById = new Map(board.statuses.map((s) => [s.id, s]));
@@ -76,7 +78,7 @@ export default async function SharePage({ params }: PageProps<"/share/[token]">)
     project,
     today,
   );
-  const money = share.showBudget ? computeBudget(project.budget, usages, expenses) : null;
+  const money = share.showBudget ? computeBudget(project.budget, usages, expenses, [], advances) : null;
   const statusLabel = PROJECT_STATUSES.find((s) => s.value === project.status)?.label;
 
   return (

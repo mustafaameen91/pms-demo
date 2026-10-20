@@ -29,6 +29,8 @@ export type LoanItem = {
   issuedOn: string;
   reason: string | null;
   lastPaidOn: string | null;
+  /** Set for a cash advance from a project's budget. */
+  project: { name: string; key: string } | null;
 };
 export type LoanRequestItem = {
   id: string;
@@ -53,6 +55,7 @@ type Props = {
   totals: Totals;
   borrowers: { people: { id: string; name: string }[]; workers: { id: string; name: string; role: string | null }[] };
   filter: "active" | "paid" | "all";
+  projects: { id: string; name: string; key: string; currency: string }[];
 };
 
 export function LoansView(props: Props) {
@@ -74,7 +77,7 @@ export function LoansView(props: Props) {
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             {isAdmin
-              ? t("Money the company lends to members and workers. Record repayments of any amount until the balance is zero.")
+              ? t("Money the company lends to members and workers, or advances from a project's budget. Record repayments of any amount until the balance is zero.")
               : t("Loans the company gave you and what's left to repay. You can also ask for a new loan.")}
           </p>
         </div>
@@ -165,11 +168,15 @@ export function LoansView(props: Props) {
                         <span className="ms-2 rounded-full border px-1.5 py-0.5 text-xs text-muted-foreground">
                           {l.borrowerKind === "member" ? t("Member") : t("Worker")}
                         </span>
+                        {l.project && <AdvanceTag project={l.project} />}
                       </td>
                     )}
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       {isAdmin ? formatDate(l.issuedOn, t.intl) : (
-                        <Link href={`loans/${l.id}`} className="after:absolute after:inset-0 hover:underline">{formatDate(l.issuedOn, t.intl)}</Link>
+                        <>
+                          <Link href={`loans/${l.id}`} className="after:absolute after:inset-0 hover:underline">{formatDate(l.issuedOn, t.intl)}</Link>
+                          {l.project && <AdvanceTag project={l.project} />}
+                        </>
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-end whitespace-nowrap tabular-nums">{money(l.amount, l.currency)}</td>
@@ -210,10 +217,19 @@ export function LoansView(props: Props) {
       )}
 
       {isAdmin && (
-        <NewLoanDialog open={newOpen} onOpenChange={setNewOpen} slug={props.slug} borrowers={props.borrowers} defaultCurrency={props.defaultCurrency} today={props.today} />
+        <NewLoanDialog open={newOpen} onOpenChange={setNewOpen} slug={props.slug} borrowers={props.borrowers} projects={props.projects} defaultCurrency={props.defaultCurrency} today={props.today} />
       )}
       {!isAdmin && <RequestDialog open={requestOpen} onOpenChange={setRequestOpen} slug={props.slug} defaultCurrency={props.defaultCurrency} />}
     </div>
+  );
+}
+
+function AdvanceTag({ project }: { project: { name: string; key: string } }) {
+  const t = useT();
+  return (
+    <span className="ms-2 inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-xs text-amber-900 dark:text-amber-200">
+      {t("Advance · {project}", { project: project.name })}
+    </span>
   );
 }
 
@@ -323,9 +339,9 @@ function MyRequest({ request: r }: { request: LoanRequestItem }) {
   );
 }
 
-function CurrencySelect({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+function CurrencySelect({ id, value, onChange, disabled }: { id: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
-    <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={cn(nativeSelectClass, "w-28")}>
+    <select id={id} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} className={cn(nativeSelectClass, "w-28 disabled:opacity-70")}>
       {CURRENCIES.map((c) => (
         <option key={c} value={c}>
           {c}
@@ -340,6 +356,7 @@ function NewLoanDialog({
   onOpenChange,
   slug,
   borrowers,
+  projects,
   defaultCurrency,
   today,
 }: {
@@ -347,11 +364,14 @@ function NewLoanDialog({
   onOpenChange: (o: boolean) => void;
   slug: string;
   borrowers: Props["borrowers"];
+  projects: Props["projects"];
   defaultCurrency: string;
   today: string;
 }) {
   const t = useT();
-  const [form, setForm] = useState({ borrower: "", amount: "", currency: defaultCurrency, issuedOn: today, reason: "" });
+  const empty = { borrower: "", amount: "", currency: defaultCurrency, issuedOn: today, reason: "", projectId: "" };
+  const [form, setForm] = useState(empty);
+  const project = projects.find((p) => p.id === form.projectId);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
@@ -369,8 +389,8 @@ function NewLoanDialog({
                 setErrors(res.fieldErrors ?? { form: res.error });
                 return;
               }
-              toast.success(t("Loan recorded"));
-              setForm({ borrower: "", amount: "", currency: defaultCurrency, issuedOn: today, reason: "" });
+              toast.success(project ? t("Advance recorded") : t("Loan recorded"));
+              setForm(empty);
               onOpenChange(false);
             });
           }}
@@ -403,6 +423,34 @@ function NewLoanDialog({
             </select>
             <FieldError message={errors.borrower} />
           </div>
+          {projects.length > 0 && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="loan-project">{t("From a project's budget?")}</Label>
+              <select
+                id="loan-project"
+                value={form.projectId}
+                onChange={(e) => {
+                  const p = projects.find((x) => x.id === e.target.value);
+                  set({ projectId: e.target.value, currency: p?.currency ?? form.currency });
+                }}
+                className={nativeSelectClass}
+                aria-describedby="loan-project-help"
+              >
+                <option value="">{t("No — a personal loan")}</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.key})
+                  </option>
+                ))}
+              </select>
+              <p id="loan-project-help" className={cn("text-xs", project ? "text-foreground" : "text-muted-foreground")}>
+                {project
+                  ? t("A cash advance to buy things for {project}. It counts as spent from the project's budget right away. Receipts are added as the project's expenses, and cash brought back returns to the budget.", { project: project.name })
+                  : t("Choose a project for a cash advance (e.g. to buy equipment), settled with receipts and the cash brought back.")}
+              </p>
+              <FieldError message={errors.projectId} />
+            </div>
+          )}
           <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
             <div className="grid gap-1.5">
               <Label htmlFor="loan-amount">{t("Amount")}</Label>
@@ -410,7 +458,7 @@ function NewLoanDialog({
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="loan-currency">{t("Currency")}</Label>
-              <CurrencySelect id="loan-currency" value={form.currency} onChange={(currency) => set({ currency })} />
+              <CurrencySelect id="loan-currency" value={form.currency} onChange={(currency) => set({ currency })} disabled={Boolean(project)} />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="loan-date">{t("Given on")}</Label>
