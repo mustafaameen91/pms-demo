@@ -3,26 +3,15 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createT, type T } from "@/i18n/translate";
+import { TYPES, detectProjectFile, type ReceiptType } from "@/lib/file-types";
 
 // Files live on the server's own disk. Back up UPLOAD_DIR together with the database.
 const ROOT = path.resolve(process.env.UPLOAD_DIR ?? "./uploads");
 
 export const MAX_RECEIPT_BYTES = 8 * 1024 * 1024;
 
-const TYPES = {
-  "application/pdf": { ext: "pdf", magic: (b: Buffer) => b.subarray(0, 5).toString("latin1") === "%PDF-" },
-  "image/jpeg": { ext: "jpg", magic: (b: Buffer) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
-  "image/png": {
-    ext: "png",
-    magic: (b: Buffer) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
-  },
-  "image/webp": {
-    ext: "webp",
-    magic: (b: Buffer) => b.subarray(0, 4).toString("latin1") === "RIFF" && b.subarray(8, 12).toString("latin1") === "WEBP",
-  },
-} as const;
 
-export type ReceiptType = keyof typeof TYPES;
+
 export const RECEIPT_ACCEPT = Object.keys(TYPES).join(",");
 
 export type SavedFile = { path: string; name: string; type: ReceiptType };
@@ -103,4 +92,25 @@ function resolveInside(relative: string) {
   const absolute = path.resolve(ROOT, relative);
   if (!absolute.startsWith(ROOT + path.sep)) throw new Error("Invalid file path");
   return absolute;
+}
+
+// --- Project files (drawings, scans, photos, office files) ---
+
+export const MAX_PROJECT_FILE_BYTES = 25 * 1024 * 1024;
+
+export type SavedProjectFile = { path: string; name: string; mime: string; size: number };
+
+/** Validates and stores a project file (up to 25 MB). */
+export async function saveProjectFile(workspaceId: string, file: File, t: T = createT("en", {})): Promise<SavedProjectFile | { error: string }> {
+  if (file.size === 0) return { error: t("The file is empty.") };
+  if (file.size > MAX_PROJECT_FILE_BYTES) return { error: t("Files can be at most 25 MB.") };
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const kind = detectProjectFile(bytes, file.name);
+  if (!kind) return { error: t("Use PDF, images (JPG, PNG, WebP), drawings (DWG, DXF), Word, Excel, PowerPoint or ZIP files.") };
+  const relative = path.join(workspaceId, "files", `${randomUUID()}.${kind.ext}`);
+  const absolute = resolveInside(relative);
+  await mkdir(path.dirname(absolute), { recursive: true });
+  await writeFile(absolute, bytes);
+  const name = path.basename(file.name).slice(0, 200) || `file.${kind.ext}`;
+  return { path: relative, name, mime: kind.mime, size: bytes.length };
 }

@@ -22,7 +22,7 @@ export function activityGroup(type: string): ActivityGroup {
 /** Prefix filters per group, for querying. */
 export const GROUP_PREFIXES: Record<ActivityGroup, string[]> = {
   tasks: ["task.", "subtask.", "comment."],
-  projects: ["project.", "share.", "risk.", "time.", "sitelog.", "company.", "document.", "document_form."],
+  projects: ["project.", "share.", "risk.", "time.", "sitelog.", "company.", "document.", "document_form.", "file."],
   money: ["expense.", "resource.", "loan."],
   members: ["member."],
   billing: ["subscription."],
@@ -99,6 +99,9 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "document_form.enabled": return t("turned on {kind}", { kind: localized(data, "kind", t) });
     case "document_form.disabled": return t("turned off {kind}", { kind: localized(data, "kind", t) });
     case "document_form.reset": return t("reset the {kind} form to built-in", { kind: localized(data, "kind", t) });
+    case "file.uploaded": return t("uploaded the file “{name}”", { name: s(data.name) });
+    case "file.version": return t("uploaded version {version} of “{name}”", { name: s(data.name), version: s(data.version) });
+    case "file.deleted": return t("deleted the file “{name}”", { name: s(data.name) });
     case "company.updated": return t("updated the company profile");
     case "risk.created": return t("raised risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });
     case "risk.updated": return t("updated risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });

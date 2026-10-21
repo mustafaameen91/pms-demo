@@ -12,6 +12,7 @@ import risks from "./risks";
 import forecast from "./forecast";
 import time from "./time";
 import documents from "./documents";
+import files from "./files";
 
 /**
  * Arabic dictionary, keyed by the English text. Split by area so several
@@ -32,4 +33,5 @@ export const ar: Dictionary = {
   ...forecast,
   ...time,
   ...documents,
+  ...files,
 };

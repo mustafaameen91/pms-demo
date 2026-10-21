@@ -978,3 +978,48 @@ export const documentTypeSettings = pgTable(
   },
   (t) => [primaryKey({ columns: [t.workspaceId, t.type] })],
 );
+
+/**
+ * A file kept on a project (drawing, signed contract scan, permit, photo…).
+ * Each upload of a new version is kept in project_file_versions.
+ */
+export const projectFiles = pgTable(
+  "project_files",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    taskId: text("task_id").references(() => tasks.id, { onDelete: "set null" }),
+    name: text("name").notNull(),
+    // See FILE_CATEGORIES in lib/files.ts.
+    category: text("category").notNull().default("other"),
+    description: text("description"),
+    currentVersion: integer("current_version").notNull().default(1),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [index("project_files_project_idx").on(t.projectId, t.category), index("project_files_task_idx").on(t.taskId)],
+);
+
+export const projectFileVersions = pgTable(
+  "project_file_versions",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    fileId: text("file_id")
+      .notNull()
+      .references(() => projectFiles.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    // Stored on the server's disk (see lib/uploads.ts).
+    path: text("path").notNull(),
+    originalName: text("original_name").notNull(),
+    mime: text("mime").notNull(),
+    size: integer("size").notNull(),
+    note: text("note"),
+    uploadedById: text("uploaded_by_id").references(() => user.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("project_file_versions_uidx").on(t.fileId, t.version)],
+);

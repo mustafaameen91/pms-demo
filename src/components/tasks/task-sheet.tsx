@@ -41,6 +41,9 @@ type SheetProps = {
   otherWeight: number;
   resources: ProjectResource[];
   resourcesHref: string;
+  /** Files linked to this task (current version). */
+  files: { id: string; name: string; versionId: string; currentVersion: number }[];
+  filesHref: string;
   currentUserId: string;
   isAdmin: boolean;
   /** What the viewer may change on this task (from the server); comments are always allowed. */
@@ -106,6 +109,8 @@ function TaskEditor({
   otherWeight,
   resources,
   resourcesHref,
+  files,
+  filesHref,
   currentUserId,
   isAdmin,
   edits,
@@ -642,6 +647,31 @@ function TaskEditor({
                   <span className="w-24 text-end whitespace-nowrap tabular-nums">
                     {formatMoney(Number(r.plannedQty) * Number(r.unitCost), currency, t.intl)}
                   </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section aria-labelledby="task-files-heading" className="grid gap-2">
+          <div className="flex items-center justify-between">
+            <h3 id="task-files-heading" className="text-sm font-medium">
+              {t("Files")}
+            </h3>
+            <Link href={filesHref} className="text-xs text-primary underline-offset-4 hover:underline">
+              {t("Files tab")}
+            </Link>
+          </div>
+          {files.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("No files linked to this task.")}</p>
+          ) : (
+            <ul className="grid divide-y rounded-lg border text-sm">
+              {files.map((f) => (
+                <li key={f.id} className="flex items-center gap-3 px-3 py-2">
+                  <a href={`/api/files/project/${f.versionId}`} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate hover:underline" dir="auto">
+                    {f.name}
+                  </a>
+                  <span className="text-xs text-muted-foreground tabular-nums">v{f.currentVersion}</span>
                 </li>
               ))}
             </ul>

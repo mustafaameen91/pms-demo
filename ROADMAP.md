@@ -184,9 +184,9 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Default wording / terms per type; number prefix; turn types on or off
 
 ### 21d — Project file library
-- [ ] Files tab per project: drawings, contracts (signed scans), permits, photos — stored on your server
-- [ ] Versions: a new upload keeps the old ones; categories; link a file to a task
-- [ ] Permissions follow the project team
+- [x] Files tab per project: drawings (PDF, DWG, DXF), contracts (signed scans), permits, photos, Office files — stored on your server, up to 25 MB each, type checked from the file's contents
+- [x] Versions: a new upload keeps the old ones; categories; link a file to a task
+- [x] Permissions follow the project team
 
 ## Phase 22 — Portfolios
 - [ ] Group projects into portfolios (e.g. "Baghdad branch", "Government contracts")

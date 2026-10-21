@@ -155,6 +155,13 @@
       "when": 1792608329187,
       "tag": "0021_clear_toro",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792609492670,
+      "tag": "0022_amazing_blur",
+      "breakpoints": true
     }
   ]
 }

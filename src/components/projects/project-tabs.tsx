@@ -17,6 +17,7 @@ export function ProjectTabs({ basePath, canManage = false }: { basePath: string;
     { href: `${basePath}/risks`, label: t("Risks"), active: pathname.startsWith(`${basePath}/risks`) },
     { href: `${basePath}/timesheets`, label: t("Timesheets"), active: pathname.startsWith(`${basePath}/timesheets`) },
     { href: `${basePath}/site-log`, label: t("Site log"), active: pathname.startsWith(`${basePath}/site-log`) },
+    { href: `${basePath}/files`, label: t("Files"), active: pathname.startsWith(`${basePath}/files`) },
     ...(canManage ? [{ href: `${basePath}/documents`, label: t("Documents"), active: pathname.startsWith(`${basePath}/documents`) }] : []),
     { href: `${basePath}/automations`, label: t("Automations"), active: pathname.startsWith(`${basePath}/automations`) },
     { href: `${basePath}/settings`, label: t("Settings"), active: pathname.startsWith(`${basePath}/settings`) },

@@ -1,4 +1,5 @@
 import { getVisibleProjectByKey } from "@/lib/data/project-access";
+import { listFiles } from "@/lib/data/files";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarDays, CalendarRange, Columns3, List, Table2 } from "lucide-react";
@@ -42,13 +43,14 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
   const taskParam = typeof query.task === "string" ? query.task : null;
   const taskNumber = taskParam?.match(/^[A-Z0-9]+-(\d+)$/i)?.[1];
 
-  const [board, members, selectedTask, projectResources, dependencies, fields] = await Promise.all([
+  const [board, members, selectedTask, projectResources, dependencies, fields, projectFiles] = await Promise.all([
     getBoard(project.id),
     listMembers(workspace.id),
     taskNumber ? getTaskDetail(project.id, Number(taskNumber)) : null,
     taskNumber ? getProjectResources(project.id) : [],
     view === "timeline" ? getDependencies(project.id) : [],
     getProjectFields(project.id),
+    taskNumber ? listFiles(project.id) : [],
   ]);
   const [links, [request]] = selectedTask
     ? await Promise.all([
@@ -158,6 +160,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
           members={members}
           resources={projectResources.filter((r) => selectedTask && r.taskId === selectedTask.id)}
           resourcesHref={`${basePath}/resources`}
+          files={projectFiles.filter((f) => selectedTask && f.taskId === selectedTask.id)}
+          filesHref={`${basePath}/files${selectedTask ? `?task=${selectedTask.id}` : ""}`}
           currentUserId={user.id}
           links={links}
           request={request ?? null}
