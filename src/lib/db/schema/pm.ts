@@ -887,3 +887,71 @@ export const siteLogs = pgTable(
   },
   (t) => [uniqueIndex("site_logs_project_date_uidx").on(t.projectId, t.date)],
 );
+
+/**
+ * The buying company's letterhead: what every document it prints shows.
+ * One row per workspace; missing = defaults (workspace name, teal, Classic).
+ */
+export const companyProfiles = pgTable("company_profiles", {
+  workspaceId: text("workspace_id")
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  nameEn: text("name_en"),
+  nameAr: text("name_ar"),
+  addressEn: text("address_en"),
+  addressAr: text("address_ar"),
+  phone: text("phone"),
+  email: text("email"),
+  website: text("website"),
+  registrationNo: text("registration_no"),
+  taxNo: text("tax_no"),
+  footerEn: text("footer_en"),
+  footerAr: text("footer_ar"),
+  brandColor: text("brand_color").notNull().default("#0D9488"),
+  logoPath: text("logo_path"),
+  logoType: text("logo_type"),
+  stampPath: text("stamp_path"),
+  stampType: text("stamp_type"),
+  // "classic" | "modern" | "minimal" — see PAPER_STYLES in lib/documents.
+  defaultStyle: text("default_style").notNull().default("classic"),
+  // Language new documents are written in.
+  defaultLanguage: text("default_language").notNull().default("ar"),
+  updatedById: text("updated_by_id").references(() => user.id, { onDelete: "set null" }),
+  ...timestamps,
+});
+
+/**
+ * A document made from a project on the company's letterhead (contract,
+ * purchase order, voucher…). Field values live in `data`, line items in `items`;
+ * numbered per company per type (PO-0001…).
+ */
+export const documents = pgTable(
+  "documents",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    // See DOC_TYPES in lib/documents/types.ts.
+    type: text("type").notNull(),
+    number: integer("number").notNull(),
+    // "draft" | "issued" | "signed" | "cancelled"
+    status: text("status").notNull().default("draft"),
+    language: text("language").notNull().default("ar"),
+    style: text("style").notNull().default("classic"),
+    date: date("date").notNull(),
+    currency: text("currency").notNull(),
+    data: jsonb("data").$type<Record<string, string>>().notNull().default({}),
+    items: jsonb("items").$type<{ description: string; unit: string; quantity: string; unitPrice: string; condition?: string }[]>().notNull().default([]),
+    taxRate: numeric("tax_rate", { precision: 5, scale: 2 }),
+    issuedAt: timestamp("issued_at", { withTimezone: true }),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    updatedById: text("updated_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("documents_number_uidx").on(t.workspaceId, t.type, t.number),
+    index("documents_project_idx").on(t.projectId, t.createdAt),
+  ],
+);

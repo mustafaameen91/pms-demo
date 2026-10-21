@@ -22,7 +22,7 @@ export function activityGroup(type: string): ActivityGroup {
 /** Prefix filters per group, for querying. */
 export const GROUP_PREFIXES: Record<ActivityGroup, string[]> = {
   tasks: ["task.", "subtask.", "comment."],
-  projects: ["project.", "share.", "risk.", "time.", "sitelog."],
+  projects: ["project.", "share.", "risk.", "time.", "sitelog.", "company.", "document."],
   money: ["expense.", "resource.", "loan."],
   members: ["member."],
   billing: ["subscription."],
@@ -90,6 +90,12 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "time.rejected": return t("rejected {quantity} {unit} for {date} — {note}", { quantity: s(data.quantity), unit: s(data.unit), date: s(data.date), note: s(data.note) });
     case "time.deleted": return t("removed {quantity} {unit} of time for {date}", { quantity: s(data.quantity), unit: s(data.unit), date: s(data.date) });
     case "sitelog.saved": return t("wrote the site log for {date}", { date: s(data.date) });
+    case "document.created": return t("created {kind} {number}", { kind: localized(data, "kind", t), number: s(data.number) });
+    case "document.issued": return t("issued {kind} {number}", { kind: localized(data, "kind", t), number: s(data.number) });
+    case "document.signed": return t("marked {kind} {number} as signed", { kind: localized(data, "kind", t), number: s(data.number) });
+    case "document.cancelled": return t("cancelled {kind} {number}", { kind: localized(data, "kind", t), number: s(data.number) });
+    case "document.deleted": return t("deleted draft {kind} {number}", { kind: localized(data, "kind", t), number: s(data.number) });
+    case "company.updated": return t("updated the company profile");
     case "risk.created": return t("raised risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });
     case "risk.updated": return t("updated risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });
     case "risk.closed": return t("closed risk R-{number} “{title}”", { number: s(data.number), title: s(data.title) });

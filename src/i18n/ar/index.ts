@@ -11,6 +11,7 @@ import loans from "./loans";
 import risks from "./risks";
 import forecast from "./forecast";
 import time from "./time";
+import documents from "./documents";
 
 /**
  * Arabic dictionary, keyed by the English text. Split by area so several
@@ -30,4 +31,5 @@ export const ar: Dictionary = {
   ...risks,
   ...forecast,
   ...time,
+  ...documents,
 };

@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/client";
 
-export function ProjectTabs({ basePath }: { basePath: string }) {
+/** `canManage` shows the manager-only tabs (documents). */
+export function ProjectTabs({ basePath, canManage = false }: { basePath: string; canManage?: boolean }) {
   const t = useT();
   const pathname = usePathname();
   const tabs = [
@@ -16,6 +17,7 @@ export function ProjectTabs({ basePath }: { basePath: string }) {
     { href: `${basePath}/risks`, label: t("Risks"), active: pathname.startsWith(`${basePath}/risks`) },
     { href: `${basePath}/timesheets`, label: t("Timesheets"), active: pathname.startsWith(`${basePath}/timesheets`) },
     { href: `${basePath}/site-log`, label: t("Site log"), active: pathname.startsWith(`${basePath}/site-log`) },
+    ...(canManage ? [{ href: `${basePath}/documents`, label: t("Documents"), active: pathname.startsWith(`${basePath}/documents`) }] : []),
     { href: `${basePath}/automations`, label: t("Automations"), active: pathname.startsWith(`${basePath}/automations`) },
     { href: `${basePath}/settings`, label: t("Settings"), active: pathname.startsWith(`${basePath}/settings`) },
   ];

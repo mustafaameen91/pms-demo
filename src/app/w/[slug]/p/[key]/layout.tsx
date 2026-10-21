@@ -115,7 +115,7 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
         </dl>
 
         <div className="flex items-end justify-between gap-3">
-          <ProjectTabs basePath={basePath} />
+          <ProjectTabs basePath={basePath} canManage={canManageProject(workspace.role, user.id, project)} />
           <div className="mb-1.5">
             <ExportMenu excelHref={`${basePath}/export`} printHref={`/print/${workspace.slug}/${project.key}`} />
           </div>

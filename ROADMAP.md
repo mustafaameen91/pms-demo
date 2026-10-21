@@ -164,10 +164,29 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Members log their own time; managers log for workers and approve
 - [x] Timesheet report per person / per task / per week
 
-## Phase 21 — Project documents
-- [ ] Documents tab per project: drawings, contracts, permits (stored on your server)
-- [ ] Versions: uploading a new version keeps the old ones; folders or categories
-- [ ] Link a document to a task; permissions follow the project team
+## Phase 21 — Branded documents & files *(sold to many companies: each one's own letterhead)*
+
+### 21a — Company profile (Settings)
+- [x] Each company enters its own logo, name (Arabic & English), address, phone, email, website, registration / tax number, footer line, stamp or signature image
+- [x] Brand colour, default paper style and default document language
+- [x] Only owners / admins can edit; every document prints with the buying company's details, never another's
+
+### 21b — Documents (8 types × 3 paper styles)
+- [x] Types: contract / agreement, purchase order, goods received / store note, payment voucher, permit / official letter, handover / completion certificate, work order / site instruction, quotation, invoice (quotation and invoice numbered separately)
+- [x] 3 paper styles: Classic (formal letterhead), Modern (colour band), Minimal — each in the company's brand colour
+- [x] Created from a project; pre-filled from it (client, project, materials, amounts); line items with totals; amount in words
+- [x] Automatic numbering per type (e.g. PO-0001); status: draft → issued → signed / cancelled
+- [x] Print or save as PDF (A4), in Arabic or English, with signature boxes and stamp
+- [x] Documents list per project; audit log
+
+### 21c — Each company customizes its forms
+- [ ] Per document type: rename labels, hide fields it doesn't use, add its own extra fields
+- [ ] Default wording / terms per type; number prefix; turn types on or off
+
+### 21d — Project file library
+- [ ] Files tab per project: drawings, contracts (signed scans), permits, photos — stored on your server
+- [ ] Versions: a new upload keeps the old ones; categories; link a file to a task
+- [ ] Permissions follow the project team
 
 ## Phase 22 — Portfolios
 - [ ] Group projects into portfolios (e.g. "Baghdad branch", "Government contracts")

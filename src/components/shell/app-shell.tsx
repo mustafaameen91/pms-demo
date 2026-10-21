@@ -27,6 +27,7 @@ import {
   Plus,
   Sun,
   Users,
+  Building2,
 } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import { cn, initials } from "@/lib/utils";
@@ -222,6 +223,12 @@ function SidebarContent({
           <NavLink href={`${base}/audit`} active={pathname.startsWith(`${base}/audit`)} onNavigate={onNavigate}>
             <ScrollText className="size-4" />
             {t("Audit log")}
+          </NavLink>
+        )}
+        {(workspace.role === "owner" || workspace.role === "admin") && (
+          <NavLink href={`${base}/company`} active={pathname.startsWith(`${base}/company`)} onNavigate={onNavigate}>
+            <Building2 className="size-4" />
+            {t("Company profile")}
           </NavLink>
         )}
         {(workspace.role === "owner" || workspace.role === "admin") && (
