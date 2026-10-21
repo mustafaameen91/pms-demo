@@ -7,6 +7,8 @@ import { AlertTriangle, FileText, HandCoins, Link2, Loader2, Paperclip, Pencil, 
 import { toast } from "sonner";
 import { deleteExpense, saveExpense } from "@/lib/actions/expenses";
 import type { BudgetSummary } from "@/lib/budget";
+import type { Forecast } from "@/lib/forecast";
+import { ForecastBlock } from "@/components/projects/forecast";
 import type { ProjectExpense } from "@/lib/data/expenses";
 import { CATEGORY_FOR_RESOURCE, EXPENSE_CATEGORIES, type ResourceType } from "@/lib/constants";
 import { todayISO } from "@/lib/accomplishment";
@@ -47,6 +49,7 @@ const categoryLabel = (v: string) => EXPENSE_CATEGORIES.find((c) => c.value === 
 export function ExpensesView({
   project,
   summary,
+  forecast,
   tasks,
   usages,
   expenses,
@@ -55,6 +58,7 @@ export function ExpensesView({
 }: {
   project: ProjectInfo;
   summary: BudgetSummary;
+  forecast: Forecast;
   tasks: TaskOption[];
   usages: UsageOption[];
   expenses: ExpenseRow[];
@@ -106,7 +110,7 @@ export function ExpensesView({
 
       {/* KPI row */}
       <section aria-label={t("Budget summary")} className="rounded-xl border bg-card p-5 sm:p-6">
-        <dl className="grid gap-5 sm:grid-cols-3">
+        <dl className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <div>
             <dt className="text-sm text-muted-foreground">{t("Budget")}</dt>
             <dd className="mt-1 text-2xl font-semibold">{summary.budget === null ? "—" : money(summary.budget)}</dd>
@@ -154,6 +158,12 @@ export function ExpensesView({
             {summary.usedPct !== null && (
               <p className="mt-0.5 text-xs text-muted-foreground">{t("{pct}% of budget used", { pct: String(summary.usedPct) })}</p>
             )}
+          </div>
+          <div>
+            <dt className="sr-only">{t("Cost forecast")}</dt>
+            <dd>
+              <ForecastBlock forecast={forecast} currency={project.currency} t={t} />
+            </dd>
           </div>
         </dl>
         {pct !== null && (

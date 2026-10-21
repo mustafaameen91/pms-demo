@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AlertTriangle, CalendarClock, CircleCheck, Diamond, ShieldAlert, Wallet } from "lucide-react";
 import { RiskLevelBadge } from "@/components/risks/risk-level";
+import { ForecastBlock } from "@/components/projects/forecast";
+import type { Forecast } from "@/lib/forecast";
 import type { BudgetSummary } from "@/lib/budget";
 import { daysBetween } from "@/lib/schedule";
 import { cn, formatDate, formatMoney } from "@/lib/utils";
@@ -15,11 +17,13 @@ export async function MoneyPanel({
   currency,
   href,
   overPlanCount,
+  forecast,
 }: {
   summary: BudgetSummary;
   currency: string;
   href: string;
   overPlanCount: number;
+  forecast: Forecast;
 }) {
   const t = await getT();
   const money = (v: number) => formatMoney(v, currency, t.intl);
@@ -73,6 +77,8 @@ export async function MoneyPanel({
           <p className="mt-1.5 text-xs text-muted-foreground">{t("{pct}% of budget used", { pct: String(summary.usedPct) })}</p>
         </div>
       )}
+
+      <ForecastBlock forecast={forecast} currency={currency} t={t} className="mt-4 border-t pt-4" />
 
       <ul className="mt-4 grid gap-1.5 border-t pt-4 text-sm">
         {summary.overBudget && (

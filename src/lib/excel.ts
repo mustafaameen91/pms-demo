@@ -73,6 +73,11 @@ export async function buildProjectWorkbook(report: ProjectReport, t: T = createT
   add(`  ${t("of which other expenses")}`, budget.otherExpenses, money);
   add(t("Remaining"), budget.remaining, money);
   add(t("Still owed to resources"), budget.owedToResources, money);
+  const f = report.forecast;
+  add(t("Expected final cost"), f.ready ? f.final : t("Not enough data yet"), f.ready ? money : undefined);
+  add(t("Expected over (+) / under (−) budget"), f.ready ? f.overBy : null, money);
+  add(t("Cost efficiency (CPI)"), f.ready ? f.costIndex : null, "0.00");
+  add(t("Schedule efficiency (SPI)"), f.ready ? f.scheduleIndex : null, "0.00");
   add(t("Late tasks"), report.late.length);
 
   // Tasks

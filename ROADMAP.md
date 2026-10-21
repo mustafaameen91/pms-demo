@@ -153,9 +153,9 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Audit log, Arabic & English, included in the project report (Excel / PDF)
 
 ## Phase 19 — Cost forecast *(where will the money end up?)*
-- [ ] Forecast final cost from spending vs accomplishment % (earned value): expected total at the end, expected over/under budget
-- [ ] Cost and schedule health: "spending faster than progress" / "behind schedule" indicators, explained in plain words
-- [ ] Shown on the project overview and expenses page, the dashboard, and the report
+- [x] Forecast final cost from spending vs accomplishment % (earned value): expected total at the end, expected over/under budget
+- [x] Cost and schedule health: "spending faster than progress" / "behind schedule" indicators, explained in plain words
+- [x] Shown on the project overview and expenses page, the dashboard, and the report
 
 ## Phase 20 — Daily timesheets / site log
 - [ ] Record per day who worked (members and workers), how many days or hours, on which task

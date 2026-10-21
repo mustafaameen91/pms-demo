@@ -1,12 +1,14 @@
 import { getVisibleProjectByKey } from "@/lib/data/project-access";
 import { notFound } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth/session";
-import { getBoard } from "@/lib/data/projects";
+import { getAccomplishmentTasks, getBoard } from "@/lib/data/projects";
 import { getProjectResources } from "@/lib/data/resources";
 import { getProjectExpenses } from "@/lib/data/expenses";
 import { computeBudget } from "@/lib/budget";
 import { canManageProject, isWorkspaceAdmin } from "@/lib/permissions";
 import { listLoans } from "@/lib/data/loans";
+import { computeAccomplishment } from "@/lib/accomplishment";
+import { computeForecast } from "@/lib/forecast";
 import { ExpensesView } from "@/components/expenses/expenses-view";
 import { getT } from "@/i18n/server";
 
@@ -21,13 +23,16 @@ export default async function ExpensesPage({ params, searchParams }: PageProps<"
   const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project) notFound();
 
-  const [board, usages, expenseRows, advances] = await Promise.all([
+  const [board, usages, expenseRows, advances, accomplishmentTasks] = await Promise.all([
     getBoard(project.id),
     getProjectResources(project.id),
     getProjectExpenses(project.id),
     listLoans(workspace.id, { projectId: project.id }),
+    getAccomplishmentTasks(project.id),
   ]);
   const summary = computeBudget(project.budget, usages, expenseRows, board.tasks, advances);
+  const a = computeAccomplishment(accomplishmentTasks, project);
+  const forecast = computeForecast({ budget: summary.budget, spent: summary.actual, donePct: a.actual, plannedPct: a.planned });
   const canManage = canManageProject(workspace.role, user.id, project);
   const isAdmin = isWorkspaceAdmin(workspace.role);
   // Admins can file receipts on any advance (e.g. for a worker); members on their own.
@@ -55,6 +60,7 @@ export default async function ExpensesPage({ params, searchParams }: PageProps<"
         advances={advanceOptions}
         startWithAdvance={advance}
         summary={summary}
+        forecast={forecast}
         tasks={board.tasks.map((t) => ({ id: t.id, number: t.number, title: t.title }))}
         usages={usages.map((u) => ({ id: u.id, name: u.name, role: u.role, type: u.type, taskId: u.taskId }))}
         expenses={expenseRows.map(({ hasReceipt, createdById, ...e }) => ({

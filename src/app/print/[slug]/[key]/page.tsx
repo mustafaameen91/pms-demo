@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { RISK_STATUSES, riskLevel, riskScore } from "@/lib/risks";
+import { ForecastBlock } from "@/components/projects/forecast";
 import { notFound } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getProjectReport } from "@/lib/data/report";
@@ -102,6 +103,8 @@ export default async function ProjectReportPage({ params }: PageProps<"/print/[s
           </div>
         ))}
       </section>
+
+      <ForecastBlock forecast={report.forecast} currency={project.currency} t={t} className="mt-4 break-inside-avoid rounded-lg border p-3" />
 
       {report.late.length > 0 && (
         <p className="mt-4 rounded-lg border border-destructive/40 px-3 py-2 text-destructive">

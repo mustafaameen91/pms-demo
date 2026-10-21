@@ -1,6 +1,7 @@
 import "server-only";
 import { computeAccomplishment, todayISO } from "@/lib/accomplishment";
 import { computeBudget } from "@/lib/budget";
+import { computeForecast } from "@/lib/forecast";
 import { lateTasks } from "@/lib/schedule";
 import { getBoard, getProjectByKey, type Project } from "./projects";
 import { getProjectResources } from "./resources";
@@ -51,6 +52,7 @@ async function buildReport(project: Project) {
     risks,
     accomplishment,
     budget,
+    forecast: computeForecast({ budget: budget.budget, spent: budget.actual, donePct: accomplishment.actual, plannedPct: accomplishment.planned }),
   };
 }
 

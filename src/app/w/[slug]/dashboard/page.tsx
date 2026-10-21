@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { AlertTriangle, CalendarClock, FolderKanban, TrendingDown, Wallet } from "lucide-react";
+import { AlertTriangle, CalendarClock, FolderKanban, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { computeForecast } from "@/lib/forecast";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getWorkspaceAccomplishmentTasks, listProjects } from "@/lib/data/projects";
 import { getWorkspaceUsages } from "@/lib/data/resources";
@@ -37,14 +38,21 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
       const tasks = tasksByProject.get(p.id) ?? [];
       const accomplishment = computeAccomplishment(tasks, p, today);
       const money = computeBudget(p.budget, usagesByProject.get(p.id) ?? [], expensesByProject.get(p.id) ?? [], [], advancesByProject.get(p.id) ?? []);
+      const forecast = computeForecast({ budget: money.budget, spent: money.actual, donePct: accomplishment.actual, plannedPct: accomplishment.planned });
+      // Not over yet, but on course to be (an early guess doesn't count).
+      const headingOver = !money.overBudget && forecast.ready && !forecast.early && (forecast.health === "watch" || forecast.health === "bad");
       const late = lateTasks(tasks, today).length;
       const finished = p.status === "completed" || p.status === "cancelled";
       const daysLeft = p.endDate ? daysBetween(today, p.endDate) : null;
       const overdue = !finished && daysLeft !== null && daysLeft < 0;
       // Higher = needs attention sooner.
       const attention =
-        (money.overBudget ? 4 : 0) + (accomplishment.schedule === "behind" ? 3 : 0) + (overdue ? 2 : 0) + (late > 0 ? 1 : 0);
-      return { p, accomplishment, money, late, daysLeft, overdue, finished, attention };
+        (money.overBudget ? 4 : 0) +
+        (accomplishment.schedule === "behind" ? 3 : 0) +
+        (headingOver && forecast.ready && forecast.health === "bad" ? 2 : 0) +
+        (overdue ? 2 : 0) +
+        (late > 0 ? 1 : 0);
+      return { p, accomplishment, money, forecast, headingOver, late, daysLeft, overdue, finished, attention };
     })
     .sort(
       (a, b) =>
@@ -56,6 +64,7 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
   const open = rows.filter((r) => !r.finished);
   const behind = open.filter((r) => r.accomplishment.schedule === "behind").length;
   const overBudget = open.filter((r) => r.money.overBudget).length;
+  const headingOver = open.filter((r) => r.headingOver).length;
   const lateTotal = open.reduce((s, r) => s + r.late, 0);
 
   // Money can't be added across currencies, so totals are per currency.
@@ -71,7 +80,15 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
   const kpis = [
     { label: t("Open projects"), value: open.length, icon: FolderKanban, tone: "default", hint: t("{count} in total", { count: rows.length }) },
     { label: t("Behind schedule"), value: behind, icon: TrendingDown, tone: behind ? "bad" : "default", hint: t("Done less than planned") },
-    { label: t("Over budget"), value: overBudget, icon: AlertTriangle, tone: overBudget ? "bad" : "default", hint: t("Spent more than budget") },
+    {
+      label: t("Over budget"),
+      value: overBudget,
+      icon: AlertTriangle,
+      tone: overBudget ? "bad" : "default",
+      hint: headingOver
+        ? t.plural(headingOver, "Spent more than budget · {count} more heading over", "Spent more than budget · {count} more heading over")
+        : t("Spent more than budget"),
+    },
     { label: t("Late tasks"), value: lateTotal, icon: CalendarClock, tone: lateTotal ? "bad" : "default", hint: t("Past their end date") },
   ] as const;
 
@@ -162,7 +179,7 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
                 </tr>
               </thead>
               <tbody>
-                {rows.map(({ p, accomplishment: a, money, late, daysLeft, overdue, finished }) => (
+                {rows.map(({ p, accomplishment: a, money, forecast, headingOver, late, daysLeft, overdue, finished }) => (
                   <tr key={p.id} className={cn("border-b last:border-b-0", finished && "text-muted-foreground")}>
                     <td className="py-3 pe-3 ps-4">
                       <Link href={`${base}/p/${p.key}/overview`} className="flex items-center gap-2 font-medium hover:underline">
@@ -202,8 +219,21 @@ export default async function DashboardPage({ params }: PageProps<"/w/[slug]/das
                           {t("Over budget")}
                         </p>
                       )}
-                      {!money.overBudget && money.usedPct !== null && (
-                        <p className="text-xs text-muted-foreground">{t("{pct}% used", { pct: String(money.usedPct) })}</p>
+                      {headingOver && forecast.ready ? (
+                        <p
+                          className={cn(
+                            "flex items-center gap-1 text-xs",
+                            forecast.health === "bad" ? "font-medium text-destructive" : "text-amber-700 dark:text-amber-400",
+                          )}
+                        >
+                          <TrendingUp className="size-3" aria-hidden />
+                          {t("Heading {pct}% over budget", { pct: String(forecast.overPct) })}
+                        </p>
+                      ) : (
+                        !money.overBudget &&
+                        money.usedPct !== null && (
+                          <p className="text-xs text-muted-foreground">{t("{pct}% used", { pct: String(money.usedPct) })}</p>
+                        )
                       )}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">

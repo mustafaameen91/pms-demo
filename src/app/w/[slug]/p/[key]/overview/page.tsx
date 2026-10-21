@@ -8,6 +8,7 @@ import { getProjectResources } from "@/lib/data/resources";
 import { getProjectExpenses } from "@/lib/data/expenses";
 import { getProjectAdvances } from "@/lib/data/loans";
 import { listRisks } from "@/lib/data/risks";
+import { computeForecast } from "@/lib/forecast";
 import { computeBudget } from "@/lib/budget";
 import { lateTasks, upcomingTasks } from "@/lib/schedule";
 import { DeadlinesPanel, MilestonesPanel, RisksPanel, MoneyPanel } from "@/components/projects/overview-panels";
@@ -171,6 +172,7 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
           currency={project.currency}
           href={`${tasksHref}/expenses`}
           overPlanCount={overPlanCount}
+          forecast={computeForecast({ budget: money.budget, spent: money.actual, donePct: a.actual, plannedPct: a.planned })}
         />
         <DeadlinesPanel
           late={lateTasks(rows, today)}
