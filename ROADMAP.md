@@ -199,8 +199,8 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [ ] Build the Flutter app (Arabic & English, right-to-left), then publish to the stores
 
 ## Phase 24 — Calendar link
-- [ ] Private calendar link (iCal) per person: their tasks and milestones appear in Google / Outlook / phone calendar
-- [ ] Reset the link if it leaks
+- [x] Private calendar link (iCal) per person, per company: their open tasks (start → end date) and the milestones of their projects appear in Google / Outlook / phone calendar, each linking back to the task; titles in their language
+- [x] Reset the link if it leaks (the old one stops working at once); someone who leaves the company loses their feed
 
 ## Phase 25 — Automatic weekly report
 - [x] Every week (Saturday–Friday), owners / admins get a report of all projects and each project manager of theirs: progress and the change since last week, money spent this week and in total, forecast, late tasks, tasks finished, top and new risks
@@ -218,4 +218,5 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [ ] Automated tests, production Docker setup
 - [ ] Deploy with HTTPS
 - [ ] Weekly report timer: set `CRON_SECRET` in `.env` and a cron job every Saturday 07:00 calling `/api/cron/weekly-reports` with it
+- [ ] Calendar links only work for Google / Outlook once the app is on its public domain (they fetch the link from the internet, not from localhost)
 - [ ] Nightly backups, monitoring

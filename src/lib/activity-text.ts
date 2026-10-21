@@ -105,6 +105,7 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "portfolio.created": return t("created the portfolio “{name}”", { name: s(data.name) });
     case "portfolio.deleted": return t("deleted the portfolio “{name}”", { name: s(data.name) });
     case "portfolio.projects_changed": return t("set the projects of “{name}” ({count})", { name: s(data.name), count: s(data.count) });
+    case "calendar.reset": return t("reset their calendar link");
     case "company.updated": return t("updated the company profile");
     case "risk.created": return t("raised risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });
     case "risk.updated": return t("updated risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });

@@ -1056,3 +1056,23 @@ export const weeklyReports = pgTable(
   },
   (t) => [uniqueIndex("weekly_reports_week_uidx").on(t.workspaceId, t.weekStart)],
 );
+
+/**
+ * A person's private calendar link for one company. The token is the only key:
+ * whoever has the link sees that person's tasks and milestones; resetting it
+ * replaces the token so the old link stops working.
+ */
+export const calendarFeeds = pgTable(
+  "calendar_feeds",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    token: text("token").notNull(),
+    lastFetchedAt: timestamp("last_fetched_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("calendar_feeds_user_uidx").on(t.workspaceId, t.userId), uniqueIndex("calendar_feeds_token_uidx").on(t.token)],
+);

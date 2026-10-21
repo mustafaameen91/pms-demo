@@ -7,6 +7,7 @@ import { DUE_GROUP_LABELS, dueGroup, type DueGroup } from "@/lib/my-tasks-groups
 import { cn, formatDate } from "@/lib/utils";
 import { MilestoneIcon, PriorityIcon, ProgressBar, StatusDot } from "@/components/tasks/task-bits";
 import { getT } from "@/i18n/server";
+import { CalendarLinkButton } from "@/components/tasks/calendar-link";
 import { visibleProjectIds } from "@/lib/data/project-access";
 
 export async function generateMetadata() {
@@ -41,9 +42,12 @@ export default async function MyTasksPage({ params, searchParams }: PageProps<"/
             {tr.plural(open, "{count} open task assigned to you across all projects.", "{count} open tasks assigned to you across all projects.")}
           </p>
         </div>
-        <Link href={showDone ? `${base}/my-tasks` : `${base}/my-tasks?done=1`} className="text-sm text-primary underline-offset-4 hover:underline">
-          {showDone ? tr("Hide finished") : tr("Show finished")}
-        </Link>
+        <div className="flex items-center gap-4">
+          <CalendarLinkButton slug={workspace.slug} />
+          <Link href={showDone ? `${base}/my-tasks` : `${base}/my-tasks?done=1`} className="text-sm text-primary underline-offset-4 hover:underline">
+            {showDone ? tr("Hide finished") : tr("Show finished")}
+          </Link>
+        </div>
       </div>
 
       {all.length === 0 || (open === 0 && !showDone) ? (

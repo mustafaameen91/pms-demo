@@ -29,4 +29,22 @@ export default {
   "{count} heading over budget": { one: "مشروع متجه لتجاوز الميزانية", two: "مشروعان متجهان لتجاوز الميزانية", few: "{count} مشاريع متجهة لتجاوز الميزانية", many: "{count} مشروعًا متجهًا لتجاوز الميزانية", other: "{count} مشروع متجه لتجاوز الميزانية" },
   "{count} late tasks": { one: "مهمة متأخرة واحدة", two: "مهمتان متأخرتان", few: "{count} مهام متأخرة", many: "{count} مهمة متأخرة", other: "{count} مهمة متأخرة" },
   "{count} tasks finished": { zero: "لم تُنجز أي مهمة", one: "أُنجزت مهمة واحدة", two: "أُنجزت مهمتان", few: "أُنجزت {count} مهام", many: "أُنجزت {count} مهمة", other: "أُنجزت {count} مهمة" },
+  // Calendar link (Phase 24)
+  "Calendar link": "رابط التقويم",
+  "Your calendar link": "رابط تقويمك",
+  "Add it once to Google Calendar, Outlook or your phone: your open tasks and the milestones of your projects appear there and stay up to date.":
+    "أضفه مرة واحدة إلى تقويم Google أو Outlook أو هاتفك: تظهر مهامك المفتوحة ومعالم مشاريعك هناك وتبقى محدّثة.",
+  "Private link": "رابط خاص",
+  "Copy the link": "نسخ الرابط",
+  "Anyone with this link can see your tasks. Don't share it; reset it if you did.": "أي شخص لديه هذا الرابط يرى مهامك. لا تشاركه، وأعد إنشاءه إن فعلت.",
+  "Open in my calendar app": "فتح في تطبيق التقويم",
+  "How to add it": "طريقة الإضافة",
+  "Other calendars → + → From URL → paste the link.": "تقويمات أخرى ← + ← من عنوان URL ← الصق الرابط.",
+  "Add calendar → Subscribe from web → paste the link.": "إضافة تقويم ← الاشتراك من الويب ← الصق الرابط.",
+  "Settings → Calendar → Accounts → Add account → Other → Add subscribed calendar.": "الإعدادات ← التقويم ← الحسابات ← إضافة حساب ← آخر ← إضافة تقويم مشترك.",
+  "Calendar apps check for changes every few hours, so a change can take a while to appear.": "تتحقق تطبيقات التقويم من التغييرات كل بضع ساعات، لذا قد يتأخر ظهور التغيير قليلًا.",
+  "Reset link": "إعادة إنشاء الرابط",
+  "Click again: the old link stops working": "انقر مرة أخرى: سيتوقف الرابط القديم",
+  "New link made. The old one no longer works; add the new one to your calendar.": "أُنشئ رابط جديد. لم يعد القديم يعمل؛ أضف الجديد إلى تقويمك.",
+  "reset their calendar link": "أعاد إنشاء رابط تقويمه",
 } satisfies Dictionary;
