@@ -189,8 +189,9 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Permissions follow the project team
 
 ## Phase 22 — Portfolios
-- [ ] Group projects into portfolios (e.g. "Baghdad branch", "Government contracts")
-- [ ] Portfolio page: budget, spent, forecast, accomplishment and risks totalled across its projects
+- [x] Group projects into portfolios (e.g. "Baghdad branch", "Government contracts")
+- [x] Portfolio page: budget, spent, forecast, accomplishment and risks totalled across its projects
+- [x] Dashboard can be filtered by portfolio (or "not in a portfolio"); members only count the projects they're on
 
 ## Phase 23 — Install as a phone app
 - [ ] Installable app (PWA): home-screen icon, full screen, app name in Arabic & English

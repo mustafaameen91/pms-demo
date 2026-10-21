@@ -162,6 +162,13 @@
       "when": 1792609492670,
       "tag": "0022_amazing_blur",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792610749346,
+      "tag": "0023_curious_harrier",
+      "breakpoints": true
     }
   ]
 }

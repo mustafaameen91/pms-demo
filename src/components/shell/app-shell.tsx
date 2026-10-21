@@ -28,6 +28,7 @@ import {
   Sun,
   Users,
   Building2,
+  Layers,
 } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import { cn, initials } from "@/lib/utils";
@@ -192,6 +193,10 @@ function SidebarContent({
         <NavLink href={base} active={pathname === base} onNavigate={onNavigate}>
           <FolderKanban className="size-4" />
           {t("Projects")}
+        </NavLink>
+        <NavLink href={`${base}/portfolios`} active={pathname.startsWith(`${base}/portfolios`)} onNavigate={onNavigate}>
+          <Layers className="size-4" />
+          {t("Portfolios")}
         </NavLink>
         <NavLink href={`${base}/resources`} active={pathname.startsWith(`${base}/resources`)} onNavigate={onNavigate}>
           <Package className="size-4" />

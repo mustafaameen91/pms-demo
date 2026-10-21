@@ -86,6 +86,8 @@ export const projects = pgTable(
     leadId: text("lead_id").references(() => user.id, { onDelete: "set null" }),
     // Incremented atomically when a task is created, to hand out task numbers.
     taskCounter: integer("task_counter").notNull().default(0),
+    // A group of projects (e.g. "Baghdad branch"); at most one per project.
+    portfolioId: text("portfolio_id").references((): AnyPgColumn => portfolios.id, { onDelete: "set null" }),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
     ...timestamps,
@@ -1022,4 +1024,19 @@ export const projectFileVersions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [uniqueIndex("project_file_versions_uidx").on(t.fileId, t.version)],
+);
+
+/** A named group of projects whose numbers are added up together. */
+export const portfolios = pgTable(
+  "portfolios",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    name: text("name").notNull(),
+    description: text("description"),
+    color: text("color").notNull().default("#0D9488"),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [index("portfolios_workspace_idx").on(t.workspaceId)],
 );
