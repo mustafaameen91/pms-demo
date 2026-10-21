@@ -6,6 +6,7 @@ import { getCompanyProfile } from "@/lib/data/company";
 import { canManageProject } from "@/lib/permissions";
 import { isPaperStyle } from "@/lib/branding";
 import { docNumber, docType } from "@/lib/documents/types";
+import { layoutDef } from "@/lib/documents/customize";
 import { getT } from "@/i18n/server";
 import { DocumentEditor } from "@/components/documents/document-editor";
 
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/
   const t = await getT();
   const { workspace } = await requireWorkspace(slug);
   const row = await getDocument(workspace.id, id);
-  const def = row && docType(row.doc.type);
+  const def = row && layoutDef(row.doc.type, row.doc.layout, docType);
   return { title: def ? docNumber(def.prefix, row.doc.number) : t("Documents") };
 }
 
@@ -24,7 +25,7 @@ export default async function DocumentPage({ params }: PageProps<"/w/[slug]/p/[k
   const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project || !canManageProject(workspace.role, user.id, project)) notFound();
   const row = await getDocument(workspace.id, id);
-  const def = row && docType(row.doc.type);
+  const def = row && layoutDef(row.doc.type, row.doc.layout, docType);
   if (!row || !def || row.doc.projectId !== project.id) notFound();
   const { configured: _c, ...profile } = await getCompanyProfile(workspace.id);
   void _c;

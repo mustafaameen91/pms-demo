@@ -5,6 +5,7 @@ import { getCompanyProfile } from "@/lib/data/company";
 import { isWorkspaceAdmin } from "@/lib/permissions";
 import { getT } from "@/i18n/server";
 import { CompanyProfileForm } from "@/components/documents/company-profile-form";
+import { CompanyTabs } from "@/components/documents/company-tabs";
 
 export async function generateMetadata() {
   const t = await getT();
@@ -21,6 +22,7 @@ export default async function CompanyPage({ params }: PageProps<"/w/[slug]/compa
 
   return (
     <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
+      <CompanyTabs slug={workspace.slug} />
       <header className="mb-6">
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
           <Building2 className="size-5 text-primary" aria-hidden />

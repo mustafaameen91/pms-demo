@@ -29,3 +29,43 @@ test("numbers and totals", () => {
   assert.equal(t.total, 3852500.17);
   assert.deepEqual(docTotals([], null), { lines: [], subtotal: 0, tax: 0, total: 0 });
 });
+
+import { applySettings, isLockedField, settingsSchema } from "../src/lib/documents/customize";
+
+test("a company's adjustments are applied on top of the built-in form", () => {
+  const po = docType("purchase_order")!;
+  const s = settingsSchema.parse({
+    title: { ar: "طلب شراء مواد" },
+    prefix: "lpo",
+    labels: { supplier: { en: "Vendor" } },
+    hidden: ["supplierContact", "supplier"], // supplier is required: can't be hidden
+    defaults: { paymentTerms: { en: "Cash on delivery." } },
+    extra: [{ key: "x_site01", label: { en: "Site engineer", ar: "مهندس الموقع" }, kind: "text", half: true }],
+    signatures: [{ en: "Storekeeper" }],
+  });
+  const def = applySettings(po, s);
+  assert.equal(def.title.en, "Purchase order");
+  assert.equal(def.title.ar, "طلب شراء مواد");
+  assert.equal(def.prefix, "LPO");
+  const keys = def.fields.map((f) => f.key);
+  assert.ok(!keys.includes("supplierContact"));
+  assert.ok(keys.includes("supplier"));
+  assert.equal(def.fields.find((f) => f.key === "supplier")!.label.en, "Vendor");
+  assert.equal(def.fields.find((f) => f.key === "supplier")!.label.ar, "المورّد");
+  assert.equal(def.fields.find((f) => f.key === "paymentTerms")!.defaultText!.en, "Cash on delivery.");
+  assert.equal(keys.at(-1), "x_site01");
+  assert.deepEqual(def.signatures[0], { en: "Storekeeper", ar: "أعدّه" });
+  // The built-in definition is untouched.
+  assert.equal(po.prefix, "PO");
+  assert.ok(po.fields.some((f) => f.key === "supplierContact"));
+});
+
+test("locked fields and bad settings", () => {
+  const contract = docType("contract")!;
+  assert.ok(isLockedField(contract, "value")); // spelled out in words
+  assert.ok(isLockedField(contract, "secondParty")); // required
+  assert.ok(!isLockedField(contract, "terms"));
+  assert.ok(!settingsSchema.safeParse({ prefix: "PO-1" }).success);
+  assert.ok(!settingsSchema.safeParse({ extra: [{ key: "bad key", label: { en: "x", ar: "" }, kind: "text" }] }).success);
+  assert.ok(!settingsSchema.safeParse({ extra: [{ key: "x_abcd", label: { en: "", ar: "" }, kind: "text" }] }).success);
+});

@@ -21,7 +21,8 @@ import {
 import { toast } from "sonner";
 import { createDocument } from "@/lib/actions/documents";
 import { PAPER_STYLES, type DocumentLanguage, type PaperStyle } from "@/lib/branding";
-import { DOC_TYPES, docNumber, docType, type DocTypeDef, type DocTypeKey } from "@/lib/documents/types";
+import { docNumber, docType, type DocTypeDef, type DocTypeKey } from "@/lib/documents/types";
+import { layoutDef } from "@/lib/documents/customize";
 import { cn, formatDate } from "@/lib/utils";
 import { useT } from "@/i18n/client";
 import { Button } from "@/components/ui/button";
@@ -41,13 +42,15 @@ export const DOC_ICONS: Record<DocTypeDef["icon"], typeof FileText> = {
   Receipt,
 };
 
-type Row = { id: string; type: string; number: number; status: string; date: string; data: Record<string, string>; createdByName: string | null };
+type Row = { id: string; type: string; number: number; status: string; date: string; data: Record<string, string>; layout: unknown; createdByName: string | null };
+type CompanyType = DocTypeDef & { enabled: boolean };
 
 export function DocumentsList({
   projectId,
   basePath,
   printBase,
   documents,
+  types,
   defaults,
   companyHref,
 }: {
@@ -55,6 +58,8 @@ export function DocumentsList({
   basePath: string;
   printBase: string;
   documents: Row[];
+  /** This company's forms (with on / off). */
+  types: CompanyType[];
   defaults: { language: DocumentLanguage; style: PaperStyle };
   /** Set when the company profile hasn't been filled in yet (admins get the link). */
   companyHref: string | null | false;
@@ -65,8 +70,10 @@ export function DocumentsList({
   const [filter, setFilter] = useState<string>("");
   const shown = documents.filter((d) => !filter || d.type === filter);
   // The first field (party / supplier / recipient) says who the document is for.
+  // Each document is shown with the form it was made with.
+  const defOf = (d: Row) => layoutDef(d.type, d.layout, docType);
   const who = (d: Row) => {
-    const def = docType(d.type);
+    const def = defOf(d);
     const first = def?.fields.find((f) => f.kind === "text");
     return first ? d.data[first.key] : "";
   };
@@ -112,7 +119,7 @@ export function DocumentsList({
             <span className="text-muted-foreground">{t("Type")}</span>
             <select value={filter} onChange={(e) => setFilter(e.target.value)} className={cn(nativeSelectClass, "h-8 w-48")}>
               <option value="">{t("All types")}</option>
-              {DOC_TYPES.map((d) => (
+              {types.map((d) => (
                 <option key={d.key} value={d.key}>
                   {d.title[lang]}
                 </option>
@@ -139,7 +146,7 @@ export function DocumentsList({
               </thead>
               <tbody>
                 {shown.map((d) => {
-                  const def = docType(d.type);
+                  const def = defOf(d);
                   if (!def) return null;
                   const Icon = DOC_ICONS[def.icon];
                   return (
@@ -176,7 +183,7 @@ export function DocumentsList({
         )}
       </section>
 
-      <NewDocumentDialog open={open} onOpenChange={setOpen} projectId={projectId} basePath={basePath} defaults={defaults} />
+      <NewDocumentDialog open={open} onOpenChange={setOpen} projectId={projectId} basePath={basePath} defaults={defaults} types={types.filter((d) => d.enabled)} />
     </div>
   );
 }
@@ -187,12 +194,14 @@ function NewDocumentDialog({
   projectId,
   basePath,
   defaults,
+  types,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   projectId: string;
   basePath: string;
   defaults: { language: DocumentLanguage; style: PaperStyle };
+  types: CompanyType[];
 }) {
   const t = useT();
   const router = useRouter();
@@ -202,7 +211,7 @@ function NewDocumentDialog({
   const [style, setStyle] = useState(defaults.style);
   const [withMaterials, setWithMaterials] = useState(false);
   const [pending, startTransition] = useTransition();
-  const def = type ? docType(type) : null;
+  const def = type ? types.find((d) => d.key === type) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -226,7 +235,7 @@ function NewDocumentDialog({
           <fieldset>
             <legend className="sr-only">{t("Document type")}</legend>
             <div className="grid gap-2 sm:grid-cols-3">
-              {DOC_TYPES.map((d) => {
+              {types.map((d) => {
                 const Icon = DOC_ICONS[d.icon];
                 return (
                   <label

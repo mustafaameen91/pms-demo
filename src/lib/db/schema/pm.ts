@@ -945,6 +945,9 @@ export const documents = pgTable(
     data: jsonb("data").$type<Record<string, string>>().notNull().default({}),
     items: jsonb("items").$type<{ description: string; unit: string; quantity: string; unitPrice: string; condition?: string }[]>().notNull().default([]),
     taxRate: numeric("tax_rate", { precision: 5, scale: 2 }),
+    // The form as the company had it set up when this document was made (labels,
+    // fields, prefix…), so later changes to the form never alter a sent document.
+    layout: jsonb("layout").$type<Record<string, unknown>>(),
     issuedAt: timestamp("issued_at", { withTimezone: true }),
     createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
     updatedById: text("updated_by_id").references(() => user.id, { onDelete: "set null" }),
@@ -954,4 +957,24 @@ export const documents = pgTable(
     uniqueIndex("documents_number_uidx").on(t.workspaceId, t.type, t.number),
     index("documents_project_idx").on(t.projectId, t.createdAt),
   ],
+);
+
+/**
+ * How one company has adjusted a built-in document type: on/off, title, number
+ * prefix, renamed / hidden fields, its own extra fields, default wording,
+ * signature box names. See lib/documents/customize.ts.
+ */
+export const documentTypeSettings = pgTable(
+  "document_type_settings",
+  {
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    settings: jsonb("settings").$type<Record<string, unknown>>().notNull().default({}),
+    updatedById: text("updated_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.workspaceId, t.type] })],
 );

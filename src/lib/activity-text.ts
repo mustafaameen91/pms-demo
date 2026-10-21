@@ -22,7 +22,7 @@ export function activityGroup(type: string): ActivityGroup {
 /** Prefix filters per group, for querying. */
 export const GROUP_PREFIXES: Record<ActivityGroup, string[]> = {
   tasks: ["task.", "subtask.", "comment."],
-  projects: ["project.", "share.", "risk.", "time.", "sitelog.", "company.", "document."],
+  projects: ["project.", "share.", "risk.", "time.", "sitelog.", "company.", "document.", "document_form."],
   money: ["expense.", "resource.", "loan."],
   members: ["member."],
   billing: ["subscription."],
@@ -95,6 +95,10 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "document.signed": return t("marked {kind} {number} as signed", { kind: localized(data, "kind", t), number: s(data.number) });
     case "document.cancelled": return t("cancelled {kind} {number}", { kind: localized(data, "kind", t), number: s(data.number) });
     case "document.deleted": return t("deleted draft {kind} {number}", { kind: localized(data, "kind", t), number: s(data.number) });
+    case "document_form.updated": return t("changed the {kind} form", { kind: localized(data, "kind", t) });
+    case "document_form.enabled": return t("turned on {kind}", { kind: localized(data, "kind", t) });
+    case "document_form.disabled": return t("turned off {kind}", { kind: localized(data, "kind", t) });
+    case "document_form.reset": return t("reset the {kind} form to built-in", { kind: localized(data, "kind", t) });
     case "company.updated": return t("updated the company profile");
     case "risk.created": return t("raised risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });
     case "risk.updated": return t("updated risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });

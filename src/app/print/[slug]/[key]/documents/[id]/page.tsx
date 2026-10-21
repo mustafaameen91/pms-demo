@@ -7,6 +7,7 @@ import { getCompanyProfile } from "@/lib/data/company";
 import { canManageProject } from "@/lib/permissions";
 import { isPaperStyle } from "@/lib/branding";
 import { docNumber, docType } from "@/lib/documents/types";
+import { layoutDef } from "@/lib/documents/customize";
 import { getT } from "@/i18n/server";
 import { LightTheme } from "@/components/light-theme";
 import { Paper } from "@/components/documents/paper";
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: PageProps<"/print/[slug]/[key
   const { slug, id } = await params;
   const { workspace } = await requireWorkspace(slug);
   const row = await getDocument(workspace.id, id);
-  const def = row && docType(row.doc.type);
+  const def = row && layoutDef(row.doc.type, row.doc.layout, docType);
   // The PDF's default file name.
   return { title: def ? `${docNumber(def.prefix, row.doc.number)} ${def.title[row.doc.language === "en" ? "en" : "ar"]}` : "" };
 }
@@ -30,7 +31,7 @@ export default async function PrintDocumentPage({ params }: PageProps<"/print/[s
   const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project || !canManageProject(workspace.role, user.id, project)) notFound();
   const row = await getDocument(workspace.id, id);
-  const def = row && docType(row.doc.type);
+  const def = row && layoutDef(row.doc.type, row.doc.layout, docType);
   if (!row || !def || row.doc.projectId !== project.id) notFound();
   const profile = await getCompanyProfile(workspace.id);
   const { doc } = row;

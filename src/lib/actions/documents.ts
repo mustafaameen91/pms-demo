@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { activities, documents, projectResources, projects, resources, user } from "@/lib/db/schema";
 import { canManageProject } from "@/lib/permissions";
 import { getCompanyProfile } from "@/lib/data/company";
+import { getCompanyType } from "@/lib/data/document-settings";
+import { layoutDef } from "@/lib/documents/customize";
 import { PAPER_STYLES } from "@/lib/branding";
 import { DOC_TYPE_KEYS, docNumber, docType, type DocItem, type DocTypeDef, type Prefill } from "@/lib/documents/types";
 import { todayISO } from "@/lib/accomplishment";
@@ -29,11 +31,11 @@ async function loadDocument(id: string) {
   const [doc] = await db.select().from(documents).where(eq(documents.id, id)).limit(1);
   if (!doc) return null;
   const auth = await loadProject(doc.projectId);
-  return auth ? { doc, ...auth, def: docType(doc.type)! } : null;
+  return auth ? { doc, ...auth, def: layoutDef(doc.type, doc.layout, docType)! } : null;
 }
 
-async function log(doc: { workspaceId: string; projectId: string; type: string; number: number }, actorId: string, type: string) {
-  const def = docType(doc.type)!;
+async function log(doc: { workspaceId: string; projectId: string; type: string; number: number; layout?: unknown }, actorId: string, type: string) {
+  const def = layoutDef(doc.type, doc.layout, docType)!;
   await db.insert(activities).values({
     workspaceId: doc.workspaceId,
     projectId: doc.projectId,
@@ -81,7 +83,11 @@ export async function createDocument(projectId: string, input: z.input<typeof cr
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: t("Choose a document type") };
   const { project, user: me } = auth;
-  const def = docType(parsed.data.type)!;
+  // The company's own version of this form.
+  const company = await getCompanyType(project.workspaceId, parsed.data.type);
+  if (!company?.enabled) return { ok: false, error: t("This document type is turned off for your company.") };
+  const { enabled: _enabled, ...def } = company;
+  void _enabled;
   const profile = await getCompanyProfile(project.workspaceId);
   const language = parsed.data.language ?? profile.defaultLanguage;
   const style = parsed.data.style ?? profile.defaultStyle;
@@ -125,13 +131,14 @@ export async function createDocument(projectId: string, input: z.input<typeof cr
         currency: project.currency,
         data,
         items,
+        layout: def as unknown as Record<string, unknown>,
         createdById: me.id,
         updatedById: me.id,
       })
       .returning({ id: documents.id, number: documents.number });
     return row;
   });
-  await log({ workspaceId: project.workspaceId, projectId, type: def.key, number: id.number }, me.id, "document.created");
+  await log({ workspaceId: project.workspaceId, projectId, type: def.key, number: id.number, layout: def }, me.id, "document.created");
   refresh();
   return { ok: true, data: { id: id.id } };
 }

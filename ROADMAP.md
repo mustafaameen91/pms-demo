@@ -180,8 +180,8 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Documents list per project; audit log
 
 ### 21c — Each company customizes its forms
-- [ ] Per document type: rename labels, hide fields it doesn't use, add its own extra fields
-- [ ] Default wording / terms per type; number prefix; turn types on or off
+- [x] Per document type: rename labels, hide fields it doesn't use, add its own extra fields
+- [x] Default wording / terms per type; number prefix; turn types on or off
 
 ### 21d — Project file library
 - [ ] Files tab per project: drawings, contracts (signed scans), permits, photos — stored on your server

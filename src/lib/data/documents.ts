@@ -14,6 +14,7 @@ export async function listDocuments(projectId: string) {
       language: documents.language,
       date: documents.date,
       data: documents.data,
+      layout: documents.layout,
       updatedAt: documents.updatedAt,
       createdByName: user.name,
     })
