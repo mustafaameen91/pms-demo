@@ -783,3 +783,39 @@ export const loanRepayments = pgTable(
   },
   (t) => [index("loan_repayments_loan_idx").on(t.loanId, t.paidOn)],
 );
+
+/**
+ * Risk register: things that could go wrong on a project, scored likelihood × impact (1–5 each).
+ * Numbered per project (R-1, R-2…).
+ */
+export const projectRisks = pgTable(
+  "project_risks",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    number: integer("number").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    // See RISK_CATEGORIES in lib/risks.ts.
+    category: text("category").notNull().default("other"),
+    likelihood: integer("likelihood").notNull(),
+    impact: integer("impact").notNull(),
+    // What we'll do to make it less likely or less harmful.
+    mitigation: text("mitigation"),
+    // "open" | "watching" | "closed"
+    status: text("status").notNull().default("open"),
+    ownerId: text("owner_id").references(() => user.id, { onDelete: "set null" }),
+    taskId: text("task_id").references(() => tasks.id, { onDelete: "set null" }),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("project_risks_number_uidx").on(t.projectId, t.number),
+    index("project_risks_project_idx").on(t.projectId, t.status),
+    index("project_risks_owner_idx").on(t.ownerId),
+  ],
+);

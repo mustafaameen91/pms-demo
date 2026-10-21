@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RISK_STATUSES, riskLevel, riskScore } from "@/lib/risks";
 import { notFound } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getProjectReport } from "@/lib/data/report";
@@ -167,6 +168,24 @@ export default async function ProjectReportPage({ params }: PageProps<"/print/[s
           money(e.amount),
         ])}
         empty={t("No expenses.")}
+      />
+
+      <ReportTable
+        title={t("Risks")}
+        head={[t("ID"), t("Risk"), t("Score"), t("Status"), t("Owner|risk"), t("Plan to reduce it")]}
+        right={[2]}
+        rows={report.risks.map((r) => {
+          const score = riskScore(r.likelihood, r.impact);
+          return [
+            `R-${r.number}`,
+            r.title,
+            `${t({ high: "High", medium: "Medium", low: "Low" }[riskLevel(score)])} · ${score}`,
+            t(RISK_STATUSES.find((s) => s.value === r.status)?.label ?? r.status),
+            r.ownerName ?? "—",
+            r.mitigation ?? "—",
+          ];
+        })}
+        empty={t("No risks recorded.")}
       />
 
       <p className="mt-6 text-xs text-muted-foreground">

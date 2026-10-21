@@ -144,13 +144,54 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Members see their own loans and balance; Loans page for admins (who owes what, totals); audit log; Arabic & English
 - [x] Project cash advances: a loan can come from a project's budget (counted as spent right away); the borrower adds receipts as project expenses linked to the advance (owners/admins approve them); cash brought back returns to the budget; settled when receipts + cash = the amount
 
-## Phase 18 — AI assistant & integrations *(needs a decision: free AI services vs paid vs own server — discussed, to decide later)*
+## Phase 18 — Risk register *(construction, engineering, PMO)*
+- [x] Each project has a list of risks: title, description, category, likelihood (1–5) × impact (1–5) = score, owner, plan to reduce it, status (open / watching / closed)
+- [x] Score shown as low / medium / high with text, not colour alone; sort and filter by score and status
+- [x] Risk matrix (likelihood × impact grid) showing where the open risks sit
+- [x] Top open risks on the project overview; a risk can be linked to a task
+- [x] Permissions: manager / admins edit; team members can raise a risk; owner notified when assigned
+- [x] Audit log, Arabic & English, included in the project report (Excel / PDF)
+
+## Phase 19 — Cost forecast *(where will the money end up?)*
+- [ ] Forecast final cost from spending vs accomplishment % (earned value): expected total at the end, expected over/under budget
+- [ ] Cost and schedule health: "spending faster than progress" / "behind schedule" indicators, explained in plain words
+- [ ] Shown on the project overview and expenses page, the dashboard, and the report
+
+## Phase 20 — Daily timesheets / site log
+- [ ] Record per day who worked (members and workers), how many days or hours, on which task
+- [ ] Labour resources' used quantity fills in automatically from timesheets (no double entry)
+- [ ] Daily site log page per project: who was there, notes (weather, deliveries, problems)
+- [ ] Members log their own time; managers log for workers and approve
+- [ ] Timesheet report per person / per task / per week
+
+## Phase 21 — Project documents
+- [ ] Documents tab per project: drawings, contracts, permits (stored on your server)
+- [ ] Versions: uploading a new version keeps the old ones; folders or categories
+- [ ] Link a document to a task; permissions follow the project team
+
+## Phase 22 — Portfolios
+- [ ] Group projects into portfolios (e.g. "Baghdad branch", "Government contracts")
+- [ ] Portfolio page: budget, spent, forecast, accomplishment and risks totalled across its projects
+
+## Phase 23 — Install as a phone app
+- [ ] Installable app (PWA): home-screen icon, full screen, app name in Arabic & English
+- [ ] Friendly "you're offline" screen
+
+## Phase 24 — Calendar link
+- [ ] Private calendar link (iCal) per person: their tasks and milestones appear in Google / Outlook / phone calendar
+- [ ] Reset the link if it leaks
+
+## Phase 25 — Automatic weekly report
+- [ ] Every week, managers get a summary per project: progress vs plan, spending and forecast, late tasks, top risks
+- [ ] Delivered to the inbox (and by email once real email is on)
+
+## Phase 26 — AI assistant & integrations *(needs a decision: free AI services vs paid vs own server — discussed, to decide later)*
 - [ ] AI: turn a project brief into weighted tasks
 - [ ] AI: weekly status summary and risk list per project
 - [ ] "Continue with Google" sign-in
 - [ ] Outgoing webhooks / API for other systems
 
-## Phase 19 — Going live on your Ubuntu servers
+## Phase 27 — Going live on your Ubuntu servers
 - [ ] **Turn on real email** (SMTP settings in `.env`) — chosen to postpone; currently printed to terminal
 - [ ] Automated tests, production Docker setup
 - [ ] Deploy with HTTPS

@@ -8,6 +8,7 @@ import money from "./money";
 import server from "./server";
 import access from "./access";
 import loans from "./loans";
+import risks from "./risks";
 
 /**
  * Arabic dictionary, keyed by the English text. Split by area so several
@@ -24,4 +25,5 @@ export const ar: Dictionary = {
   ...money,
   ...access,
   ...loans,
+  ...risks,
 };

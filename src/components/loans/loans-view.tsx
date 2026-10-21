@@ -134,7 +134,7 @@ export function LoansView(props: Props) {
                 aria-current={filter === f ? "page" : undefined}
                 className={cn("rounded-md px-3 py-1 text-muted-foreground hover:text-foreground", filter === f && "bg-background font-medium text-foreground shadow-sm")}
               >
-                {{ active: t.locale === "en" ? "Open" : t("Open|loans"), paid: t("Paid off"), all: t("All") }[f]}
+                {{ active: t("Open|loans"), paid: t("Paid off"), all: t("All") }[f]}
               </Link>
             ))}
           </nav>

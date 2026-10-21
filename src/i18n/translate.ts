@@ -30,11 +30,20 @@ function fill(text: string, vars: Vars | undefined, intl: string) {
   });
 }
 
+/**
+ * "Open|risk" → "Open". A "|context" suffix gives the same English word its own
+ * key when another language needs a different word (e.g. a button vs a status).
+ */
+const withoutContext = (text: string) => {
+  const bar = text.indexOf("|");
+  return bar === -1 ? text : text.slice(0, bar);
+};
+
 export function createT(locale: Locale, dict: Dictionary): T {
   const intl = intlLocale(locale);
   const t = ((text: string, vars?: Vars) => {
     const hit = locale === "en" ? undefined : dict[text];
-    return fill(typeof hit === "string" ? hit : text, vars, intl);
+    return fill(typeof hit === "string" ? hit : withoutContext(text), vars, intl);
   }) as T;
   const rules = new Intl.PluralRules(intl);
   t.plural = (count, one, other, vars) => {

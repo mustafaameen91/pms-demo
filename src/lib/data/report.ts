@@ -6,6 +6,7 @@ import { getBoard, getProjectByKey, type Project } from "./projects";
 import { getProjectResources } from "./resources";
 import { getProjectExpenses } from "./expenses";
 import { getProjectAdvances } from "./loans";
+import { listRisks } from "./risks";
 import { getProjectFields } from "./custom-fields";
 
 /** Everything a project report (Excel or PDF) shows. Caller must authorize the workspace. */
@@ -16,12 +17,13 @@ export async function getProjectReport(workspaceId: string, key: string) {
 }
 
 async function buildReport(project: Project) {
-  const [board, usages, expenses, fields, advances] = await Promise.all([
+  const [board, usages, expenses, fields, advances, risks] = await Promise.all([
     getBoard(project.id),
     getProjectResources(project.id),
     getProjectExpenses(project.id),
     getProjectFields(project.id),
     getProjectAdvances(project.workspaceId, project.id),
+    listRisks(project.id),
   ]);
   const today = todayISO();
   const statusById = new Map(board.statuses.map((s) => [s.id, s]));
@@ -46,6 +48,7 @@ async function buildReport(project: Project) {
     usages,
     expenses,
     fields,
+    risks,
     accomplishment,
     budget,
   };

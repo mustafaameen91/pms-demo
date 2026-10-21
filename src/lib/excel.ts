@@ -1,4 +1,5 @@
 import "server-only";
+import { RISK_CATEGORIES, RISK_STATUSES, riskLevel, riskScore } from "@/lib/risks";
 import ExcelJS from "exceljs";
 import type { ProjectReport } from "@/lib/data/report";
 import { EXPENSE_CATEGORIES, PROJECT_STATUSES, resourceTypeInfo } from "@/lib/constants";
@@ -181,6 +182,39 @@ export async function buildProjectWorkbook(report: ProjectReport, t: T = createT
       // Resource payments are already counted through the resource's used cost.
       counted:
         e.approvalStatus !== "approved" ? t("No (not approved)") : e.projectResourceId ? t("No (resource payment)") : t("Yes"),
+    });
+  }
+
+  // Risks
+  const risks = wb.addWorksheet(t("Risks"));
+  risks.columns = [
+    { header: t("ID"), key: "id", width: 8 },
+    { header: t("Risk"), key: "title", width: 36 },
+    { header: t("Category"), key: "category", width: 18 },
+    { header: t("Likelihood"), key: "likelihood", width: 11 },
+    { header: t("Impact"), key: "impact", width: 10 },
+    { header: t("Score"), key: "score", width: 8 },
+    { header: t("Level"), key: "level", width: 10 },
+    { header: t("Status"), key: "status", width: 11 },
+    { header: t("Owner|risk"), key: "owner", width: 20 },
+    { header: t("Plan to reduce it"), key: "mitigation", width: 40 },
+    { header: t("Task"), key: "task", width: 24 },
+  ];
+  header(risks);
+  for (const r of report.risks) {
+    const score = riskScore(r.likelihood, r.impact);
+    risks.addRow({
+      id: `R-${r.number}`,
+      title: r.title,
+      category: t(RISK_CATEGORIES.find((c) => c.value === r.category)?.label ?? r.category),
+      likelihood: r.likelihood,
+      impact: r.impact,
+      score,
+      level: t({ high: "High", medium: "Medium", low: "Low" }[riskLevel(score)]),
+      status: t(RISK_STATUSES.find((s) => s.value === r.status)?.label ?? r.status),
+      owner: r.ownerName ?? "",
+      mitigation: r.mitigation ?? "",
+      task: r.taskNumber ? `${project.key}-${r.taskNumber} ${r.taskTitle}` : "",
     });
   }
 

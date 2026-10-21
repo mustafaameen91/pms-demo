@@ -13,6 +13,7 @@ export function ProjectTabs({ basePath }: { basePath: string }) {
     { href: basePath, label: t("Tasks"), active: pathname === basePath },
     { href: `${basePath}/resources`, label: t("Resources"), active: pathname.startsWith(`${basePath}/resources`) },
     { href: `${basePath}/expenses`, label: t("Expenses"), active: pathname.startsWith(`${basePath}/expenses`) },
+    { href: `${basePath}/risks`, label: t("Risks"), active: pathname.startsWith(`${basePath}/risks`) },
     { href: `${basePath}/automations`, label: t("Automations"), active: pathname.startsWith(`${basePath}/automations`) },
     { href: `${basePath}/settings`, label: t("Settings"), active: pathname.startsWith(`${basePath}/settings`) },
   ];

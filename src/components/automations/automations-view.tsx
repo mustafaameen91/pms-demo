@@ -574,7 +574,7 @@ const RUN_STATUS = {
 /** "Done" and "When" mean something else elsewhere, so Arabic looks them up under a "|context" key. */
 const runStatusLabel = (status: Run["status"], t: T) =>
   ({
-    done: t.locale === "en" ? "Done" : t("Done|run"),
+    done: t("Done|run"),
     skipped: t("Skipped"),
     failed: t("Failed"),
   })[status];
@@ -600,7 +600,7 @@ function RunHistory({ runs, rules, names, projectKey, basePath }: { runs: Run[];
                 <th scope="col" className="px-4 py-2 font-medium">{t("Result")}</th>
                 <th scope="col" className="px-4 py-2 font-medium">{t("What happened")}</th>
                 <th scope="col" className="hidden px-4 py-2 font-medium sm:table-cell">{t("Rule")}</th>
-                <th scope="col" className="px-4 py-2 text-end font-medium">{t.locale === "en" ? "When" : t("When|time")}</th>
+                <th scope="col" className="px-4 py-2 text-end font-medium">{t("When|time")}</th>
               </tr>
             </thead>
             <tbody>

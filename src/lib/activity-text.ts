@@ -22,7 +22,7 @@ export function activityGroup(type: string): ActivityGroup {
 /** Prefix filters per group, for querying. */
 export const GROUP_PREFIXES: Record<ActivityGroup, string[]> = {
   tasks: ["task.", "subtask.", "comment."],
-  projects: ["project.", "share."],
+  projects: ["project.", "share.", "risk."],
   money: ["expense.", "resource.", "loan."],
   members: ["member."],
   billing: ["subscription."],
@@ -83,6 +83,11 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "subtask.deleted": return on("deleted sub-task “{title}” on {ref}", "deleted sub-task “{title}”", { title: s(data.title) });
     case "subtask.restored": return on("restored sub-task “{title}” on {ref}", "restored sub-task “{title}”", { title: s(data.title) });
     case "comment.added": return on("commented on {ref}", "commented");
+    case "risk.created": return t("raised risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });
+    case "risk.updated": return t("updated risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });
+    case "risk.closed": return t("closed risk R-{number} “{title}”", { number: s(data.number), title: s(data.title) });
+    case "risk.reopened": return t("reopened risk R-{number} “{title}”", { number: s(data.number), title: s(data.title) });
+    case "risk.deleted": return t("deleted risk R-{number} “{title}”", { number: s(data.number), title: s(data.title) });
     case "loan.created":
       return data.project
         ? t("gave {name} an advance of {amount} {currency} from {project}'s budget", { amount: s(data.amount), currency: s(data.currency), name: s(data.borrower), project: s(data.project) })

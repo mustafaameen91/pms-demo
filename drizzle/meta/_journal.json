@@ -120,6 +120,13 @@
       "when": 1792530288211,
       "tag": "0016_solid_quentin_quire",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792602324019,
+      "tag": "0017_brave_gamora",
+      "breakpoints": true
     }
   ]
 }

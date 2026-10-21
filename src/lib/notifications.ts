@@ -25,7 +25,8 @@ export type NotificationType =
   | "request.received"
   | "automation"
   | "loan"
-  | "loan.request";
+  | "loan.request"
+  | "risk";
 
 type Notify = {
   workspaceId: string;

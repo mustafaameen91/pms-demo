@@ -7,9 +7,10 @@ import { getAccomplishmentTasks, getBoard } from "@/lib/data/projects";
 import { getProjectResources } from "@/lib/data/resources";
 import { getProjectExpenses } from "@/lib/data/expenses";
 import { getProjectAdvances } from "@/lib/data/loans";
+import { listRisks } from "@/lib/data/risks";
 import { computeBudget } from "@/lib/budget";
 import { lateTasks, upcomingTasks } from "@/lib/schedule";
-import { DeadlinesPanel, MilestonesPanel, MoneyPanel } from "@/components/projects/overview-panels";
+import { DeadlinesPanel, MilestonesPanel, RisksPanel, MoneyPanel } from "@/components/projects/overview-panels";
 import {
   SCHEDULE_TOLERANCE,
   computeAccomplishment,
@@ -58,12 +59,13 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
   const project = await getVisibleProjectByKey(workspace, user.id, key);
   if (!project) notFound();
 
-  const [rows, board, usages, expenseRows, advances] = await Promise.all([
+  const [rows, board, usages, expenseRows, advances, risks] = await Promise.all([
     getAccomplishmentTasks(project.id),
     getBoard(project.id),
     getProjectResources(project.id),
     getProjectExpenses(project.id),
     getProjectAdvances(workspace.id, project.id),
+    listRisks(project.id, { activeOnly: true }),
   ]);
   const today = todayISO();
   const money = computeBudget(project.budget, usages, expenseRows, board.tasks, advances);
@@ -177,6 +179,8 @@ export default async function OverviewPage({ params }: PageProps<"/w/[slug]/p/[k
           taskHref={(n) => `${tasksHref}?task=${project.key}-${n}`}
         />
       </div>
+
+      <RisksPanel risks={risks.slice(0, 5)} total={risks.length} href={`${tasksHref}/risks`} />
 
       <MilestonesPanel
         milestones={rows.filter((r) => r.isMilestone)}

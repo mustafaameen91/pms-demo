@@ -91,7 +91,7 @@ export function RequestForms({
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="min-w-0 flex-1 font-medium">{f.title}</p>
                   <span className={cn("rounded-full border px-2 py-0.5 text-xs", f.enabled ? "border-primary/30 bg-primary/10 text-primary" : "text-muted-foreground")}>
-                    {f.enabled ? (t.locale === "en" ? "Open" : t("Open|form state")) : t("Closed")}
+                    {f.enabled ? t("Open|form state") : t("Closed")}
                   </span>
                   <span className="text-xs text-muted-foreground tabular-nums">
                     {t.plural(f.submissions, "{count} request", "{count} requests")}

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { AlertTriangle, CalendarClock, CircleCheck, Diamond, Wallet } from "lucide-react";
+import { AlertTriangle, CalendarClock, CircleCheck, Diamond, ShieldAlert, Wallet } from "lucide-react";
+import { RiskLevelBadge } from "@/components/risks/risk-level";
 import type { BudgetSummary } from "@/lib/budget";
 import { daysBetween } from "@/lib/schedule";
 import { cn, formatDate, formatMoney } from "@/lib/utils";
@@ -235,6 +236,49 @@ export async function MilestonesPanel({
           );
         })}
       </ol>
+    </section>
+  );
+}
+
+/** The highest-scoring active risks (already sorted), with a link to the register. */
+export async function RisksPanel({
+  risks,
+  total,
+  href,
+}: {
+  risks: { id: string; number: number; title: string; likelihood: number; impact: number; ownerName: string | null }[];
+  total: number;
+  href: string;
+}) {
+  const t = await getT();
+  return (
+    <section aria-labelledby="risks-heading" className="rounded-xl border bg-card p-5">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="risks-heading" className="flex items-center gap-2 font-semibold">
+          <ShieldAlert className="size-4 text-primary" aria-hidden />
+          {t("Top risks")}
+        </h2>
+        <Link href={href} className="text-sm text-primary underline-offset-4 hover:underline">
+          {total > 0 ? t.plural(total, "View {count} active risk", "View all {count} active risks") : t("Risk register")}
+        </Link>
+      </div>
+      {risks.length === 0 ? (
+        <p className="mt-4 text-sm text-muted-foreground">{t("No active risks. Add what could delay the project or raise its cost.")}</p>
+      ) : (
+        <ol className="mt-4 grid gap-2">
+          {risks.map((r) => (
+            <li key={r.id}>
+              <Link href={`${href}?risk=${r.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-sm hover:bg-accent/50">
+                <RiskLevelBadge likelihood={r.likelihood} impact={r.impact} t={t} />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  <span className="font-mono text-xs text-muted-foreground">R-{r.number}</span> {r.title}
+                </span>
+                <span className="text-xs text-muted-foreground">{r.ownerName ?? t("No owner")}</span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }
