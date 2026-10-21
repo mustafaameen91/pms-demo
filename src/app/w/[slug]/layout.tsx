@@ -6,6 +6,7 @@ import { unreadCount } from "@/lib/data/notifications";
 import { listPendingApprovals } from "@/lib/data/expenses";
 import { ensureLateTaskNotifications } from "@/lib/notifications";
 import { sweepLateTaskAutomations } from "@/lib/automation-runner";
+import { ensureWeeklyReport } from "@/lib/weekly-report-server";
 import { chosenLocale, syncUserLocale } from "@/lib/locale-sync";
 import { AppShell } from "@/components/shell/app-shell";
 import { visibleProjectIds } from "@/lib/data/project-access";
@@ -20,6 +21,8 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
     await ensureLateTaskNotifications(user.id, workspace.id);
     // "Task becomes late" automations: after the page is sent, so they never slow it down.
     after(() => sweepLateTaskAutomations(workspace.id));
+    // Last week's report, the first time anyone opens the app after the week ends.
+    after(() => ensureWeeklyReport(workspace.id));
     const chosen = await chosenLocale();
     after(() => syncUserLocale(user.id, chosen));
   }
@@ -42,6 +45,7 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
       unread={unread}
       approvals={approvals.filter((a) => a.requesterId !== user.id).length}
       loanRequests={loanRequests}
+      showReports={isAdmin || projects.some((p) => p.leadId === user.id)}
       access={access}
       isPlatformAdmin={isSuperAdmin(user.email)}
     >

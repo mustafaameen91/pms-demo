@@ -1,0 +1,32 @@
+import type { Dictionary } from "../translate";
+
+/** Weekly reports (Phase 25). */
+export default {
+  "Weekly reports": "التقارير الأسبوعية",
+  "Weekly report: {start} – {end}": "التقرير الأسبوعي: {start} – {end}",
+  "Weekly report · {date}": "التقرير الأسبوعي · {date}",
+  "Every Saturday, a summary of last week for the projects you manage: progress, money, late tasks and risks. It also arrives in your inbox.":
+    "كل يوم سبت، ملخّص للأسبوع الماضي للمشاريع التي تديرها: التقدّم، والأموال، والمهام المتأخرة، والمخاطر. ويصلك أيضًا في صندوق الوارد.",
+  "No reports yet. The first one is made after the first full week (Saturday to Friday).": "لا توجد تقارير بعد. يُعدّ أول تقرير بعد أول أسبوع كامل (من السبت إلى الجمعة).",
+  "Over / heading over budget": "تجاوز / متجه لتجاوز الميزانية",
+  "Finished this week": "أُنجز هذا الأسبوع",
+  "Spent this week": "المصروف هذا الأسبوع",
+  "{spent} of {budget} so far": "{spent} من {budget} حتى الآن",
+  "{spent} so far": "{spent} حتى الآن",
+  "{n} pts": "{n} نقطة",
+  "up since last week": "ارتفاع منذ الأسبوع الماضي",
+  "down since last week": "انخفاض منذ الأسبوع الماضي",
+  "First report: no change to show yet": "أول تقرير: لا يوجد تغيّر لعرضه بعد",
+  "No progress since last week": "لا تقدّم منذ الأسبوع الماضي",
+  "Early estimate": "تقدير مبكر",
+  "Within budget": "ضمن الميزانية",
+  "No forecast yet": "لا يوجد توقّع بعد",
+  "Nothing late.": "لا شيء متأخر.",
+  "No tasks finished this week.": "لم تُنجز مهام هذا الأسبوع.",
+  "{count} new this week": { one: "واحدة جديدة هذا الأسبوع", two: "اثنتان جديدتان هذا الأسبوع", few: "{count} جديدة هذا الأسبوع", many: "{count} جديدة هذا الأسبوع", other: "{count} جديدة هذا الأسبوع" },
+  "{count} behind schedule": { one: "مشروع متأخر عن الخطة", two: "مشروعان متأخران عن الخطة", few: "{count} مشاريع متأخرة عن الخطة", many: "{count} مشروعًا متأخرًا عن الخطة", other: "{count} مشروع متأخر عن الخطة" },
+  "{count} over budget": { one: "مشروع تجاوز الميزانية", two: "مشروعان تجاوزا الميزانية", few: "{count} مشاريع تجاوزت الميزانية", many: "{count} مشروعًا تجاوز الميزانية", other: "{count} مشروع تجاوز الميزانية" },
+  "{count} heading over budget": { one: "مشروع متجه لتجاوز الميزانية", two: "مشروعان متجهان لتجاوز الميزانية", few: "{count} مشاريع متجهة لتجاوز الميزانية", many: "{count} مشروعًا متجهًا لتجاوز الميزانية", other: "{count} مشروع متجه لتجاوز الميزانية" },
+  "{count} late tasks": { one: "مهمة متأخرة واحدة", two: "مهمتان متأخرتان", few: "{count} مهام متأخرة", many: "{count} مهمة متأخرة", other: "{count} مهمة متأخرة" },
+  "{count} tasks finished": { zero: "لم تُنجز أي مهمة", one: "أُنجزت مهمة واحدة", two: "أُنجزت مهمتان", few: "أُنجزت {count} مهام", many: "أُنجزت {count} مهمة", other: "أُنجزت {count} مهمة" },
+} satisfies Dictionary;

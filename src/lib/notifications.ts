@@ -27,7 +27,8 @@ export type NotificationType =
   | "loan"
   | "loan.request"
   | "risk"
-  | "time";
+  | "time"
+  | "report.weekly";
 
 type Notify = {
   workspaceId: string;

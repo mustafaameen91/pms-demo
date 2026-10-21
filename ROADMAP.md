@@ -203,8 +203,9 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [ ] Reset the link if it leaks
 
 ## Phase 25 — Automatic weekly report
-- [ ] Every week, managers get a summary per project: progress vs plan, spending and forecast, late tasks, top risks
-- [ ] Delivered to the inbox (and by email once real email is on)
+- [x] Every week (Saturday–Friday), owners / admins get a report of all projects and each project manager of theirs: progress and the change since last week, money spent this week and in total, forecast, late tasks, tasks finished, top and new risks
+- [x] Delivered to the inbox (and by email once real email is on); every past week kept under "Weekly reports"
+- [x] Made when the app is first opened after the week ends; a server timer can make it on Saturday morning without anyone logging in (see going live)
 
 ## Phase 26 — AI assistant & integrations *(needs a decision: free AI services vs paid vs own server — discussed, to decide later)*
 - [ ] AI: turn a project brief into weighted tasks
@@ -216,4 +217,5 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [ ] **Turn on real email** (SMTP settings in `.env`) — chosen to postpone; currently printed to terminal
 - [ ] Automated tests, production Docker setup
 - [ ] Deploy with HTTPS
+- [ ] Weekly report timer: set `CRON_SECRET` in `.env` and a cron job every Saturday 07:00 calling `/api/cron/weekly-reports` with it
 - [ ] Nightly backups, monitoring

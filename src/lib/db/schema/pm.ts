@@ -1040,3 +1040,19 @@ export const portfolios = pgTable(
   },
   (t) => [index("portfolios_workspace_idx").on(t.workspaceId)],
 );
+
+/**
+ * A company's weekly report: a snapshot of every active project for one week
+ * (Saturday–Friday), so past weeks can be read back and compared.
+ */
+export const weeklyReports = pgTable(
+  "weekly_reports",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    weekStart: date("week_start").notNull(),
+    data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("weekly_reports_week_uidx").on(t.workspaceId, t.weekStart)],
+);

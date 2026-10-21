@@ -27,6 +27,7 @@ export async function listProjects(
       budget: projects.budget,
       currency: projects.currency,
       portfolioId: projects.portfolioId,
+      leadId: projects.leadId,
       createdAt: projects.createdAt,
     })
     .from(projects)

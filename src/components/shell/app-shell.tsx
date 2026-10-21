@@ -29,6 +29,7 @@ import {
   Users,
   Building2,
   Layers,
+  FileBarChart,
 } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import { cn, initials } from "@/lib/utils";
@@ -62,6 +63,8 @@ type ShellProps = {
   approvals: number;
   /** Loan requests waiting (owners/admins only; 0 for members). */
   loanRequests: number;
+  /** Owners, admins and project managers get weekly reports. */
+  showReports: boolean;
   access: AccessState;
   isPlatformAdmin: boolean;
   children: React.ReactNode;
@@ -128,6 +131,7 @@ function SidebarContent({
   unread,
   approvals,
   loanRequests,
+  showReports,
   access,
   isPlatformAdmin,
   onNavigate,
@@ -194,6 +198,12 @@ function SidebarContent({
           <FolderKanban className="size-4" />
           {t("Projects")}
         </NavLink>
+        {showReports && (
+          <NavLink href={`${base}/reports`} active={pathname.startsWith(`${base}/reports`)} onNavigate={onNavigate}>
+            <FileBarChart className="size-4" />
+            {t("Weekly reports")}
+          </NavLink>
+        )}
         <NavLink href={`${base}/portfolios`} active={pathname.startsWith(`${base}/portfolios`)} onNavigate={onNavigate}>
           <Layers className="size-4" />
           {t("Portfolios")}
