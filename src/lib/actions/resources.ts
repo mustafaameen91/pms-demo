@@ -218,7 +218,12 @@ export async function updateProjectResource(usageId: string, input: UsageInput):
   if (parsed.data.taskId && !(await taskBelongsToProject(parsed.data.taskId, auth.usage.projectId))) {
     return { ok: false, error: t("Task not found in this project"), fieldErrors: { taskId: t("Task not found") } };
   }
-  await db.update(projectResources).set(parsed.data).where(eq(projectResources.id, usageId));
+  // A worker on timesheets: used quantity comes from attendance, not this form.
+  const { usedQty, ...rest } = parsed.data;
+  await db
+    .update(projectResources)
+    .set(auth.usage.fromTimesheets ? rest : { ...rest, usedQty })
+    .where(eq(projectResources.id, usageId));
   await checkOverBudget(auth.usage.projectId, auth.user.id);
   refresh();
   return { ok: true };

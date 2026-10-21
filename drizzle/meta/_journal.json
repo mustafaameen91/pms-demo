@@ -127,6 +127,13 @@
       "when": 1792602324019,
       "tag": "0017_brave_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792605155436,
+      "tag": "0018_real_titanium_man",
+      "breakpoints": true
     }
   ]
 }

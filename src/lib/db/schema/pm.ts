@@ -14,6 +14,7 @@ import {
   uniqueIndex,
   foreignKey,
   boolean,
+  check,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { organization, user } from "./auth";
@@ -381,6 +382,9 @@ export const projectResources = pgTable(
     usedQty: numeric("used_qty", { precision: 14, scale: 2 }).notNull().default("0"),
     // Price per unit in the project's currency (copied from the library, editable).
     unitCost: numeric("unit_cost", { precision: 14, scale: 2 }).notNull().default("0"),
+    // Workers on timesheets: usedQty = usedQtyBase (entered by hand before) + approved time entries.
+    fromTimesheets: boolean("from_timesheets").notNull().default(false),
+    usedQtyBase: numeric("used_qty_base", { precision: 14, scale: 2 }).notNull().default("0"),
     notes: text("notes"),
     ...timestamps,
   },
@@ -818,4 +822,68 @@ export const projectRisks = pgTable(
     index("project_risks_project_idx").on(t.projectId, t.status),
     index("project_risks_owner_idx").on(t.ownerId),
   ],
+);
+
+/**
+ * Time on a project, per person per day: a member's own hours, or a worker's
+ * attendance (in the worker's unit, e.g. days) recorded by a manager.
+ * Workers' approved entries fill in their project resource's used quantity.
+ */
+export const timeEntries = pgTable(
+  "time_entries",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    // Exactly one of: a member (has an account) or a worker from the resource library.
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+    resourceId: text("resource_id").references(() => resources.id, { onDelete: "restrict" }),
+    // For workers: the project resource row whose used quantity this counts toward.
+    projectResourceId: text("project_resource_id").references(() => projectResources.id, { onDelete: "set null" }),
+    taskId: text("task_id").references(() => tasks.id, { onDelete: "set null" }),
+    quantity: numeric("quantity", { precision: 8, scale: 2 }).notNull(),
+    // "hour" for members; the worker's unit ("day", "hour"…) for workers.
+    unit: text("unit").notNull(),
+    note: text("note"),
+    status: approvalStatus("status").notNull().default("approved"),
+    decidedById: text("decided_by_id").references(() => user.id, { onDelete: "set null" }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decisionNote: text("decision_note"),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("time_entries_project_date_idx").on(t.projectId, t.date),
+    index("time_entries_user_idx").on(t.userId, t.date),
+    index("time_entries_resource_idx").on(t.resourceId),
+    index("time_entries_usage_idx").on(t.projectResourceId),
+    check("time_entries_one_person", sql`(${t.userId} is null) <> (${t.resourceId} is null)`),
+    check("time_entries_quantity_positive", sql`${t.quantity} > 0`),
+  ],
+);
+
+/** One diary page per project per day: weather, deliveries, problems, notes. */
+export const siteLogs = pgTable(
+  "site_logs",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    // See WEATHER in lib/timesheets.ts.
+    weather: text("weather"),
+    temperature: integer("temperature"),
+    deliveries: text("deliveries"),
+    problems: text("problems"),
+    notes: text("notes"),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    updatedById: text("updated_by_id").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("site_logs_project_date_uidx").on(t.projectId, t.date)],
 );

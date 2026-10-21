@@ -215,6 +215,9 @@ export function ProjectResourcesView({
                                   {fmtQty(used)} / {fmtQty(planned)} {u.unit}
                                 </span>
                               </div>
+                              {u.fromTimesheets && (
+                                <p className="mt-0.5 text-xs text-muted-foreground">{t("From timesheets")}</p>
+                              )}
                               {over && (
                                 <p className="mt-0.5 flex items-center gap-1 text-xs text-destructive">
                                   <AlertTriangle className="size-3" aria-hidden />
@@ -284,6 +287,7 @@ function UsageFields({
   unit,
   currency,
   priceHint,
+  timesheetsHref,
 }: {
   value: UsageDraft;
   onChange: (v: UsageDraft) => void;
@@ -292,6 +296,8 @@ function UsageFields({
   unit: string;
   currency: string;
   priceHint?: string;
+  /** Set for a worker on timesheets: used quantity is filled in from attendance. */
+  timesheetsHref?: string;
 }) {
   const t = useT();
   const set = <K extends keyof UsageDraft>(k: K, v: UsageDraft[K]) => onChange({ ...value, [k]: v });
@@ -317,7 +323,25 @@ function UsageFields({
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="usage-used">{t("Used so far ({unit})", { unit })}</Label>
-          <Input id="usage-used" inputMode="decimal" value={value.usedQty} onChange={(e) => set("usedQty", e.target.value)} placeholder="0" className="tabular-nums" aria-invalid={Boolean(errors.usedQty)} />
+          <Input
+            id="usage-used"
+            inputMode="decimal"
+            value={value.usedQty}
+            onChange={(e) => set("usedQty", e.target.value)}
+            placeholder="0"
+            className="tabular-nums"
+            readOnly={Boolean(timesheetsHref)}
+            aria-describedby={timesheetsHref ? "usage-used-hint" : undefined}
+            aria-invalid={Boolean(errors.usedQty)}
+          />
+          {timesheetsHref && (
+            <p id="usage-used-hint" className="text-xs text-muted-foreground">
+              {t("Filled in from attendance.")}{" "}
+              <Link href={timesheetsHref} className="text-primary underline-offset-4 hover:underline">
+                {t("Timesheets")}
+              </Link>
+            </p>
+          )}
           <FieldError message={errors.usedQty} />
         </div>
         <div className="grid gap-1.5">
@@ -621,7 +645,16 @@ function EditUsageForm({
         });
       }}
     >
-      <UsageFields value={draft} onChange={setDraft} errors={errors} tasks={tasks} unit={usage.unit} currency={project.currency} />
+      <UsageFields
+        value={draft}
+        onChange={setDraft}
+        errors={errors}
+        tasks={tasks}
+        unit={usage.unit}
+        currency={project.currency}
+        // Relative to this project's Resources page.
+        timesheetsHref={usage.fromTimesheets ? "timesheets" : undefined}
+      />
       <CostPreview draft={draft} unit={usage.unit} currency={project.currency} />
       <DialogFooter className="sm:justify-between">
         <Button

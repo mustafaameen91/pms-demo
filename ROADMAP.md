@@ -158,11 +158,11 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Shown on the project overview and expenses page, the dashboard, and the report
 
 ## Phase 20 — Daily timesheets / site log
-- [ ] Record per day who worked (members and workers), how many days or hours, on which task
-- [ ] Labour resources' used quantity fills in automatically from timesheets (no double entry)
-- [ ] Daily site log page per project: who was there, notes (weather, deliveries, problems)
-- [ ] Members log their own time; managers log for workers and approve
-- [ ] Timesheet report per person / per task / per week
+- [x] Record per day who worked (members and workers), how many days or hours, on which task
+- [x] Labour resources' used quantity fills in automatically from timesheets (no double entry)
+- [x] Daily site log page per project: who was there, notes (weather, deliveries, problems)
+- [x] Members log their own time; managers log for workers and approve
+- [x] Timesheet report per person / per task / per week
 
 ## Phase 21 — Project documents
 - [ ] Documents tab per project: drawings, contracts, permits (stored on your server)

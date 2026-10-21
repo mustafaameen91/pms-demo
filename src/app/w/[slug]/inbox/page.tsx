@@ -1,4 +1,4 @@
-import { AlertTriangle, AtSign, BadgeCheck, Bell, ClipboardList, CalendarClock, MessageSquare, UserPlus, Workflow, XCircle, HandCoins, ShieldAlert } from "lucide-react";
+import { AlertTriangle, AtSign, BadgeCheck, Bell, ClipboardList, CalendarClock, MessageSquare, UserPlus, Workflow, XCircle, HandCoins, ShieldAlert, Clock } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { listNotifications } from "@/lib/data/notifications";
 import { markAllNotificationsRead } from "@/lib/actions/notifications";
@@ -26,6 +26,7 @@ const ICONS: Record<string, typeof Bell> = {
   loan: HandCoins,
   "loan.request": HandCoins,
   risk: ShieldAlert,
+  time: Clock,
 };
 const ALERT_TYPES = new Set(["task.late", "project.over_budget", "expense.rejected"]);
 

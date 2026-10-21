@@ -55,6 +55,8 @@ export async function getProjectResources(projectId: string) {
       plannedQty: projectResources.plannedQty,
       usedQty: projectResources.usedQty,
       unitCost: projectResources.unitCost,
+      fromTimesheets: projectResources.fromTimesheets,
+      usedQtyBase: projectResources.usedQtyBase,
       notes: projectResources.notes,
       taskId: projectResources.taskId,
       taskNumber: tasks.number,

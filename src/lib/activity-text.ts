@@ -22,7 +22,7 @@ export function activityGroup(type: string): ActivityGroup {
 /** Prefix filters per group, for querying. */
 export const GROUP_PREFIXES: Record<ActivityGroup, string[]> = {
   tasks: ["task.", "subtask.", "comment."],
-  projects: ["project.", "share.", "risk."],
+  projects: ["project.", "share.", "risk.", "time.", "sitelog."],
   money: ["expense.", "resource.", "loan."],
   members: ["member."],
   billing: ["subscription."],
@@ -83,6 +83,13 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "subtask.deleted": return on("deleted sub-task “{title}” on {ref}", "deleted sub-task “{title}”", { title: s(data.title) });
     case "subtask.restored": return on("restored sub-task “{title}” on {ref}", "restored sub-task “{title}”", { title: s(data.title) });
     case "comment.added": return on("commented on {ref}", "commented");
+    case "time.logged": return t("logged {quantity} h for {date}", { quantity: s(data.quantity), date: s(data.date) });
+    case "time.updated": return t("changed their hours for {date} to {quantity} h", { quantity: s(data.quantity), date: s(data.date) });
+    case "time.attendance": return t("recorded attendance for {date}: {names}", { date: s(data.date), names: s(data.names) });
+    case "time.approved": return t("approved {quantity} {unit} for {date}", { quantity: s(data.quantity), unit: s(data.unit), date: s(data.date) });
+    case "time.rejected": return t("rejected {quantity} {unit} for {date} — {note}", { quantity: s(data.quantity), unit: s(data.unit), date: s(data.date), note: s(data.note) });
+    case "time.deleted": return t("removed {quantity} {unit} of time for {date}", { quantity: s(data.quantity), unit: s(data.unit), date: s(data.date) });
+    case "sitelog.saved": return t("wrote the site log for {date}", { date: s(data.date) });
     case "risk.created": return t("raised risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });
     case "risk.updated": return t("updated risk R-{number} “{title}” (score {score})", { number: s(data.number), title: s(data.title), score: s(data.score) });
     case "risk.closed": return t("closed risk R-{number} “{title}”", { number: s(data.number), title: s(data.title) });

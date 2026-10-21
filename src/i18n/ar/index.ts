@@ -10,6 +10,7 @@ import access from "./access";
 import loans from "./loans";
 import risks from "./risks";
 import forecast from "./forecast";
+import time from "./time";
 
 /**
  * Arabic dictionary, keyed by the English text. Split by area so several
@@ -28,4 +29,5 @@ export const ar: Dictionary = {
   ...loans,
   ...risks,
   ...forecast,
+  ...time,
 };

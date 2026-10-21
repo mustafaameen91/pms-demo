@@ -223,5 +223,29 @@ export async function buildProjectWorkbook(report: ProjectReport, t: T = createT
     });
   }
 
+  // Timesheets (approved time)
+  const time = wb.addWorksheet(t("Timesheets"));
+  time.columns = [
+    { header: t("Date"), key: "date", width: 12, style: { numFmt: "yyyy-mm-dd" } },
+    { header: t("Person"), key: "person", width: 24 },
+    { header: t("Type"), key: "kind", width: 10 },
+    { header: t("Task"), key: "task", width: 30 },
+    { header: t("Amount|time"), key: "quantity", width: 10 },
+    { header: t("Unit"), key: "unit", width: 10 },
+    { header: t("Note"), key: "note", width: 36 },
+  ];
+  header(time);
+  for (const e of report.time) {
+    time.addRow({
+      date: isoToDate(e.date),
+      person: e.personName,
+      kind: e.kind === "member" ? t("Member") : t("Worker"),
+      task: e.taskNumber ? `${project.key}-${e.taskNumber} ${e.taskTitle}` : t("Whole project"),
+      quantity: Number(e.quantity),
+      unit: t(e.unit),
+      note: e.note ?? "",
+    });
+  }
+
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
