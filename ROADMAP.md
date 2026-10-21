@@ -193,9 +193,10 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Portfolio page: budget, spent, forecast, accomplishment and risks totalled across its projects
 - [x] Dashboard can be filtered by portfolio (or "not in a portfolio"); members only count the projects they're on
 
-## Phase 23 — Install as a phone app
-- [ ] Installable app (PWA): home-screen icon, full screen, app name in Arabic & English
-- [ ] Friendly "you're offline" screen
+## Phase 23 — Phone app *(postponed — a Flutter app is planned instead of an installable web app)*
+- [ ] Decide the Flutter app's scope (which screens: my tasks, timesheets, site log, photos, approvals…)
+- [ ] Mobile API for it: secure sign-in tokens and JSON endpoints, using the same permissions as the web app
+- [ ] Build the Flutter app (Arabic & English, right-to-left), then publish to the stores
 
 ## Phase 24 — Calendar link
 - [ ] Private calendar link (iCal) per person: their tasks and milestones appear in Google / Outlook / phone calendar
