@@ -15,6 +15,7 @@ import documents from "./documents";
 import files from "./files";
 import portfolios from "./portfolios";
 import reports from "./reports";
+import mobile from "./mobile";
 
 /**
  * Arabic dictionary, keyed by the English text. Split by area so several
@@ -38,4 +39,5 @@ export const ar: Dictionary = {
   ...files,
   ...portfolios,
   ...reports,
+  ...mobile,
 };

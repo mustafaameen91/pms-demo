@@ -193,10 +193,27 @@ you record the payment in the admin panel, which activates/extends the workspace
 - [x] Portfolio page: budget, spent, forecast, accomplishment and risks totalled across its projects
 - [x] Dashboard can be filtered by portfolio (or "not in a portfolio"); members only count the projects they're on
 
-## Phase 23 — Phone app *(postponed — a Flutter app is planned instead of an installable web app)*
-- [ ] Decide the Flutter app's scope (which screens: my tasks, timesheets, site log, photos, approvals…)
-- [ ] Mobile API for it: secure sign-in tokens and JSON endpoints, using the same permissions as the web app
-- [ ] Build the Flutter app (Arabic & English, right-to-left), then publish to the stores
+## Phase 23 — Phone app (Flutter) *(one app for members and managers; screens follow your role)*
+Lives in `mobile/`, fully separate from the web app. Libraries are only added with your approval: Riverpod, go_router, flutter_secure_storage, flutter_localizations + intl and Dio for talking to the server.
+
+### 23a — Mobile API (on the server)
+- [x] Sign-in that returns a secure token for the phone (kept in the phone's keychain)
+- [x] `/api/mobile/v1/…` JSON endpoints: who I am, my companies and role in each, what I manage
+- [x] Same permission rules as the website (the server decides, never the app)
+
+### 23b — App skeleton
+- [ ] Login, choose company, home that changes with the role (member vs manager / admin)
+- [ ] Arabic & English with right-to-left, the app's teal style, light / dark
+
+### 23c — Member screens
+- [ ] My tasks (status, progress), log my hours, site log, photos / receipts, comments, inbox, my loans
+
+### 23d — Manager & admin screens
+- [ ] Project health, approvals (expenses, hours, loans), worker attendance, risks, weekly report
+
+### 23e — Publishing
+- [ ] Google Play ($25 once) and Apple App Store ($99 per year) — accounts in your name
+- [ ] Phone notifications — later
 
 ## Phase 24 — Calendar link
 - [x] Private calendar link (iCal) per person, per company: their open tasks (start → end date) and the milestones of their projects appear in Google / Outlook / phone calendar, each linking back to the task; titles in their language

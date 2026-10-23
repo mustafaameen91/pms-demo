@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { organization } from "better-auth/plugins";
+import { bearer, organization } from "better-auth/plugins";
 import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { appUrl, sendEmail } from "@/lib/email";
@@ -63,6 +63,9 @@ export const auth = betterAuth({
         });
       },
     }),
+    // The phone app signs in for a token (set-auth-token header) and sends it as
+    // "Authorization: Bearer …"; only signed tokens are accepted.
+    bearer({ requireSignature: true }),
     nextCookies(), // must stay last
   ],
 });
