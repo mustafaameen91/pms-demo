@@ -115,4 +115,23 @@ All paths below are under `/w/{slug}`.
 Photos and receipts (`url`, `receiptUrl`) are server paths: load them from `{server}{url}` with
 the same `Authorization: Bearer` header.
 
-Manager screens (approvals, project health, attendance…) arrive with roadmap 23d.
+## Manager endpoints (23d)
+
+For owners, admins and project managers (the `"manager"` view). As above, every decision
+calls the website's own action.
+
+| Method & path | What |
+|---|---|
+| `GET /approvals` | `{ canLoans, expenses: [{ …, requester, advance, mine }], hours: [{ id, date, hours, note, person, project, task }], loans: [{ id, amount, currency, reason, person }] }`. `mine`: my own expense, someone else decides. Loans only for owners/admins |
+| `POST /approvals/expenses/{id}` · `/approvals/hours/{id}` · `/approvals/loans/{id}` | `{ decision: "approved" \| "rejected", note? }`; a `note` is required to reject; loans can be approved for a different `amount` |
+| `GET /health` | The active projects I manage (admins: all), most in need first: `{ projects: [{ id, key, name, actual, planned, schedule, budget, spent, usedPct, overBudget, headingOver, forecast, late, daysLeft, overdue }] }` |
+| `GET /health/{projectId}` | `{ project, late: [task], upcoming: [task], risks: [{ key, title, score, level, owner }] }` |
+| `GET /projects/{id}/attendance?date=` | Managers: `{ date, workers: [{ id, name, role, unitLabel, defaultQuantity, onProject }], recorded }` |
+| `POST /projects/{id}/attendance` | `{ date, taskId?, note?, workers: [{ resourceId, quantity }] }` |
+| `GET /projects/{id}/risks` | `{ manager, categories, statuses, likelihood, impact, people, risks: [{ …, score, level, canEdit }] }` |
+| `POST /projects/{id}/risks` · `PUT /projects/{id}/risks/{riskId}` | `{ title, category, likelihood 1–5, impact 1–5, status, description?, mitigation?, ownerId?, taskId? }`; anyone on the team raises a risk; only the manager sets the owner |
+| `GET /reports` · `GET /reports/{weekStart}` | Weekly reports with the projects I manage: headline numbers, then per project |
+
+Opening the app's home (`GET /w/{slug}/home`) does what opening the website does: it sends
+late-task reminders and, after answering, runs "task becomes late" automations and makes last
+week's report when it's due.

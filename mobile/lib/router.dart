@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import 'core/models.dart';
 import 'core/providers.dart';
+import 'features/approvals/approvals_screen.dart';
+import 'features/attendance/attendance_screen.dart';
 import 'features/companies/companies_screen.dart';
 import 'features/expenses/expense_form_screen.dart';
 import 'features/expenses/expenses_screen.dart';
@@ -14,6 +16,10 @@ import 'features/loans/loans_screen.dart';
 import 'features/login/login_screen.dart';
 import 'features/more/more_screen.dart';
 import 'features/photos/photos_screen.dart';
+import 'features/projects/project_screen.dart';
+import 'features/projects/projects_screen.dart';
+import 'features/reports/reports_screen.dart';
+import 'features/risks/risks_screen.dart';
 import 'features/shell/workspace_shell.dart';
 import 'features/site_log/site_log_screen.dart';
 import 'features/splash_screen.dart';
@@ -106,6 +112,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               StatefulShellBranch(
                 routes: [GoRoute(path: 'more', builder: (context, state) => MoreScreen(key: ValueKey(slugOf(state)), slug: slugOf(state)))],
               ),
+              // Managers' tabs (the shell shows them instead of Tasks and Hours).
+              StatefulShellBranch(
+                routes: [GoRoute(path: 'projects', builder: (context, state) => ProjectsScreen(key: ValueKey(slugOf(state)), slug: slugOf(state)))],
+              ),
+              StatefulShellBranch(
+                routes: [GoRoute(path: 'approvals', builder: (context, state) => ApprovalsScreen(key: ValueKey(slugOf(state)), slug: slugOf(state)))],
+              ),
             ],
           ),
           page('task/:id', (slug, s) => TaskScreen(slug: slug, id: s.pathParameters['id']!)),
@@ -114,6 +127,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           page('expenses', (slug, s) => ExpensesScreen(slug: slug)),
           page('expenses/new', (slug, s) => ExpenseFormScreen(slug: slug, projectId: s.uri.queryParameters['project'])),
           page('loans', (slug, s) => LoansScreen(slug: slug)),
+          page('project/:id', (slug, s) => ProjectScreen(slug: slug, id: s.pathParameters['id']!)),
+          page('project/:id/attendance', (slug, s) => AttendanceScreen(slug: slug, projectId: s.pathParameters['id']!)),
+          page('project/:id/risks', (slug, s) => RisksScreen(slug: slug, projectId: s.pathParameters['id']!)),
+          page('reports', (slug, s) => ReportsScreen(slug: slug)),
+          page('reports/:week', (slug, s) => ReportScreen(slug: slug, week: s.pathParameters['week']!)),
         ],
       ),
     ],

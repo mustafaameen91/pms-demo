@@ -29,12 +29,13 @@ void main() {
   testWidgets(skip: !_enabled, 'member home · ar · dark', (t) => shot(t, 'home_member_ar_dark', signedIn(lastSlug: 'al-noor', locale: 'ar', theme: 'dark'), height: 1500));
   testWidgets(skip: !_enabled, 'manager home · en · light', (t) => shot(t, 'home_manager_en_light', signedIn(lastSlug: 'towers'), height: 2100));
   testWidgets(skip: !_enabled, 'manager home · ar · light', (t) => shot(t, 'home_manager_ar_light', signedIn(lastSlug: 'towers', locale: 'ar'), height: 2100));
-  Future<void> flow(WidgetTester tester, String name, List<String> taps, {String? locale, String? theme, double height = 852}) async {
+  Future<void> flow(WidgetTester tester, String name, List<String> taps, {String? locale, String? theme, double height = 852, bool manager = false}) async {
     phone(tester);
     tester.view.physicalSize = Size(1179, height * 3);
-    final me = meJson(workspaces: [wsJson('al-noor', 'Al-Noor Construction', unread: 1)]);
+    final ws = manager ? wsJson('towers', 'Baghdad Towers', role: 'admin', view: 'manager') : wsJson('al-noor', 'Al-Noor Construction', unread: 1);
+    final me = meJson(workspaces: [ws]);
     final api = FakeApi()..meData = me;
-    await pumpApp(tester, api: api, saved: signedIn(lastSlug: 'al-noor', me: me, locale: locale, theme: theme));
+    await pumpApp(tester, api: api, saved: signedIn(lastSlug: ws['slug'] as String, me: me, locale: locale, theme: theme));
     for (final t in taps) {
       await tester.tap(find.text(t).first);
       await settle(tester);
@@ -54,5 +55,14 @@ void main() {
   testWidgets(skip: !_enabled, 'expense · en', (t) => flow(t, 'expense_en_light', ['More', 'Expenses & receipts', 'Add expense'], height: 1500));
   testWidgets(skip: !_enabled, 'loans · en · dark', (t) => flow(t, 'loans_en_dark', ['More', 'My loans'], theme: 'dark'));
   testWidgets(skip: !_enabled, 'member home · en · tabs', (t) => flow(t, 'home_tabs_en_light', [], height: 1300));
+  testWidgets(skip: !_enabled, 'approvals · en', (t) => flow(t, 'approvals_en_light', ['Approvals'], manager: true, height: 1100));
+  testWidgets(skip: !_enabled, 'approvals · ar · dark', (t) => flow(t, 'approvals_ar_dark', ['الموافقات'], manager: true, locale: 'ar', theme: 'dark'));
+  testWidgets(skip: !_enabled, 'projects · en', (t) => flow(t, 'projects_en_light', ['Projects'], manager: true));
+  testWidgets(skip: !_enabled, 'project · en', (t) => flow(t, 'project_en_light', ['Projects', 'Riverside Clinic'], manager: true, height: 1900));
+  testWidgets(skip: !_enabled, 'attendance · en', (t) => flow(t, 'attendance_en_light', ['Projects', 'Riverside Clinic', 'Attendance', 'Ahmed Mason'], manager: true));
+  testWidgets(skip: !_enabled, 'risks · en', (t) => flow(t, 'risks_en_light', ['Projects', 'Riverside Clinic', 'Risks'], manager: true));
+  testWidgets(skip: !_enabled, 'risk form · en', (t) => flow(t, 'riskform_en_light', ['Projects', 'Riverside Clinic', 'Risks', 'Raise a risk'], manager: true, height: 1100));
+  testWidgets(skip: !_enabled, 'report · en', (t) => flow(t, 'report_en_light', ['More', 'Weekly reports', 'Oct 10 – Oct 16'], manager: true));
+  testWidgets(skip: !_enabled, 'manager home tabs · en', (t) => flow(t, 'home_manager_tabs_en_light', [], manager: true, height: 2200));
   testWidgets(skip: !_enabled, 'manager home · en · dark', (t) => shot(t, 'home_manager_en_dark', signedIn(lastSlug: 'towers', theme: 'dark')));
 }

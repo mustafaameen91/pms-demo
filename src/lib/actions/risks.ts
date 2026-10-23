@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refreshPage } from "@/lib/refresh-page";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
@@ -160,7 +160,7 @@ export async function saveRisk(projectId: string, riskId: string | null, input: 
       email: true,
     });
   }
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -182,6 +182,6 @@ export async function deleteRisk(riskId: string): Promise<Result> {
       data: { number: risk.number, title: risk.title },
     });
   });
-  refresh();
+  refreshPage();
   return { ok: true };
 }

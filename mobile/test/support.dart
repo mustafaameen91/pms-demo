@@ -197,8 +197,9 @@ Json taskDetailJson({String id = 't1', bool canEdit = true, List<Json> comments 
   'photos': <Json>[],
 };
 
-/// Answers for the member screens' GETs.
+/// Answers for the member and manager screens' GETs.
 Map<String, Json> memberFixtures() => {
+  ...managerFixtures(),
   '/tasks': {
     'today': '2026-10-23',
     'done': 4,
@@ -399,3 +400,139 @@ Future<void> loadFonts() async {
     await loader.load();
   }
 }
+
+Json _health({String id = 'p1', String name = 'Riverside Clinic'}) => {
+  'id': id,
+  'key': 'CLIN',
+  'name': name,
+  'color': '#0d9488',
+  'currency': 'IQD',
+  'endDate': '2026-12-31',
+  'daysLeft': 69,
+  'overdue': false,
+  'actual': 42.5,
+  'planned': 55.0,
+  'schedule': 'behind',
+  'budget': 250000000,
+  'spent': 262000000,
+  'usedPct': 104.8,
+  'overBudget': true,
+  'headingOver': false,
+  'pendingApproval': 0,
+  'forecast': {'final': 616470588, 'overBy': 366470588, 'overPct': 146.6, 'health': 'bad', 'early': false},
+  'late': 2,
+  'attention': 9,
+};
+
+/// Answers for the manager screens' GETs (approvals, health, attendance, risks, reports).
+Map<String, Json> managerFixtures() => {
+  '/approvals': {
+    'canLoans': true,
+    'expenses': [
+      {'id': 'e1', 'date': '2026-10-22', 'amount': '1200000.00', 'currency': 'IQD', 'description': 'Scaffolding rental', 'payee': 'Al-Bina', 'requester': 'Mona Ali', 'project': {'key': 'CLIN', 'name': 'Riverside Clinic'}, 'advance': false, 'mine': false},
+      {'id': 'e2', 'date': '2026-10-21', 'amount': '90000.00', 'currency': 'IQD', 'description': 'Fuel for the generator', 'payee': null, 'requester': 'Sara Kareem', 'project': {'key': 'CLIN', 'name': 'Riverside Clinic'}, 'advance': false, 'mine': true},
+    ],
+    'hours': [
+      {'id': 'h9', 'date': '2026-10-22', 'hours': '9.00', 'note': 'Night pour', 'person': 'Mona Ali', 'project': {'id': 'p1', 'key': 'CLIN', 'name': 'Riverside Clinic'}, 'task': {'key': 'CLIN-1', 'title': 'Pour foundation slab'}},
+    ],
+    'loans': [
+      {'id': 'r9', 'amount': '600.00', 'currency': 'USD', 'reason': 'Tools for site', 'person': 'Mona Ali', 'createdAt': '2026-10-22T09:00:00Z'},
+    ],
+  },
+  '/health': {'projects': [_health(), _health(id: 'p2', name: 'Al-Mansour School')..['schedule'] = 'on_track'..['overBudget'] = false..['late'] = 0]},
+  '/health/p1': {
+    'project': _health(),
+    'late': [
+      {'id': 't1', 'key': 'CLIN-1', 'title': 'Pour foundation slab', 'dueDate': '2026-10-20', 'progress': 40, 'status': {'name': 'In progress', 'color': '#2563eb', 'category': 'in_progress'}},
+    ],
+    'upcoming': <Json>[],
+    'risks': [
+      {'id': 'rk1', 'key': 'R-1', 'title': 'Rain delays the pour', 'score': 16, 'level': 'high', 'owner': 'Omar Hassan'},
+    ],
+  },
+  '/projects/p1/attendance': {
+    'date': '2026-10-23',
+    'today': '2026-10-23',
+    'workers': [
+      {'id': 'w1', 'name': 'Ahmed Mason', 'role': 'Mason', 'unit': 'day', 'unitLabel': 'day', 'defaultQuantity': 1, 'onProject': true},
+      {'id': 'w2', 'name': 'Karim Electrician', 'role': 'Electrician', 'unit': 'hour', 'unitLabel': 'hour', 'defaultQuantity': 8, 'onProject': false},
+    ],
+    'recorded': <Json>[],
+  },
+  '/projects/p1/risks': {
+    'manager': true,
+    'categories': [
+      {'value': 'schedule', 'label': 'Schedule'},
+      {'value': 'weather', 'label': 'Weather & site'},
+    ],
+    'statuses': [
+      {'value': 'open', 'label': 'Open'},
+      {'value': 'watching', 'label': 'Watching'},
+      {'value': 'closed', 'label': 'Closed'},
+    ],
+    'likelihood': [for (final (i, x) in ['Rare', 'Unlikely', 'Possible', 'Likely', 'Almost certain'].indexed) {'value': i + 1, 'label': x}],
+    'impact': [for (final (i, x) in ['Negligible', 'Minor', 'Moderate', 'Major', 'Severe'].indexed) {'value': i + 1, 'label': x}],
+    'people': [
+      {'id': 'u1', 'name': 'Mona Ali'},
+      {'id': 'u2', 'name': 'Omar Hassan'},
+    ],
+    'risks': [
+      {
+        'id': 'rk1',
+        'key': 'R-1',
+        'title': 'Rain delays the pour',
+        'description': null,
+        'category': 'weather',
+        'likelihood': 4,
+        'impact': 4,
+        'score': 16,
+        'level': 'high',
+        'mitigation': 'Cover the slab; move the pour to dry days.',
+        'status': 'open',
+        'owner': {'id': 'u2', 'name': 'Omar Hassan'},
+        'task': null,
+        'canEdit': true,
+      },
+    ],
+  },
+  '/reports': {
+    'reports': [
+      {'start': '2026-10-10', 'end': '2026-10-16', 'headline': {'projects': 2, 'behind': 1, 'overBudget': 1, 'headingOver': 0, 'late': 2, 'done': 3}},
+    ],
+  },
+  '/reports/2026-10-10': {
+    'start': '2026-10-10',
+    'end': '2026-10-16',
+    'headline': {'projects': 1, 'behind': 1, 'overBudget': 1, 'headingOver': 0, 'late': 2, 'done': 3},
+    'projects': [
+      {
+        'id': 'p1',
+        'key': 'CLIN',
+        'name': 'Riverside Clinic',
+        'leadId': 'u2',
+        'currency': 'IQD',
+        'actual': 42.5,
+        'change': 6.5,
+        'planned': 55,
+        'schedule': 'behind',
+        'budget': 250000000,
+        'spent': 262000000,
+        'spentThisWeek': 12000000,
+        'overBudget': true,
+        'forecast': null,
+        'late': [
+          {'number': 1, 'title': 'Pour foundation slab', 'dueDate': '2026-10-20'},
+        ],
+        'lateCount': 2,
+        'done': [
+          {'number': 4, 'title': 'Site survey'},
+        ],
+        'doneCount': 3,
+        'risks': [
+          {'number': 1, 'title': 'Rain delays the pour', 'likelihood': 4, 'impact': 4},
+        ],
+        'newRisks': 1,
+      },
+    ],
+  },
+};

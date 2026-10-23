@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../theme/theme.dart';
 import '../../widgets/brand.dart';
@@ -17,6 +18,7 @@ class MoreScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final me = ref.watch(sessionProvider.select((s) => s.me));
+    final manager = (ref.watch(homeProvider(slug).select((h) => h.value?.view)) ?? me?.workspace(slug)?.view) == HomeView.manager;
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -25,6 +27,15 @@ class MoreScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xxl),
             sliver: SliverList.list(
               children: [
+                // Managers' own work lives here (their tabs are Projects and Approvals).
+                if (manager) ...[
+                  _Tile(icon: Icons.task_alt_rounded, tone: Tone.info, title: l.myTasks, subtitle: l.myTasksHint, onTap: () => context.go('/w/$slug/tasks')),
+                  const SizedBox(height: Space.md),
+                  _Tile(icon: Icons.schedule_rounded, tone: Tone.info, title: l.myHours, subtitle: l.myHoursHint, onTap: () => context.go('/w/$slug/hours')),
+                  const SizedBox(height: Space.md),
+                  _Tile(icon: Icons.insert_chart_outlined_rounded, tone: Tone.success, title: l.weeklyReports, subtitle: l.weeklyReportsHint, onTap: () => context.push('/w/$slug/reports')),
+                  const SizedBox(height: Space.xxl),
+                ],
                 _Tile(icon: Icons.assignment_rounded, tone: Tone.info, title: l.siteLog, subtitle: l.siteLogHint, onTap: () => context.push('/w/$slug/site-log')),
                 const SizedBox(height: Space.md),
                 _Tile(icon: Icons.photo_library_rounded, tone: Tone.success, title: l.photos, subtitle: l.photosHint, onTap: () => context.push('/w/$slug/photos')),

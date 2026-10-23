@@ -78,7 +78,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: InlineBanner(icon: Icons.cloud_off_rounded, message: context.l10n.showingSaved, tone: Tone.warning),
           ),
         if (view == HomeView.manager) ...managerHome(context, slug, data) else ...memberHome(context, slug, data),
-        if (view == HomeView.manager) ...[const SizedBox(height: Space.xxl), const ComingSoonNote()],
       ];
     }
 

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/models.dart';
 import '../../core/providers.dart';
 import '../../widgets/common.dart';
 
@@ -18,7 +19,8 @@ class WorkspaceShell extends ConsumerStatefulWidget {
 }
 
 class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
-  static const _paths = ['/home', '/tasks', '/hours', '/inbox', '/more'];
+  // Branch order in the router: home, tasks, hours, inbox, more, projects, approvals.
+  static const _paths = ['/home', '/tasks', '/hours', '/inbox', '/more', '/projects', '/approvals'];
 
   @override
   void initState() {
@@ -32,27 +34,45 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final unread = ref.watch(homeProvider(widget.slug).select((h) => h.value?.unread ?? 0));
-    final index = widget.shell.currentIndex;
+    final home = ref.watch(homeProvider(widget.slug).select((h) => h.value));
+    final view = home?.view ?? ref.watch(sessionProvider.select((s) => s.me?.workspace(widget.slug)?.view)) ?? HomeView.member;
+    final unread = home?.unread ?? 0;
+    final waiting = home?.manage?.approvals.total ?? 0;
+    final manager = view == HomeView.manager;
+
+    Widget badge(int n, IconData icon) => Badge(isLabelVisible: n > 0, label: Text('$n'), child: Icon(icon));
+    // (branch, outlined icon, filled icon, label, badge)
+    final items = manager
+        ? [
+            (0, Icons.home_outlined, Icons.home_rounded, l.navHome, 0),
+            (5, Icons.insights_outlined, Icons.insights_rounded, l.navProjects, 0),
+            (6, Icons.fact_check_outlined, Icons.fact_check_rounded, l.navApprovals, waiting),
+            (3, Icons.notifications_none_rounded, Icons.notifications_rounded, l.navInbox, unread),
+            (4, Icons.grid_view_outlined, Icons.grid_view_rounded, l.navMore, 0),
+          ]
+        : [
+            (0, Icons.home_outlined, Icons.home_rounded, l.navHome, 0),
+            (1, Icons.task_alt_outlined, Icons.task_alt_rounded, l.navTasks, 0),
+            (2, Icons.schedule_outlined, Icons.schedule_rounded, l.navHours, 0),
+            (3, Icons.notifications_none_rounded, Icons.notifications_rounded, l.navInbox, unread),
+            (4, Icons.grid_view_outlined, Icons.grid_view_rounded, l.navMore, 0),
+          ];
+    final branch = widget.shell.currentIndex;
+    // A screen opened from More (e.g. a manager's own tasks) keeps More highlighted.
+    final selected = items.indexWhere((i) => i.$1 == branch);
+
     return Scaffold(
       body: widget.shell,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
+        selectedIndex: selected < 0 ? items.length - 1 : selected,
         onDestinationSelected: (i) {
           HapticFeedback.selectionClick();
           // Tapping the open tab again goes back to its start (e.g. Tasks unfiltered).
-          context.go('/w/${widget.slug}${_paths[i]}');
+          context.go('/w/${widget.slug}${_paths[items[i].$1]}');
         },
         destinations: [
-          NavigationDestination(icon: const Icon(Icons.home_outlined), selectedIcon: const Icon(Icons.home_rounded), label: l.navHome),
-          NavigationDestination(icon: const Icon(Icons.task_alt_outlined), selectedIcon: const Icon(Icons.task_alt_rounded), label: l.navTasks),
-          NavigationDestination(icon: const Icon(Icons.schedule_outlined), selectedIcon: const Icon(Icons.schedule_rounded), label: l.navHours),
-          NavigationDestination(
-            icon: Badge(isLabelVisible: unread > 0, label: Text('$unread'), child: const Icon(Icons.notifications_none_rounded)),
-            selectedIcon: Badge(isLabelVisible: unread > 0, label: Text('$unread'), child: const Icon(Icons.notifications_rounded)),
-            label: l.navInbox,
-          ),
-          NavigationDestination(icon: const Icon(Icons.grid_view_outlined), selectedIcon: const Icon(Icons.grid_view_rounded), label: l.navMore),
+          for (final (_, icon, filled, label, count) in items)
+            NavigationDestination(icon: badge(count, icon), selectedIcon: badge(count, filled), label: label),
         ],
       ),
     );

@@ -115,7 +115,6 @@
   "hours": "الساعات",
   "loans": "السُّلف",
   "nothingToApprove": "لا شيء بانتظارك. أنجزت كل شيء.",
-  "comingSoon": "الموافقة على المصروفات والساعات والسُّلف قادمة إلى التطبيق قريبًا. وافق عليها من الموقع حاليًا.",
   "account": "الحساب",
   "switchCompany": "تبديل الشركة",
   "language": "اللغة",
@@ -319,5 +318,134 @@
     }
   },
   "quickActions": "إجراءات سريعة",
-  "fieldRequired": "مطلوب"
+  "fieldRequired": "مطلوب",
+  "navProjects": "المشاريع",
+  "navApprovals": "الموافقات",
+  "approvals": "الموافقات",
+  "approve": "موافقة",
+  "reject": "رفض",
+  "approvedToast": "تمت الموافقة",
+  "rejectedToast": "تم الرفض",
+  "rejectWhy": "لماذا يُرفض؟",
+  "rejectWhyHint": "سيرى الشخص هذا السبب ليتمكن من التصحيح.",
+  "nothingWaiting": "لا شيء بانتظار قرارك.",
+  "requestedBy": "طلبها {name}",
+  "@requestedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "yourOwnRequest": "طلبك أنت — يقرر فيه موافِق آخر",
+  "loanAmountToLend": "المبلغ الممنوح",
+  "approveLoan": "الموافقة على السلفة",
+  "ahead": "متقدم",
+  "onTrack": "وفق الخطة",
+  "behind": "متأخر",
+  "done": "منجز",
+  "planned": "المخطط",
+  "budget": "الميزانية",
+  "spent": "المصروف",
+  "noBudget": "لا ميزانية محددة",
+  "expectedFinal": "الكلفة النهائية المتوقعة",
+  "overBy": "تجاوز بمقدار {amount}",
+  "@overBy": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "daysLeft": "{count, plural, zero{ينتهي اليوم} one{يوم واحد متبقٍ} two{يومان متبقيان} few{{count} أيام متبقية} many{{count} يومًا متبقيًا} other{{count} يوم متبقٍ}}",
+  "@daysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "daysOverdue": "{count, plural, one{تجاوز تاريخ الانتهاء بيوم} two{تجاوز تاريخ الانتهاء بيومين} few{تجاوز تاريخ الانتهاء بـ{count} أيام} many{تجاوز تاريخ الانتهاء بـ{count} يومًا} other{تجاوز تاريخ الانتهاء بـ{count} يوم}}",
+  "@daysOverdue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lateCount": "{count, plural, zero{لا مهام متأخرة} one{مهمة متأخرة واحدة} two{مهمتان متأخرتان} few{{count} مهام متأخرة} many{{count} مهمة متأخرة} other{{count} مهمة متأخرة}}",
+  "@lateCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "upcoming": "القادمة (14 يومًا)",
+  "noLate": "لا مهام متأخرة. أحسنت.",
+  "topRisks": "أبرز المخاطر",
+  "noRisks": "لا مخاطر مفتوحة.",
+  "noManagedProjects": "لا مشاريع جارية لإدارتها.",
+  "attendance": "الحضور",
+  "recordAttendance": "تسجيل الحضور",
+  "attendanceHint": "من عمل في الموقع وكم من الوقت. يملأ أيامهم المستخدمة وكلفتهم.",
+  "alreadyRecorded": "مسجَّل مسبقًا",
+  "noWorkers": "لا عمّال في مكتبة الموارد بعد. أضفهم من الموقع.",
+  "saveAttendanceCount": "{count, plural, zero{اختر العمّال} one{تسجيل عامل واحد} two{تسجيل عاملين} few{تسجيل {count} عمّال} many{تسجيل {count} عاملًا} other{تسجيل {count} عامل}}",
+  "@saveAttendanceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceSaved": "حُفظ الحضور",
+  "onThisProject": "في هذا المشروع",
+  "risks": "المخاطر",
+  "raiseRisk": "إضافة خطر",
+  "editRisk": "تعديل الخطر",
+  "riskTitle": "ما الذي قد يحدث خطأ؟",
+  "likelihood": "الاحتمال",
+  "impact": "الأثر",
+  "mitigation": "ما سنفعله حيال ذلك",
+  "riskOwner": "المسؤول",
+  "noOwner": "بلا مسؤول",
+  "riskSaved": "حُفظ الخطر",
+  "score": "الدرجة {score}",
+  "@score": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "levelHigh": "عالٍ",
+  "levelMedium": "متوسط",
+  "levelLow": "منخفض",
+  "weeklyReports": "التقارير الأسبوعية",
+  "weeklyReportsHint": "الأسبوع الماضي للمشاريع التي تديرها",
+  "noReports": "لا تقارير بعد. يُعدّ أول تقرير بعد انتهاء الأسبوع (الجمعة).",
+  "progressChange": "{change} نقطة هذا الأسبوع",
+  "@progressChange": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "spentThisWeek": "المصروف هذا الأسبوع",
+  "finishedThisWeek": "أُنجز هذا الأسبوع",
+  "newRisksCount": "{count, plural, zero{لا مخاطر جديدة} one{خطر جديد واحد} two{خطران جديدان} few{{count} مخاطر جديدة} many{{count} خطرًا جديدًا} other{{count} خطر جديد}}",
+  "@newRisksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealth": "صحة المشروع",
+  "actions": "الإجراءات",
+  "myTasksHint": "المهام المسندة إليك",
+  "myHoursHint": "وقتك أنت",
+  "workersLabel": "العمّال"
 }

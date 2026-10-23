@@ -25,9 +25,9 @@ List<Widget> managerHome(BuildContext context, String slug, Home home) {
   final m = home.manage!;
   return [
     SectionTitle(l.waitingApproval, trailing: m.approvals.total > 0 ? _Count('${m.approvals.total}') : null),
-    Entrance(delay: const Duration(milliseconds: 180), child: ApprovalsCard(approvals: m.approvals, showLoans: home.role.isAdmin)),
+    Entrance(delay: const Duration(milliseconds: 180), child: ApprovalsCard(slug: slug, approvals: m.approvals, showLoans: home.role.isAdmin)),
     SectionTitle(home.role.isAdmin ? l.allProjects : l.projectsYouManage),
-    Entrance(delay: const Duration(milliseconds: 220), child: ProjectsCard(manage: m)),
+    Entrance(delay: const Duration(milliseconds: 220), child: ProjectsCard(slug: slug, manage: m)),
     SectionTitle(l.myTasks, trailing: _Count(l.openTasks(home.myTasks.open))),
     Entrance(delay: const Duration(milliseconds: 260), child: TaskBreakdownCard(slug: slug, tasks: home.myTasks)),
     const SizedBox(height: Space.lg),
@@ -203,7 +203,8 @@ class TaskBreakdownCard extends StatelessWidget {
 }
 
 class ApprovalsCard extends StatelessWidget {
-  const ApprovalsCard({super.key, required this.approvals, required this.showLoans});
+  const ApprovalsCard({super.key, required this.slug, required this.approvals, required this.showLoans});
+  final String slug;
   final Approvals approvals;
 
   /// Loan requests go to owners and admins only.
@@ -212,6 +213,7 @@ class ApprovalsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    void open() => context.go('/w/$slug/approvals');
     if (approvals.total == 0) {
       return AppCard(
         child: Row(
@@ -227,12 +229,12 @@ class ApprovalsCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.sm),
       child: Column(
         children: [
-          MetricRow(icon: Icons.receipt_long_rounded, label: l.expenses, value: approvals.expenses, tone: Tone.info),
+          MetricRow(icon: Icons.receipt_long_rounded, label: l.expenses, value: approvals.expenses, tone: Tone.info, onTap: open),
           const Divider(indent: 50),
-          MetricRow(icon: Icons.schedule_rounded, label: l.hours, value: approvals.hours, tone: Tone.info),
+          MetricRow(icon: Icons.schedule_rounded, label: l.hours, value: approvals.hours, tone: Tone.info, onTap: open),
           if (showLoans) ...[
             const Divider(indent: 50),
-            MetricRow(icon: Icons.payments_outlined, label: l.loans, value: approvals.loans, tone: Tone.info),
+            MetricRow(icon: Icons.payments_outlined, label: l.loans, value: approvals.loans, tone: Tone.info, onTap: open),
           ],
         ],
       ),
@@ -241,7 +243,8 @@ class ApprovalsCard extends StatelessWidget {
 }
 
 class ProjectsCard extends StatelessWidget {
-  const ProjectsCard({super.key, required this.manage});
+  const ProjectsCard({super.key, required this.slug, required this.manage});
+  final String slug;
   final Manage manage;
 
   @override
@@ -249,6 +252,7 @@ class ProjectsCard extends StatelessWidget {
     final l = context.l10n;
     final p = context.palette;
     final m = manage;
+    void open() => context.go('/w/$slug/projects');
     if (m.projects == 0) {
       return AppCard(
         child: Row(
@@ -294,11 +298,11 @@ class ProjectsCard extends StatelessWidget {
           ),
           const SizedBox(height: Space.md),
           const Divider(),
-          MetricRow(icon: Icons.money_off_rounded, label: l.overBudget, value: m.overBudget, tone: Tone.danger),
+          MetricRow(icon: Icons.money_off_rounded, label: l.overBudget, value: m.overBudget, tone: Tone.danger, onTap: open),
           const Divider(indent: 50),
-          MetricRow(icon: Icons.speed_rounded, label: l.headingOver, value: m.headingOver, tone: Tone.warning),
+          MetricRow(icon: Icons.speed_rounded, label: l.headingOver, value: m.headingOver, tone: Tone.warning, onTap: open),
           const Divider(indent: 50),
-          MetricRow(icon: Icons.event_busy_rounded, label: l.lateTasks, value: m.lateTasks, tone: Tone.danger),
+          MetricRow(icon: Icons.event_busy_rounded, label: l.lateTasks, value: m.lateTasks, tone: Tone.danger, onTap: open),
         ],
       ),
     );
@@ -348,24 +352,6 @@ class _Legend extends StatelessWidget {
         Container(width: 10, height: 10, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
         const SizedBox(width: 6),
         Text(label, style: context.text.bodySmall),
-      ],
-    );
-  }
-}
-
-/// Managers: approving is still on the website (arrives with 23d).
-class ComingSoonNote extends StatelessWidget {
-  const ComingSoonNote({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.info_outline_rounded, size: 18, color: p.muted),
-        const SizedBox(width: Space.sm),
-        Expanded(child: Text(context.l10n.comingSoon, style: context.text.bodySmall)),
       ],
     );
   }

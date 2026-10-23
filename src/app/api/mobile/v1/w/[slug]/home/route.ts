@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { projects, timeEntries } from "@/lib/db/schema";
@@ -11,6 +12,9 @@ import { getProjectHealth } from "@/lib/data/project-health";
 import { dueGroup } from "@/lib/my-tasks-groups";
 import { isWorkspaceAdmin } from "@/lib/permissions";
 import { todayISO } from "@/lib/accomplishment";
+import { ensureLateTaskNotifications } from "@/lib/notifications";
+import { sweepLateTaskAutomations } from "@/lib/automation-runner";
+import { ensureWeeklyReport } from "@/lib/weekly-report-server";
 
 /**
  * GET → the home screen for this company. Everyone gets their own tasks;
@@ -23,6 +27,11 @@ export async function GET(request: Request, ctx: RouteContext<"/api/mobile/v1/w/
   if (authed instanceof Response) return authed;
   const { user, workspace } = authed;
   const admin = isWorkspaceAdmin(workspace.role);
+  // What the website does when it's opened (there is no background scheduler):
+  // late-task reminders now, automations and last week's report after answering.
+  await ensureLateTaskNotifications(user.id, workspace.id);
+  after(() => sweepLateTaskAutomations(workspace.id));
+  after(() => ensureWeeklyReport(workspace.id));
   const today = todayISO();
 
   const visible = await visibleProjectIds(workspace.id, user.id, workspace.role);

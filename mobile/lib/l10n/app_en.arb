@@ -115,7 +115,6 @@
   "hours": "Hours",
   "loans": "Loans",
   "nothingToApprove": "Nothing is waiting for you. All caught up.",
-  "comingSoon": "Approving expenses, hours and loans is coming to the app next. For now, approve them on the website.",
   "account": "Account",
   "switchCompany": "Switch company",
   "language": "Language",
@@ -319,5 +318,134 @@
     }
   },
   "quickActions": "Quick actions",
-  "fieldRequired": "Required"
+  "fieldRequired": "Required",
+  "navProjects": "Projects",
+  "navApprovals": "Approvals",
+  "approvals": "Approvals",
+  "approve": "Approve",
+  "reject": "Reject",
+  "approvedToast": "Approved",
+  "rejectedToast": "Rejected",
+  "rejectWhy": "Why is it rejected?",
+  "rejectWhyHint": "The person sees this, so they can fix it.",
+  "nothingWaiting": "Nothing is waiting for your decision.",
+  "requestedBy": "Requested by {name}",
+  "@requestedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "yourOwnRequest": "Your own request — another approver decides",
+  "loanAmountToLend": "Amount to lend",
+  "approveLoan": "Approve loan",
+  "ahead": "Ahead",
+  "onTrack": "On track",
+  "behind": "Behind",
+  "done": "Done",
+  "planned": "Planned",
+  "budget": "Budget",
+  "spent": "Spent",
+  "noBudget": "No budget set",
+  "expectedFinal": "Expected final cost",
+  "overBy": "Over by {amount}",
+  "@overBy": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "daysLeft": "{count, plural, =0{Ends today} =1{1 day left} other{{count} days left}}",
+  "@daysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "daysOverdue": "{count, plural, =1{1 day past the end date} other{{count} days past the end date}}",
+  "@daysOverdue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lateCount": "{count, plural, =0{No late tasks} =1{1 late task} other{{count} late tasks}}",
+  "@lateCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "upcoming": "Coming up (14 days)",
+  "noLate": "No late tasks. Well done.",
+  "topRisks": "Top risks",
+  "noRisks": "No open risks.",
+  "noManagedProjects": "No active projects to manage.",
+  "attendance": "Attendance",
+  "recordAttendance": "Record attendance",
+  "attendanceHint": "Who worked on site and for how long. It fills in their used days and cost.",
+  "alreadyRecorded": "Already recorded",
+  "noWorkers": "No workers in the resource library yet. Add them on the website.",
+  "saveAttendanceCount": "{count, plural, =0{Choose workers} =1{Record 1 worker} other{Record {count} workers}}",
+  "@saveAttendanceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceSaved": "Attendance saved",
+  "onThisProject": "On this project",
+  "risks": "Risks",
+  "raiseRisk": "Raise a risk",
+  "editRisk": "Edit risk",
+  "riskTitle": "What could go wrong?",
+  "likelihood": "Likelihood",
+  "impact": "Impact",
+  "mitigation": "What we will do about it",
+  "riskOwner": "Owner",
+  "noOwner": "No owner",
+  "riskSaved": "Risk saved",
+  "score": "Score {score}",
+  "@score": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "levelHigh": "High",
+  "levelMedium": "Medium",
+  "levelLow": "Low",
+  "weeklyReports": "Weekly reports",
+  "weeklyReportsHint": "Last week for the projects you manage",
+  "noReports": "No reports yet. The first one is made after the week ends (Friday).",
+  "progressChange": "{change} pts this week",
+  "@progressChange": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "spentThisWeek": "Spent this week",
+  "finishedThisWeek": "Finished this week",
+  "newRisksCount": "{count, plural, =0{No new risks} =1{1 new risk} other{{count} new risks}}",
+  "@newRisksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealth": "Project health",
+  "actions": "Actions",
+  "myTasksHint": "Tasks given to you",
+  "myHoursHint": "Your own time",
+  "workersLabel": "Workers"
 }

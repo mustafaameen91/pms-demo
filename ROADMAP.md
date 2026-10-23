@@ -209,7 +209,7 @@ Lives in `mobile/`, fully separate from the web app. Libraries are only added wi
 - [x] My tasks (status, progress), log my hours, site log, photos / receipts, comments, inbox, my loans
 
 ### 23d — Manager & admin screens
-- [ ] Project health, approvals (expenses, hours, loans), worker attendance, risks, weekly report
+- [x] Project health, approvals (expenses, hours, loans), worker attendance, risks, weekly report
 
 ### 23e — Publishing
 - [ ] Google Play ($25 once) and Apple App Store ($99 per year) — accounts in your name
