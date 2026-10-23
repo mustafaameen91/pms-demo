@@ -202,8 +202,8 @@ Lives in `mobile/`, fully separate from the web app. Libraries are only added wi
 - [x] Same permission rules as the website (the server decides, never the app)
 
 ### 23b — App skeleton
-- [ ] Login, choose company, home that changes with the role (member vs manager / admin)
-- [ ] Arabic & English with right-to-left, the app's teal style, light / dark
+- [x] Login, choose company, home that changes with the role (member vs manager / admin)
+- [x] Arabic & English with right-to-left, the app's teal style, light / dark
 
 ### 23c — Member screens
 - [ ] My tasks (status, progress), log my hours, site log, photos / receipts, comments, inbox, my loans
