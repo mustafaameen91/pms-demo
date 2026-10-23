@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refreshPage } from "@/lib/refresh-page";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
@@ -148,7 +148,7 @@ export async function logHours(projectId: string, input: HoursInput, entryId: st
       dedupeKey: `time:${projectId}:${user.id}:${d.date}`,
     });
   }
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -246,7 +246,7 @@ export async function recordAttendance(projectId: string, input: AttendanceInput
     data: { count: names.length, names: names.join(", "), date: d.date },
   });
   await checkOverBudget(projectId, user.id);
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -291,7 +291,7 @@ export async function decideTimeEntry(entryId: string, input: z.input<typeof dec
       link: `/w/${auth.slug}/p/${auth.project.key}/timesheets?week=${entry.date}`,
     });
   }
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -314,7 +314,7 @@ export async function deleteTimeEntry(entryId: string): Promise<Result> {
     type: "time.deleted",
     data: { quantity: entry.quantity, unit: entry.unit, date: entry.date },
   });
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -363,6 +363,6 @@ export async function saveSiteLog(projectId: string, input: SiteLogInput): Promi
     type: "sitelog.saved",
     data: { date: d.date, problems: Boolean(d.problems) },
   });
-  refresh();
+  refreshPage();
   return { ok: true };
 }

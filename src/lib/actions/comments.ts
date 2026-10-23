@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refreshPage } from "@/lib/refresh-page";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById, type WorkspaceRole } from "@/lib/auth/session";
@@ -93,7 +93,7 @@ export async function addComment(taskId: string, input: z.input<typeof commentSc
     });
   }
 
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -117,7 +117,7 @@ export async function editComment(commentId: string, input: z.input<typeof comme
     .update(comments)
     .set({ body: parsed.data.body, mentions, editedAt: new Date() })
     .where(eq(comments.id, commentId));
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -127,6 +127,6 @@ export async function deleteComment(commentId: string): Promise<Result> {
   if (!auth) return { ok: false, error: t("Comment not found") };
   if (!auth.isAuthor && !auth.isAdmin) return { ok: false, error: t("You can only delete your own comments.") };
   await db.delete(comments).where(eq(comments.id, commentId));
-  refresh();
+  refreshPage();
   return { ok: true };
 }

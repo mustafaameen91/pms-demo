@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,7 +49,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref.read(sessionProvider.notifier).signIn(_email.text.trim(), _password.text);
       TextInput.finishAutofillContext();
-      await HapticFeedback.lightImpact();
+      unawaited(HapticFeedback.lightImpact());
       // The router moves on by itself.
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -55,7 +57,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _busy = false;
         _error = errorText(context, e);
       });
-      await HapticFeedback.mediumImpact();
+      unawaited(HapticFeedback.mediumImpact());
     }
   }
 

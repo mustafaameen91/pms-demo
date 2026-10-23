@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refreshPage } from "@/lib/refresh-page";
 import { and, eq, isNull, max, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
@@ -115,7 +115,7 @@ export async function createTask(input: z.input<typeof createSchema>): Promise<R
   });
 
   const notes = parentId ? [] : await runAutomations({ type: "task.created", projectId, taskId: created.id }, user.id, t);
-  refresh();
+  refreshPage();
   return { ok: true, data: { number: created.number }, ...(notes.length && { info: notes.join(" · ") }) };
 }
 
@@ -162,7 +162,7 @@ export async function moveTask(taskId: string, statusId: string, position: numbe
     : [];
   const repeat = statusChanged && status.category === "done" ? await spawnNextOccurrence(taskId, user.id, t) : undefined;
   const info = [repeat, ...notes].filter(Boolean).join(" · ");
-  refresh();
+  refreshPage();
   if (info) return { ok: true, info };
   if (statusChanged && status.category !== "todo" && status.category !== "backlog") {
     const { open } = await predecessorState(taskId);
@@ -366,7 +366,7 @@ export async function updateTask(taskId: string, patch: TaskPatch): Promise<Resu
     const repeat = st?.category === "done" ? await spawnNextOccurrence(taskId, user.id, t) : undefined;
     info = [repeat, ...notes].filter(Boolean).join(" · ") || undefined;
   }
-  refresh();
+  refreshPage();
   if (info) return { ok: true, info };
 
   // Saved; now tell the user if this breaks a dependency.
@@ -431,7 +431,7 @@ export async function addDependency(taskId: string, dependsOnId: string): Promis
       data: { number: other.number, title: other.title },
     });
   });
-  refresh();
+  refreshPage();
   return startsTooEarly(task.startDate, other.dueDate)
     ? { ok: true, warning: t("This task starts before “{title}” ends. Consider moving its start date.", { title: other.title }) }
     : { ok: true };
@@ -458,7 +458,7 @@ export async function removeDependency(taskId: string, dependsOnId: string): Pro
       data: { number: other?.number, title: other?.title },
     });
   });
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -487,7 +487,7 @@ export async function deleteTask(taskId: string): Promise<Result> {
     });
   });
 
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -515,6 +515,6 @@ export async function restoreTask(taskId: string): Promise<Result> {
     });
   });
 
-  refresh();
+  refreshPage();
   return { ok: true };
 }

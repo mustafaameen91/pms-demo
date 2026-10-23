@@ -150,6 +150,9 @@ ThemeData buildTheme(Brightness brightness, {required bool arabic}) {
           onPrimaryContainer: Color(0xFFB8F5EC),
           secondary: Color(0xFF9BA7AB),
           onSecondary: Color(0xFF0E1A20),
+          // Selected chips and the active tab: the brand's teal, not grey.
+          secondaryContainer: Color(0xFF0C3B38),
+          onSecondaryContainer: Color(0xFFB8F5EC),
           tertiary: Color(0xFFFF8904),
           onTertiary: Color(0xFF261100),
           error: Color(0xFFFF6467),
@@ -172,6 +175,9 @@ ThemeData buildTheme(Brightness brightness, {required bool arabic}) {
           onPrimaryContainer: Brand.teal900,
           secondary: Color(0xFF58666D),
           onSecondary: Colors.white,
+          // Selected chips and the active tab: the brand's teal, not grey.
+          secondaryContainer: Brand.teal100,
+          onSecondaryContainer: Brand.teal900,
           tertiary: Color(0xFFC2410C),
           onTertiary: Colors.white,
           error: Color(0xFFC10007),

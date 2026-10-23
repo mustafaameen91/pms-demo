@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../../core/models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/motion.dart';
+import '../hours/hours_screen.dart';
 
 // The home screen's cards. Everything here is stateless and built from one
 // immutable Home, so a refresh only rebuilds what actually changed.
 
-List<Widget> memberHome(BuildContext context, Home home) => [
+/// Opens My tasks, filtered to one due group (or all).
+void openTasks(BuildContext context, String slug, [String? group]) => context.go('/w/$slug/tasks${group == null ? '' : '?group=$group'}');
+
+List<Widget> memberHome(BuildContext context, String slug, Home home) => [
+  Entrance(delay: const Duration(milliseconds: 150), child: QuickActions(slug: slug)),
   SectionTitle(context.l10n.myTasks, trailing: _Count(context.l10n.openTasks(home.myTasks.open))),
-  Entrance(delay: const Duration(milliseconds: 180), child: TaskBreakdownCard(tasks: home.myTasks)),
+  Entrance(delay: const Duration(milliseconds: 180), child: TaskBreakdownCard(slug: slug, tasks: home.myTasks)),
 ];
 
-List<Widget> managerHome(BuildContext context, Home home) {
+List<Widget> managerHome(BuildContext context, String slug, Home home) {
   final l = context.l10n;
   final m = home.manage!;
   return [
@@ -22,7 +29,9 @@ List<Widget> managerHome(BuildContext context, Home home) {
     SectionTitle(home.role.isAdmin ? l.allProjects : l.projectsYouManage),
     Entrance(delay: const Duration(milliseconds: 220), child: ProjectsCard(manage: m)),
     SectionTitle(l.myTasks, trailing: _Count(l.openTasks(home.myTasks.open))),
-    Entrance(delay: const Duration(milliseconds: 260), child: TaskBreakdownCard(tasks: home.myTasks)),
+    Entrance(delay: const Duration(milliseconds: 260), child: TaskBreakdownCard(slug: slug, tasks: home.myTasks)),
+    const SizedBox(height: Space.lg),
+    QuickActions(slug: slug),
   ];
 }
 
@@ -37,7 +46,8 @@ class _Count extends StatelessWidget {
 // ── Focus cards (sit half on the teal header) ───────────────────────────
 
 class MemberFocusCard extends StatelessWidget {
-  const MemberFocusCard({super.key, required this.tasks});
+  const MemberFocusCard({super.key, required this.slug, required this.tasks});
+  final String slug;
   final TaskCounts tasks;
 
   @override
@@ -59,11 +69,11 @@ class MemberFocusCard extends StatelessWidget {
       child: IntrinsicHeight(
         child: Row(
           children: [
-            Expanded(child: _FocusStat(icon: Icons.error_outline_rounded, label: l.overdue, value: tasks.overdue, tone: Tone.danger)),
+            Expanded(child: _FocusStat(icon: Icons.error_outline_rounded, label: l.overdue, value: tasks.overdue, tone: Tone.danger, onTap: () => openTasks(context, slug, 'overdue'))),
             const _VDivider(),
-            Expanded(child: _FocusStat(icon: Icons.today_rounded, label: l.dueToday, value: tasks.today, tone: Tone.warning)),
+            Expanded(child: _FocusStat(icon: Icons.today_rounded, label: l.dueToday, value: tasks.today, tone: Tone.warning, onTap: () => openTasks(context, slug, 'today'))),
             const _VDivider(),
-            Expanded(child: _FocusStat(icon: Icons.date_range_rounded, label: l.thisWeek, value: tasks.week, tone: Tone.info)),
+            Expanded(child: _FocusStat(icon: Icons.date_range_rounded, label: l.thisWeek, value: tasks.week, tone: Tone.info, onTap: () => openTasks(context, slug, 'week'))),
           ],
         ),
       ),
@@ -106,17 +116,18 @@ class ManagerFocusCard extends StatelessWidget {
 }
 
 class _FocusStat extends StatelessWidget {
-  const _FocusStat({required this.icon, required this.label, required this.value, required this.tone});
+  const _FocusStat({required this.icon, required this.label, required this.value, required this.tone, this.onTap});
   final IconData icon;
   final String label;
   final int value;
   final Tone tone;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final zero = value == 0;
-    return MergeSemantics(
+    final stat = MergeSemantics(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: Space.xs),
         child: Column(
@@ -134,6 +145,8 @@ class _FocusStat extends StatelessWidget {
         ),
       ),
     );
+    if (onTap == null) return stat;
+    return InkWell(borderRadius: BorderRadius.circular(Radii.sm), onTap: onTap, child: Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: stat));
   }
 }
 
@@ -148,7 +161,8 @@ class _VDivider extends StatelessWidget {
 // ── Cards ────────────────────────────────────────────────────────────────
 
 class TaskBreakdownCard extends StatelessWidget {
-  const TaskBreakdownCard({super.key, required this.tasks});
+  const TaskBreakdownCard({super.key, required this.slug, required this.tasks});
+  final String slug;
   final TaskCounts tasks;
 
   @override
@@ -156,11 +170,11 @@ class TaskBreakdownCard extends StatelessWidget {
     final l = context.l10n;
     final p = context.palette;
     final rows = [
-      (Icons.error_outline_rounded, l.overdue, tasks.overdue, Tone.danger),
-      (Icons.today_rounded, l.dueToday, tasks.today, Tone.warning),
-      (Icons.date_range_rounded, l.thisWeek, tasks.week, Tone.info),
-      (Icons.event_note_rounded, l.later, tasks.later, Tone.neutral),
-      (Icons.hourglass_empty_rounded, l.noDueDate, tasks.none, Tone.neutral),
+      (Icons.error_outline_rounded, l.overdue, tasks.overdue, Tone.danger, 'overdue'),
+      (Icons.today_rounded, l.dueToday, tasks.today, Tone.warning, 'today'),
+      (Icons.date_range_rounded, l.thisWeek, tasks.week, Tone.info, 'week'),
+      (Icons.event_note_rounded, l.later, tasks.later, Tone.neutral, 'later'),
+      (Icons.hourglass_empty_rounded, l.noDueDate, tasks.none, Tone.neutral, 'none'),
     ];
     return AppCard(
       child: Column(
@@ -180,7 +194,7 @@ class TaskBreakdownCard extends StatelessWidget {
           ],
           for (final (i, r) in rows.indexed) ...[
             if (i > 0) const Divider(indent: 50),
-            MetricRow(icon: r.$1, label: r.$2, value: r.$3, tone: r.$4),
+            MetricRow(icon: r.$1, label: r.$2, value: r.$3, tone: r.$4, onTap: r.$3 == 0 ? null : () => openTasks(context, slug, r.$5)),
           ],
         ],
       ),
@@ -339,6 +353,7 @@ class _Legend extends StatelessWidget {
   }
 }
 
+/// Managers: approving is still on the website (arrives with 23d).
 class ComingSoonNote extends StatelessWidget {
   const ComingSoonNote({super.key});
 
@@ -403,6 +418,51 @@ class HomeSkeleton extends StatelessWidget {
           SkeletonBox(width: 140, height: 22),
           SizedBox(height: Space.md),
           SkeletonBox(height: 300, radius: Radii.lg),
+        ],
+      ),
+    );
+  }
+}
+
+/// One-tap shortcuts for site work.
+class QuickActions extends StatelessWidget {
+  const QuickActions({super.key, required this.slug});
+  final String slug;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final actions = [
+      (Icons.more_time_rounded, l.logHours, Tone.info, () => showLogHours(context, slug)),
+      (Icons.assignment_rounded, l.siteLog, Tone.success, () => context.push('/w/$slug/site-log')),
+      (Icons.add_a_photo_rounded, l.addPhoto, Tone.warning, () => context.push('/w/$slug/photos')),
+      (Icons.receipt_long_rounded, l.addExpense, Tone.neutral, () => context.push('/w/$slug/expenses/new')),
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(top: Space.xl),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final (icon, label, tone, onTap) in actions)
+            Expanded(
+              child: Semantics(
+                button: true,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(Radii.md),
+                  onTap: onTap,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: Space.sm, horizontal: 2),
+                    child: Column(
+                      children: [
+                        ToneIcon(icon, tone: tone, size: 52),
+                        const SizedBox(height: Space.sm),
+                        Text(label, textAlign: TextAlign.center, maxLines: 2, style: context.text.labelMedium),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

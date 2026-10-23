@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refreshPage } from "@/lib/refresh-page";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
@@ -222,7 +222,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
     );
   }
 
-  refresh();
+  refreshPage();
   return needsApproval
     ? { ok: true, pending: true }
     : { ok: true };
@@ -290,7 +290,7 @@ export async function decideExpense(expenseId: string, input: z.input<typeof dec
   });
   if (expense.loanId) await syncPaidOff(expense.loanId);
   if (parsed.data.decision === "approved") await checkOverBudget(expense.projectId, user.id);
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -315,7 +315,7 @@ export async function setApprovalThreshold(projectId: string, value: string): Pr
       data: { to: parsed.data },
     });
   });
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -342,6 +342,6 @@ export async function deleteExpense(expenseId: string): Promise<ExpenseResult> {
   });
   await deleteStoredFile(expense.receiptPath);
   if (expense.loanId) await syncPaidOff(expense.loanId);
-  refresh();
+  refreshPage();
   return { ok: true };
 }

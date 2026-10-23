@@ -25,9 +25,12 @@ enum ApiFailure {
 /// A failed request. [message] comes from the server, already in the person's
 /// language; when there is none (no connection) the screen shows its own text.
 class ApiException implements Exception {
-  const ApiException(this.failure, [this.message]);
+  const ApiException(this.failure, [this.message, this.fields = const {}]);
   final ApiFailure failure;
   final String? message;
+
+  /// Per-field messages for a form (400), e.g. {"hours": "Enter an amount greater than 0"}.
+  final Map<String, String> fields;
 
   @override
   String toString() => 'ApiException($failure, $message)';
@@ -38,6 +41,7 @@ class ApiException implements Exception {
 class ApiClient {
   ApiClient({required String? Function() token, required String Function() language, required void Function(String? message) onUnauthorized})
     : _onUnauthorized = onUnauthorized,
+      _token = token,
       _dio = Dio(
         BaseOptions(
           baseUrl: '$apiUrl/api/mobile/v$apiVersion',
@@ -61,6 +65,7 @@ class ApiClient {
   }
 
   final Dio _dio;
+  final String? Function() _token;
   final void Function(String? message) _onUnauthorized;
 
   /// POST /session → (token, me).
@@ -84,6 +89,46 @@ class ApiClient {
   Future<(Home, String)> home(String slug) async {
     final data = await _send(() => _dio.get<Object?>('/w/${Uri.encodeComponent(slug)}/home'));
     return (Home.fromJson(data), jsonEncode(data));
+  }
+
+  // ── The rest of the API: plain JSON in and out; screens parse what they need. ──
+
+  /// [path] is under /w/{slug}, e.g. '/tasks'.
+  String _w(String slug, String path) => '/w/${Uri.encodeComponent(slug)}$path';
+
+  Future<Json> get(String slug, String path, {Map<String, String>? query}) =>
+      _send(() => _dio.get<Object?>(_w(slug, path), queryParameters: query));
+
+  /// A change. The answer is { ok, warning?, info?, pending? }: see [ApiResult].
+  Future<ApiResult> send(String method, String slug, String path, [Json? body]) async {
+    final data = await _send(() => _dio.request<Object?>(_w(slug, path), data: body, options: Options(method: method)));
+    return ApiResult.fromJson(data);
+  }
+
+  /// multipart/form-data with optional files (photos, receipts), shrunk on the phone first.
+  Future<ApiResult> upload(String slug, String path, Map<String, String> fields, {Map<String, List<String>> files = const {}}) async {
+    final form = FormData();
+    fields.forEach((k, v) => form.fields.add(MapEntry(k, v)));
+    for (final e in files.entries) {
+      for (final file in e.value) {
+        form.files.add(MapEntry(e.key, await MultipartFile.fromFile(file, filename: file.split('/').last)));
+      }
+    }
+    final data = await _send(
+      () => _dio.post<Object?>(
+        _w(slug, path),
+        data: form,
+        options: Options(sendTimeout: const Duration(minutes: 2), contentType: 'multipart/form-data'),
+      ),
+    );
+    return ApiResult.fromJson(data);
+  }
+
+  /// Full address of a server file (/api/files/…) and the header it needs.
+  String fileUrl(String path) => path.startsWith('http') ? path : '$apiUrl$path';
+  Map<String, String> get authHeaders {
+    final t = _token();
+    return {if (t != null) 'Authorization': 'Bearer $t'};
   }
 
   Future<Json> _send(Future<Response<Object?>> Function() request, {bool signingIn = false}) async {
@@ -114,9 +159,24 @@ class ApiClient {
       case 404:
         return ApiException(ApiFailure.notFound, message);
       case 400:
-        return ApiException(ApiFailure.invalid, message);
+        final fields = error is Map && error['fields'] is Map ? (error['fields'] as Map).map((k, v) => MapEntry('$k', '$v')) : const <String, String>{};
+        return ApiException(ApiFailure.invalid, message, fields);
       default:
         return ApiException(ApiFailure.server, message);
     }
   }
+}
+
+/// What a change came back with. [warning]: saved, but worth knowing (e.g.
+/// started while blocked). [pending]: saved and waiting for approval.
+class ApiResult {
+  const ApiResult({this.warning, this.info, this.pending = false, this.data});
+
+  factory ApiResult.fromJson(Json j) =>
+      ApiResult(warning: j['warning'] as String?, info: j['info'] as String?, pending: j['pending'] == true, data: j['data']);
+
+  final String? warning;
+  final String? info;
+  final bool pending;
+  final Object? data;
 }

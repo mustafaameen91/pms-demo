@@ -15,6 +15,7 @@ Only these, each approved by the owner. **Ask before adding any other package.**
 | dio | Talking to the server |
 | flutter_secure_storage | The sign-in token and saved screens (Keychain / Keystore) |
 | flutter_localizations + intl | Arabic / English, dates |
+| image_picker | Camera / gallery for site photos and receipts (shrunk on the phone before upload) |
 
 Fonts are bundled files, not packages: Plus Jakarta Sans and IBM Plex Sans Arabic
 (the website's pair), with their OFL licences in `assets/fonts/`.
@@ -63,6 +64,7 @@ lib/
   core/       api client, models, providers (session, language, theme, home), storage
   theme/      colours from the website's tokens, type scale, spacing, motion
   widgets/    header backdrop, brand mark, cards, metric rows, skeletons
-  features/   login, companies, home (member / manager), account sheet
+  features/   login, companies, shell (tabs), home, tasks, hours, inbox, more,
+              site log, photos, expenses, loans, account sheet
   l10n/       app_en.arb, app_ar.arb → generated AppLocalizations
 ```

@@ -83,7 +83,8 @@ class AppCard extends StatelessWidget {
             ? null
             : const [BoxShadow(color: Color(0x0F0E1A20), blurRadius: 24, offset: Offset(0, 10)), BoxShadow(color: Color(0x0A0E1A20), blurRadius: 3, offset: Offset(0, 1))],
       ),
-      child: Padding(padding: padding, child: child),
+      // Transparent Material: ink splashes and list tiles inside the card show.
+      child: Material(type: MaterialType.transparency, child: Padding(padding: padding, child: child)),
     );
   }
 }
@@ -109,17 +110,20 @@ class SectionTitle extends StatelessWidget {
 
 /// One labelled count: icon, label, number. At least 56 high.
 class MetricRow extends StatelessWidget {
-  const MetricRow({super.key, required this.icon, required this.label, required this.value, required this.tone});
+  const MetricRow({super.key, required this.icon, required this.label, required this.value, required this.tone, this.onTap});
   final IconData icon;
   final String label;
   final int value;
   final Tone tone;
 
+  /// Opens the list behind the number (shows a chevron).
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final zero = value == 0;
-    return MergeSemantics(
+    final row = MergeSemantics(
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 56),
         child: Row(
@@ -137,10 +141,13 @@ class MetricRow extends StatelessWidget {
                 style: context.text.titleMedium!.copyWith(color: zero ? p.muted : tone.fg(p), fontWeight: FontWeight.w700),
               ),
             ),
+            if (onTap != null) Icon(Icons.chevron_right_rounded, size: 20, color: p.muted),
           ],
         ),
       ),
     );
+    if (onTap == null) return row;
+    return InkWell(borderRadius: BorderRadius.circular(Radii.sm), onTap: onTap, child: row);
   }
 }
 

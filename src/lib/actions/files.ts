@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refreshPage } from "@/lib/refresh-page";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
@@ -107,7 +107,7 @@ export async function uploadFiles(projectId: string, formData: FormData): Promis
     for (const s of saved) if ("path" in s) await deleteStoredFile(s.path);
     throw error;
   }
-  refresh();
+  refreshPage();
   return { ok: true, data: { count: saved.length } };
 }
 
@@ -153,7 +153,7 @@ export async function uploadVersion(fileId: string, formData: FormData): Promise
     await deleteStoredFile(saved.path);
     throw error;
   }
-  refresh();
+  refreshPage();
   return { ok: true, data: { version } };
 }
 
@@ -177,7 +177,7 @@ export async function updateFile(fileId: string, input: z.input<typeof editSchem
   }
   if (!(await taskInProject(parsed.data.taskId, auth.file.projectId))) return { ok: false, error: t("Task not found") };
   await db.update(projectFiles).set({ ...parsed.data, updatedAt: new Date() }).where(eq(projectFiles.id, fileId));
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -200,7 +200,7 @@ export async function deleteFile(fileId: string): Promise<Result> {
     });
   });
   for (const v of versions) await deleteStoredFile(v.path);
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 

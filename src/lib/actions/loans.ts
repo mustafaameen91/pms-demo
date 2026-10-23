@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refreshPage } from "@/lib/refresh-page";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspace, requireWorkspaceById } from "@/lib/auth/session";
@@ -135,7 +135,7 @@ export async function createLoan(slug: string, input: LoanInput): Promise<Result
       email: true,
     });
   }
-  refresh();
+  refreshPage();
   return { ok: true, data: { id: loan.id } };
 }
 
@@ -204,7 +204,7 @@ export async function recordRepayment(loanId: string, input: RepaymentInput): Pr
       email: true,
     });
   }
-  refresh();
+  refreshPage();
   return { ok: true, data: { paidOff: balance.paidOff } };
 }
 
@@ -220,7 +220,7 @@ export async function deleteRepayment(repaymentId: string): Promise<Result> {
   if (auth.loan.projectId) await checkOverBudget(auth.loan.projectId, auth.me.id);
   const who = await borrowerOf(auth.loan);
   await log(auth.loan.workspaceId, auth.me.id, "loan.repayment_deleted", { borrower: who.name, amount: rep.amount, currency: auth.loan.currency });
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -236,7 +236,7 @@ export async function deleteLoan(loanId: string): Promise<Result> {
   const who = await borrowerOf(auth.loan);
   await db.delete(loans).where(eq(loans.id, loanId));
   await log(auth.loan.workspaceId, auth.me.id, "loan.deleted", { borrower: who.name, amount: auth.loan.amount, currency: auth.loan.currency });
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -274,7 +274,7 @@ export async function requestLoan(slug: string, input: LoanRequestInput): Promis
     link: `/w/${workspace.slug}/loans`,
     email: true,
   });
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -337,7 +337,7 @@ export async function decideLoanRequest(requestId: string, input: z.input<typeof
     link: loanId ? `/w/${slug}/loans/${loanId}` : `/w/${slug}/loans`,
     email: true,
   });
-  refresh();
+  refreshPage();
   return { ok: true };
 }
 
@@ -350,6 +350,6 @@ export async function cancelLoanRequest(requestId: string): Promise<Result> {
   if (req.userId !== me.id) return { ok: false, error: t("Not allowed") };
   if (req.status !== "pending") return { ok: false, error: t("This request was already answered.") };
   await db.delete(loanRequests).where(eq(loanRequests.id, requestId));
-  refresh();
+  refreshPage();
   return { ok: true };
 }

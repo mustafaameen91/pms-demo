@@ -6,6 +6,10 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>To take photos of the site and of receipts. — لالتقاط صور الموقع والإيصالات.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>To add site photos and receipts from your photos. — لإضافة صور الموقع والإيصالات من صورك.</string>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>

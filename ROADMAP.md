@@ -206,7 +206,7 @@ Lives in `mobile/`, fully separate from the web app. Libraries are only added wi
 - [x] Arabic & English with right-to-left, the app's teal style, light / dark
 
 ### 23c — Member screens
-- [ ] My tasks (status, progress), log my hours, site log, photos / receipts, comments, inbox, my loans
+- [x] My tasks (status, progress), log my hours, site log, photos / receipts, comments, inbox, my loans
 
 ### 23d — Manager & admin screens
 - [ ] Project health, approvals (expenses, hours, loans), worker attendance, risks, weekly report

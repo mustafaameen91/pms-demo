@@ -2,7 +2,6 @@
   "@@locale": "ar",
   "appName": "PMS",
   "tagline": "كل مشروع وكل موقع، في جيبك.",
-
   "signInTitle": "أهلًا بعودتك",
   "signInSubtitle": "سجّل الدخول بالبريد الإلكتروني وكلمة المرور اللذين تستخدمهما في الموقع.",
   "email": "البريد الإلكتروني",
@@ -14,12 +13,10 @@
   "emailInvalid": "هذا لا يبدو عنوان بريد إلكتروني.",
   "passwordRequired": "أدخل كلمة المرور.",
   "forgotPassword": "نسيت كلمة المرور؟ أعد تعيينها من صفحة تسجيل الدخول في الموقع.",
-
   "networkError": "تعذّر الوصول إلى الخادم. تحقّق من اتصالك بالإنترنت وحاول مجددًا.",
   "serverError": "حدث خطأ في الخادم. حاول مجددًا بعد قليل.",
   "tryAgain": "حاول مجددًا",
   "showingSaved": "لا يوجد اتصال — تُعرض البيانات المحفوظة على هذا الهاتف.",
-
   "chooseCompany": "اختر شركة",
   "chooseCompanySubtitle": "أنت تعمل مع أكثر من شركة. اختر الشركة التي تريد فتحها.",
   "noCompanies": "لست عضوًا في أي شركة بعد",
@@ -33,29 +30,68 @@
   "managerView": "واجهة المدير",
   "memberView": "واجهة العضو",
   "unreadCount": "{count, plural, zero{لا جديد} one{إشعار واحد جديد} two{إشعاران جديدان} few{{count} إشعارات جديدة} many{{count} إشعارًا جديدًا} other{{count} إشعار جديد}}",
-  "@unreadCount": { "placeholders": { "count": { "type": "int" } } },
-
+  "@unreadCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "goodMorning": "صباح الخير، {name}",
-  "@goodMorning": { "placeholders": { "name": { "type": "String" } } },
+  "@goodMorning": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "goodAfternoon": "مساء الخير، {name}",
-  "@goodAfternoon": { "placeholders": { "name": { "type": "String" } } },
+  "@goodAfternoon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "goodEvening": "مساء الخير، {name}",
-  "@goodEvening": { "placeholders": { "name": { "type": "String" } } },
+  "@goodEvening": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "needsYouToday": "{count, plural, zero{لا شيء مستحق اليوم. عمل رائع.} one{مهمة واحدة تحتاجك اليوم.} two{مهمتان تحتاجانك اليوم.} few{{count} مهام تحتاجك اليوم.} many{{count} مهمة تحتاجك اليوم.} other{{count} مهمة تحتاجك اليوم.}}",
-  "@needsYouToday": { "placeholders": { "count": { "type": "int" } } },
+  "@needsYouToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "unreadNotifications": "{count, plural, zero{لا إشعارات جديدة} one{إشعار واحد غير مقروء} two{إشعاران غير مقروءين} few{{count} إشعارات غير مقروءة} many{{count} إشعارًا غير مقروء} other{{count} إشعار غير مقروء}}",
-  "@unreadNotifications": { "placeholders": { "count": { "type": "int" } } },
-
+  "@unreadNotifications": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "myTasks": "مهامي",
   "openTasks": "{count, plural, zero{لا مهام مفتوحة} one{مهمة مفتوحة واحدة} two{مهمتان مفتوحتان} few{{count} مهام مفتوحة} many{{count} مهمة مفتوحة} other{{count} مهمة مفتوحة}}",
-  "@openTasks": { "placeholders": { "count": { "type": "int" } } },
+  "@openTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "overdue": "متأخرة",
   "dueToday": "مستحقة اليوم",
-  "thisWeek": "هذا الأسبوع",
+  "thisWeek": "الأيام السبعة القادمة",
   "later": "لاحقًا",
-  "noDueDate": "بلا موعد",
+  "noDueDate": "بلا تاريخ انتهاء",
   "noOpenTasks": "لا توجد لديك مهام مفتوحة. ستظهر هنا المهام الجديدة التي تُسند إليك.",
-
   "needsAttention": "يحتاج انتباهك",
   "projectsYouManage": "المشاريع التي تديرها",
   "allProjects": "كل المشاريع",
@@ -65,7 +101,13 @@
   "headingOver": "في طريقها لتجاوز الميزانية",
   "lateTasks": "مهام متأخرة",
   "onSchedule": "{count, plural, zero{لا شيء ضمن الجدول} one{مشروع واحد ضمن الجدول} two{مشروعان ضمن الجدول} few{{count} مشاريع ضمن الجدول} many{{count} مشروعًا ضمن الجدول} other{{count} مشروع ضمن الجدول}}",
-  "@onSchedule": { "placeholders": { "count": { "type": "int" } } },
+  "@onSchedule": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "noProjects": "لا توجد مشاريع جارية لإدارتها حاليًا.",
   "waitingApproval": "بانتظار موافقتك",
   "toApprove": "للموافقة",
@@ -73,8 +115,7 @@
   "hours": "الساعات",
   "loans": "السُّلف",
   "nothingToApprove": "لا شيء بانتظارك. أنجزت كل شيء.",
-  "comingSoon": "قوائم المهام والموافقات وسجل الموقع قادمة إلى التطبيق قريبًا. افتحها من الموقع حاليًا.",
-
+  "comingSoon": "الموافقة على المصروفات والساعات والسُّلف قادمة إلى التطبيق قريبًا. وافق عليها من الموقع حاليًا.",
   "account": "الحساب",
   "switchCompany": "تبديل الشركة",
   "language": "اللغة",
@@ -84,5 +125,199 @@
   "light": "فاتح",
   "dark": "داكن",
   "signOut": "تسجيل الخروج",
-  "close": "إغلاق"
+  "close": "إغلاق",
+  "navHome": "الرئيسية",
+  "navTasks": "المهام",
+  "navHours": "الساعات",
+  "navInbox": "الوارد",
+  "navMore": "المزيد",
+  "filterAll": "الكل",
+  "finishedCount": "{count, plural, zero{لا مهام منتهية} one{مهمة منتهية واحدة} two{مهمتان منتهيتان} few{{count} مهام منتهية} many{{count} مهمة منتهية} other{{count} مهمة منتهية}}",
+  "@finishedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nothingInGroup": "لا شيء هنا.",
+  "subtask": "مهمة فرعية",
+  "milestone": "مرحلة رئيسية",
+  "dueOn": "الاستحقاق {date}",
+  "@dueOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "status": "الحالة",
+  "progress": "التقدم",
+  "saveProgress": "حفظ التقدم",
+  "startLabel": "البداية",
+  "dueLabel": "الاستحقاق",
+  "assignee": "المكلَّف",
+  "unassigned": "غير مكلَّفة",
+  "priority": "الأولوية",
+  "priorityNone": "بدون أولوية",
+  "priorityLow": "منخفضة",
+  "priorityMedium": "متوسطة",
+  "priorityHigh": "عالية",
+  "priorityUrgent": "عاجلة",
+  "description": "الوصف",
+  "subtasks": "المهام الفرعية",
+  "photos": "الصور",
+  "addPhoto": "إضافة صورة",
+  "comments": "التعليقات",
+  "noComments": "لا تعليقات بعد. اطرح سؤالًا أو شارك تحديثًا.",
+  "writeComment": "اكتب تعليقًا…",
+  "send": "إرسال",
+  "readOnlyTask": "يمكنك رؤية هذه المهمة، لكن تغييرها متاح فقط للمكلَّف بها أو لمدير المشروع.",
+  "waitingOn": "بانتظار",
+  "partOf": "جزء من",
+  "saved": "تم الحفظ",
+  "takePhoto": "التقاط صورة",
+  "chooseFromGallery": "اختيار من المعرض",
+  "uploading": "جارٍ الرفع…",
+  "photoAdded": "أُضيفت الصورة",
+  "noPhotos": "لا صور بعد. أضف أول صورة من الموقع.",
+  "myHours": "ساعاتي",
+  "logHours": "تسجيل ساعات",
+  "project": "المشروع",
+  "chooseProject": "اختر مشروعًا",
+  "taskOptional": "المهمة (اختياري)",
+  "noTask": "بدون مهمة محددة",
+  "date": "التاريخ",
+  "hoursLabel": "الساعات",
+  "noteOptional": "ملاحظة (اختياري)",
+  "save": "حفظ",
+  "statusPending": "بانتظار الموافقة",
+  "statusApproved": "معتمد",
+  "statusRejected": "مرفوض",
+  "noHours": "لا ساعات مسجّلة هذا الأسبوع.",
+  "hoursSaved": "حُفظت الساعات",
+  "delete": "حذف",
+  "deleteEntryConfirm": "حذف هذا الإدخال؟",
+  "cancel": "إلغاء",
+  "deleted": "تم الحذف",
+  "previousWeek": "الأسبوع السابق",
+  "nextWeek": "الأسبوع التالي",
+  "backToThisWeek": "هذا الأسبوع",
+  "hoursShort": "{hours} س",
+  "@hoursShort": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "notOnProjects": "لست ضمن فريق أي مشروع في هذه الشركة بعد.",
+  "inbox": "صندوق الوارد",
+  "markAllRead": "تحديد الكل كمقروء",
+  "inboxEmpty": "لا جديد. ستظهر التحديثات الجديدة هنا.",
+  "justNow": "الآن",
+  "minutesAgo": "{count, plural, zero{الآن} one{منذ دقيقة} two{منذ دقيقتين} few{منذ {count} دقائق} many{منذ {count} دقيقة} other{منذ {count} دقيقة}}",
+  "@minutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{count, plural, zero{الآن} one{منذ ساعة} two{منذ ساعتين} few{منذ {count} ساعات} many{منذ {count} ساعة} other{منذ {count} ساعة}}",
+  "@hoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yesterday": "أمس",
+  "onlyOnWebsite": "افتح هذا من الموقع.",
+  "siteLog": "سجل الموقع",
+  "siteLogHint": "الطقس والتوريدات والمشاكل في الموقع",
+  "photosHint": "صور من الموقع",
+  "expensesReceipts": "المصروفات والإيصالات",
+  "expensesHint": "ما دفعته، مع الإيصال",
+  "myLoans": "سُلفي",
+  "loansHint": "السُّلف والسُّلف النقدية، والمتبقي منها",
+  "settings": "الإعدادات",
+  "weather": "الطقس",
+  "temperature": "درجة الحرارة (°م)",
+  "deliveries": "التوريدات",
+  "problems": "مشاكل",
+  "notes": "ملاحظات",
+  "siteLogSaved": "حُفظ سجل الموقع",
+  "lastSavedBy": "آخر حفظ بواسطة {name}",
+  "@lastSavedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recentDays": "الأيام الأخيرة",
+  "today": "اليوم",
+  "noLogYet": "لم يُكتب شيء لهذا اليوم بعد.",
+  "addExpense": "إضافة مصروف",
+  "amount": "المبلغ",
+  "category": "الفئة",
+  "whatFor": "ما الغرض منه؟",
+  "payeeOptional": "المدفوع له (اختياري)",
+  "receipt": "الإيصال",
+  "addReceipt": "أضف صورة الإيصال",
+  "remove": "إزالة",
+  "fromAdvance": "مدفوع من سلفتي النقدية",
+  "amountLeft": "المتبقي {amount}",
+  "@amountLeft": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "notFromAdvance": "ليس من سلفة",
+  "expenseSaved": "حُفظ المصروف",
+  "expensePending": "حُفظ — بانتظار الموافقة",
+  "noExpenses": "لم تُضف أي مصروفات بعد.",
+  "askLoan": "طلب سلفة",
+  "currency": "العملة",
+  "loanReason": "ما سبب الطلب؟",
+  "sendRequest": "إرسال الطلب",
+  "requestSent": "أُرسل الطلب إلى المالكين والمسؤولين.",
+  "withdraw": "سحب الطلب",
+  "withdrawConfirm": "سحب هذا الطلب؟",
+  "myRequests": "طلباتي",
+  "paidOff": "مسدَّدة بالكامل",
+  "cashAdvanceFrom": "سلفة نقدية · {project}",
+  "@cashAdvanceFrom": {
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "loan": "سلفة",
+  "returned": "المُعاد",
+  "receipts": "الإيصالات",
+  "stillOwed": "المتبقي",
+  "pendingReceipts": "{amount} في إيصالات بانتظار الموافقة",
+  "@pendingReceipts": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "noLoans": "لا سُلف ولا سُلف نقدية.",
+  "givenOn": "أُعطيت في {date}",
+  "@givenOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "quickActions": "إجراءات سريعة",
+  "fieldRequired": "مطلوب"
 }

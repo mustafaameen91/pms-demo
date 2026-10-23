@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refreshPage } from "@/lib/refresh-page";
 import { and, eq, isNull } from "drizzle-orm";
 import { requireWorkspace } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -14,5 +14,5 @@ export async function markAllNotificationsRead(slug: string) {
     .where(
       and(eq(notifications.userId, user.id), eq(notifications.workspaceId, workspace.id), isNull(notifications.readAt)),
     );
-  refresh();
+  refreshPage();
 }

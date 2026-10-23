@@ -2,7 +2,6 @@
   "@@locale": "en",
   "appName": "PMS",
   "tagline": "Every project, every site, in your pocket.",
-
   "signInTitle": "Welcome back",
   "signInSubtitle": "Sign in with the email and password you use on the website.",
   "email": "Email",
@@ -14,12 +13,10 @@
   "emailInvalid": "That doesn't look like an email address.",
   "passwordRequired": "Enter your password.",
   "forgotPassword": "Forgot your password? Reset it from the website's sign-in page.",
-
   "networkError": "Can't reach the server. Check your internet connection and try again.",
   "serverError": "Something went wrong on the server. Try again in a moment.",
   "tryAgain": "Try again",
   "showingSaved": "Offline — showing what was saved on this phone.",
-
   "chooseCompany": "Choose a company",
   "chooseCompanySubtitle": "You work with more than one company. Pick the one to open.",
   "noCompanies": "You're not part of any company yet",
@@ -33,29 +30,68 @@
   "managerView": "Manager view",
   "memberView": "Member view",
   "unreadCount": "{count, plural, =1{1 unread} other{{count} unread}}",
-  "@unreadCount": { "placeholders": { "count": { "type": "int" } } },
-
+  "@unreadCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "goodMorning": "Good morning, {name}",
-  "@goodMorning": { "placeholders": { "name": { "type": "String" } } },
+  "@goodMorning": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "goodAfternoon": "Good afternoon, {name}",
-  "@goodAfternoon": { "placeholders": { "name": { "type": "String" } } },
+  "@goodAfternoon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "goodEvening": "Good evening, {name}",
-  "@goodEvening": { "placeholders": { "name": { "type": "String" } } },
+  "@goodEvening": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "needsYouToday": "{count, plural, =0{Nothing is due today. Nice work.} =1{1 task needs you today.} other{{count} tasks need you today.}}",
-  "@needsYouToday": { "placeholders": { "count": { "type": "int" } } },
+  "@needsYouToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "unreadNotifications": "{count, plural, =1{1 unread notification} other{{count} unread notifications}}",
-  "@unreadNotifications": { "placeholders": { "count": { "type": "int" } } },
-
+  "@unreadNotifications": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "myTasks": "My tasks",
   "openTasks": "{count, plural, =0{No open tasks} =1{1 open task} other{{count} open tasks}}",
-  "@openTasks": { "placeholders": { "count": { "type": "int" } } },
+  "@openTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "overdue": "Overdue",
   "dueToday": "Due today",
-  "thisWeek": "This week",
+  "thisWeek": "Next 7 days",
   "later": "Later",
-  "noDueDate": "No due date",
+  "noDueDate": "No end date",
   "noOpenTasks": "You have no open tasks. New ones you're given will appear here.",
-
   "needsAttention": "Needs your attention",
   "projectsYouManage": "Projects you manage",
   "allProjects": "All projects",
@@ -65,7 +101,13 @@
   "headingOver": "Heading over budget",
   "lateTasks": "Late tasks",
   "onSchedule": "{count, plural, =0{None on schedule} =1{1 on schedule} other{{count} on schedule}}",
-  "@onSchedule": { "placeholders": { "count": { "type": "int" } } },
+  "@onSchedule": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "noProjects": "No active projects to manage right now.",
   "waitingApproval": "Waiting for your approval",
   "toApprove": "To approve",
@@ -73,8 +115,7 @@
   "hours": "Hours",
   "loans": "Loans",
   "nothingToApprove": "Nothing is waiting for you. All caught up.",
-  "comingSoon": "Task lists, approvals and the site log are coming to the app next. For now, open them on the website.",
-
+  "comingSoon": "Approving expenses, hours and loans is coming to the app next. For now, approve them on the website.",
   "account": "Account",
   "switchCompany": "Switch company",
   "language": "Language",
@@ -84,5 +125,199 @@
   "light": "Light",
   "dark": "Dark",
   "signOut": "Sign out",
-  "close": "Close"
+  "close": "Close",
+  "navHome": "Home",
+  "navTasks": "Tasks",
+  "navHours": "Hours",
+  "navInbox": "Inbox",
+  "navMore": "More",
+  "filterAll": "All",
+  "finishedCount": "{count, plural, =0{No finished tasks} =1{1 finished task} other{{count} finished tasks}}",
+  "@finishedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nothingInGroup": "Nothing here.",
+  "subtask": "Sub-task",
+  "milestone": "Milestone",
+  "dueOn": "Due {date}",
+  "@dueOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "status": "Status",
+  "progress": "Progress",
+  "saveProgress": "Save progress",
+  "startLabel": "Start",
+  "dueLabel": "Due",
+  "assignee": "Assignee",
+  "unassigned": "Unassigned",
+  "priority": "Priority",
+  "priorityNone": "No priority",
+  "priorityLow": "Low",
+  "priorityMedium": "Medium",
+  "priorityHigh": "High",
+  "priorityUrgent": "Urgent",
+  "description": "Description",
+  "subtasks": "Sub-tasks",
+  "photos": "Photos",
+  "addPhoto": "Add photo",
+  "comments": "Comments",
+  "noComments": "No comments yet. Ask a question or share an update.",
+  "writeComment": "Write a comment…",
+  "send": "Send",
+  "readOnlyTask": "You can see this task, but only its assignee or the project manager can change it.",
+  "waitingOn": "Waiting on",
+  "partOf": "Part of",
+  "saved": "Saved",
+  "takePhoto": "Take a photo",
+  "chooseFromGallery": "Choose from gallery",
+  "uploading": "Uploading…",
+  "photoAdded": "Photo added",
+  "noPhotos": "No photos yet. Add the first one from the site.",
+  "myHours": "My hours",
+  "logHours": "Log hours",
+  "project": "Project",
+  "chooseProject": "Choose a project",
+  "taskOptional": "Task (optional)",
+  "noTask": "No specific task",
+  "date": "Date",
+  "hoursLabel": "Hours",
+  "noteOptional": "Note (optional)",
+  "save": "Save",
+  "statusPending": "Waiting for approval",
+  "statusApproved": "Approved",
+  "statusRejected": "Rejected",
+  "noHours": "No hours logged this week.",
+  "hoursSaved": "Hours saved",
+  "delete": "Delete",
+  "deleteEntryConfirm": "Delete this entry?",
+  "cancel": "Cancel",
+  "deleted": "Deleted",
+  "previousWeek": "Previous week",
+  "nextWeek": "Next week",
+  "backToThisWeek": "This week",
+  "hoursShort": "{hours} h",
+  "@hoursShort": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "notOnProjects": "You're not on any project in this company yet.",
+  "inbox": "Inbox",
+  "markAllRead": "Mark all read",
+  "inboxEmpty": "You're all caught up. New updates will appear here.",
+  "justNow": "Just now",
+  "minutesAgo": "{count, plural, =1{1 min ago} other{{count} min ago}}",
+  "@minutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@hoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yesterday": "Yesterday",
+  "onlyOnWebsite": "Open this one on the website.",
+  "siteLog": "Site log",
+  "siteLogHint": "Weather, deliveries and problems on site",
+  "photosHint": "Pictures from the site",
+  "expensesReceipts": "Expenses & receipts",
+  "expensesHint": "What you paid for, with the receipt",
+  "myLoans": "My loans",
+  "loansHint": "Loans and cash advances, and what's left",
+  "settings": "Settings",
+  "weather": "Weather",
+  "temperature": "Temperature (°C)",
+  "deliveries": "Deliveries",
+  "problems": "Problems",
+  "notes": "Notes",
+  "siteLogSaved": "Site log saved",
+  "lastSavedBy": "Last saved by {name}",
+  "@lastSavedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recentDays": "Recent days",
+  "today": "Today",
+  "noLogYet": "Nothing written for this day yet.",
+  "addExpense": "Add expense",
+  "amount": "Amount",
+  "category": "Category",
+  "whatFor": "What was it for?",
+  "payeeOptional": "Paid to (optional)",
+  "receipt": "Receipt",
+  "addReceipt": "Add a photo of the receipt",
+  "remove": "Remove",
+  "fromAdvance": "Paid from my cash advance",
+  "amountLeft": "{amount} left",
+  "@amountLeft": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "notFromAdvance": "Not from an advance",
+  "expenseSaved": "Expense saved",
+  "expensePending": "Saved — waiting for approval",
+  "noExpenses": "You haven't added any expenses yet.",
+  "askLoan": "Ask for a loan",
+  "currency": "Currency",
+  "loanReason": "What is it for?",
+  "sendRequest": "Send request",
+  "requestSent": "Request sent to the owners and admins.",
+  "withdraw": "Withdraw",
+  "withdrawConfirm": "Withdraw this request?",
+  "myRequests": "My requests",
+  "paidOff": "Paid off",
+  "cashAdvanceFrom": "Cash advance · {project}",
+  "@cashAdvanceFrom": {
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "loan": "Loan",
+  "returned": "Returned",
+  "receipts": "Receipts",
+  "stillOwed": "Still owed",
+  "pendingReceipts": "{amount} in receipts waiting for approval",
+  "@pendingReceipts": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "noLoans": "No loans or cash advances.",
+  "givenOn": "Given on {date}",
+  "@givenOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "quickActions": "Quick actions",
+  "fieldRequired": "Required"
 }

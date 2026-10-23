@@ -24,15 +24,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Remember it so the next launch opens here.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(currentSlugProvider.notifier).open(widget.slug);
-    });
-  }
-
   Future<void> _refresh() async {
     await Future.wait<void>([
       ref.refresh(homeProvider(widget.slug).future).then((_) {}, onError: (Object _) {}),
@@ -86,9 +77,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             padding: const EdgeInsets.only(bottom: Space.md),
             child: InlineBanner(icon: Icons.cloud_off_rounded, message: context.l10n.showingSaved, tone: Tone.warning),
           ),
-        if (view == HomeView.manager) ...managerHome(context, data) else ...memberHome(context, data),
-        const SizedBox(height: Space.xxl),
-        const ComingSoonNote(),
+        if (view == HomeView.manager) ...managerHome(context, slug, data) else ...memberHome(context, slug, data),
+        if (view == HomeView.manager) ...[const SizedBox(height: Space.xxl), const ComingSoonNote()],
       ];
     }
 
@@ -115,7 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? const FocusSkeleton()
                       : view == HomeView.manager
                       ? ManagerFocusCard(home: data)
-                      : MemberFocusCard(tasks: data.myTasks),
+                      : MemberFocusCard(slug: slug, tasks: data.myTasks),
                 ),
               ),
               SliverPadding(

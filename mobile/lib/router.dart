@@ -5,12 +5,28 @@ import 'package:go_router/go_router.dart';
 import 'core/models.dart';
 import 'core/providers.dart';
 import 'features/companies/companies_screen.dart';
+import 'features/expenses/expense_form_screen.dart';
+import 'features/expenses/expenses_screen.dart';
 import 'features/home/home_screen.dart';
+import 'features/hours/hours_screen.dart';
+import 'features/inbox/inbox_screen.dart';
+import 'features/loans/loans_screen.dart';
 import 'features/login/login_screen.dart';
+import 'features/more/more_screen.dart';
+import 'features/photos/photos_screen.dart';
+import 'features/shell/workspace_shell.dart';
+import 'features/site_log/site_log_screen.dart';
 import 'features/splash_screen.dart';
+import 'features/tasks/task_screen.dart';
+import 'features/tasks/tasks_screen.dart';
+
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 /// Screens follow the session: signed out → login; one company → its home;
 /// several → the last one opened, or the company picker.
+///
+/// Inside a company: five tabs (each keeps its own place and scroll), and
+/// pages that open over the tabs (a task, the site log, photos, expenses, loans).
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
   ref.listen(sessionProvider, (prev, next) {
@@ -26,7 +42,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     return '/companies';
   }
 
+  String slugOf(GoRouterState s) => s.pathParameters['slug']!;
+
+  GoRoute page(String path, Widget Function(String slug, GoRouterState s) build) => GoRoute(
+    path: path,
+    parentNavigatorKey: rootNavigatorKey,
+    builder: (context, state) => build(slugOf(state), state),
+  );
+
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: refresh,
     redirect: (context, state) {
@@ -53,10 +78,43 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/companies', pageBuilder: (context, state) => _fade(state, const CompaniesScreen())),
       GoRoute(
         path: '/w/:slug',
-        pageBuilder: (context, state) {
-          final slug = state.pathParameters['slug']!;
-          return _fade(state, HomeScreen(key: ValueKey(slug), slug: slug));
-        },
+        // A company's address on its own opens its home tab.
+        redirect: (context, state) => state.uri.pathSegments.length == 2 ? '/w/${slugOf(state)}/home' : null,
+        routes: [
+          StatefulShellRoute.indexedStack(
+            pageBuilder: (context, state, shell) =>
+                _fade(state, WorkspaceShell(key: ValueKey(slugOf(state)), slug: slugOf(state), shell: shell)),
+            branches: [
+              StatefulShellBranch(
+                routes: [GoRoute(path: 'home', builder: (context, state) => HomeScreen(key: ValueKey(slugOf(state)), slug: slugOf(state)))],
+              ),
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: 'tasks',
+                    builder: (context, state) =>
+                        TasksScreen(key: ValueKey(slugOf(state)), slug: slugOf(state), group: state.uri.queryParameters['group']),
+                  ),
+                ],
+              ),
+              StatefulShellBranch(
+                routes: [GoRoute(path: 'hours', builder: (context, state) => HoursScreen(key: ValueKey(slugOf(state)), slug: slugOf(state)))],
+              ),
+              StatefulShellBranch(
+                routes: [GoRoute(path: 'inbox', builder: (context, state) => InboxScreen(key: ValueKey(slugOf(state)), slug: slugOf(state)))],
+              ),
+              StatefulShellBranch(
+                routes: [GoRoute(path: 'more', builder: (context, state) => MoreScreen(key: ValueKey(slugOf(state)), slug: slugOf(state)))],
+              ),
+            ],
+          ),
+          page('task/:id', (slug, s) => TaskScreen(slug: slug, id: s.pathParameters['id']!)),
+          page('site-log', (slug, s) => SiteLogScreen(slug: slug, projectId: s.uri.queryParameters['project'])),
+          page('photos', (slug, s) => PhotosScreen(slug: slug, projectId: s.uri.queryParameters['project'])),
+          page('expenses', (slug, s) => ExpensesScreen(slug: slug)),
+          page('expenses/new', (slug, s) => ExpenseFormScreen(slug: slug, projectId: s.uri.queryParameters['project'])),
+          page('loans', (slug, s) => LoansScreen(slug: slug)),
+        ],
       ),
     ],
   );
