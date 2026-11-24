@@ -1,3 +1,4 @@
+import { getFinanceSettings, listAccounts } from "@/lib/finance/ledger";
 import { notFound } from "next/navigation";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getLoan } from "@/lib/data/loans";
@@ -14,6 +15,8 @@ export async function generateMetadata() {
 export default async function LoanPage({ params }: PageProps<"/w/[slug]/loans/[id]">) {
   const { slug, id } = await params;
   const { user, workspace } = await requireWorkspace(slug);
+  const finance = await getFinanceSettings(workspace.id);
+  const moneyAccounts = finance ? (await listAccounts(workspace.id)).filter((a) => a.moneyKind && !a.archivedAt).map((a) => ({ id: a.id, name: a.name, isDefault: a.id === finance.defaultMoneyAccountId })) : [];
   const isAdmin = isWorkspaceAdmin(workspace.role);
   const loan = await getLoan(workspace.id, id);
   // Members only see loans they borrowed.
@@ -22,6 +25,7 @@ export default async function LoanPage({ params }: PageProps<"/w/[slug]/loans/[i
   return (
     <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
       <LoanDetail
+        moneyAccounts={moneyAccounts}
         isAdmin={isAdmin}
         backHref={`/w/${workspace.slug}/loans`}
         today={todayISO()}

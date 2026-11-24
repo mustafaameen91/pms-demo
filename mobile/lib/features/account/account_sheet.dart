@@ -8,8 +8,10 @@ import '../../theme/theme.dart';
 import '../../widgets/brand.dart';
 import '../../widgets/common.dart';
 import '../companies/company_tile.dart';
+import '../../theme/icons.dart';
 
 Future<void> showAccountSheet(BuildContext context) => showModalBottomSheet<void>(
+  useRootNavigator: true,
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
@@ -18,6 +20,7 @@ Future<void> showAccountSheet(BuildContext context) => showModalBottomSheet<void
 
 /// Pick another company without leaving home.
 Future<void> showCompanySwitcher(BuildContext context, String currentSlug) => showModalBottomSheet<void>(
+  useRootNavigator: true,
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
@@ -72,7 +75,7 @@ class _AccountSheet extends ConsumerWidget {
                   router.go('/companies');
                 }
               },
-              icon: const Icon(Icons.swap_horiz_rounded),
+              icon: const Icon(AppIcons.arrowsLeftRight),
               label: Text(l.switchCompany),
             ),
           ],
@@ -82,7 +85,7 @@ class _AccountSheet extends ConsumerWidget {
           SegmentedButton<String?>(
             showSelectedIcon: false,
             segments: [
-              ButtonSegment(value: null, label: Text(l.phoneLanguage), icon: const Icon(Icons.smartphone_rounded, size: 18)),
+              ButtonSegment(value: null, label: Text(l.phoneLanguage), icon: const Icon(AppIcons.deviceMobile, size: 18)),
               const ButtonSegment(value: 'en', label: Text('English')),
               const ButtonSegment(value: 'ar', label: Text('العربية')),
             ],
@@ -98,9 +101,9 @@ class _AccountSheet extends ConsumerWidget {
           SegmentedButton<ThemeMode>(
             showSelectedIcon: false,
             segments: [
-              ButtonSegment(value: ThemeMode.system, label: Text(l.phoneSetting), icon: const Icon(Icons.brightness_auto_rounded, size: 18)),
-              ButtonSegment(value: ThemeMode.light, label: Text(l.light), icon: const Icon(Icons.light_mode_rounded, size: 18)),
-              ButtonSegment(value: ThemeMode.dark, label: Text(l.dark), icon: const Icon(Icons.dark_mode_rounded, size: 18)),
+              ButtonSegment(value: ThemeMode.system, label: Text(l.phoneSetting), icon: const Icon(AppIcons.circleHalf, size: 18)),
+              ButtonSegment(value: ThemeMode.light, label: Text(l.light), icon: const Icon(AppIcons.sun, size: 18)),
+              ButtonSegment(value: ThemeMode.dark, label: Text(l.dark), icon: const Icon(AppIcons.moon, size: 18)),
             ],
             selected: {themeMode},
             onSelectionChanged: (s) {
@@ -118,7 +121,7 @@ class _AccountSheet extends ConsumerWidget {
               Navigator.pop(context);
               ref.read(sessionProvider.notifier).signOut();
             },
-            icon: const Icon(Icons.logout_rounded),
+            icon: const Icon(AppIcons.signOut),
             label: Text(l.signOut),
           ),
         ],

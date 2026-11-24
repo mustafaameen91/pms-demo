@@ -68,7 +68,7 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
 
   return (
     // Wide screens: project details on one side, project features on the other, so inputs keep a readable length.
-    <div className="grid w-full grid-cols-1 items-start gap-8 px-4 py-6 sm:px-6 xl:grid-cols-2">
+    <div className="grid w-full grid-cols-1 items-start gap-6 px-4 py-6 sm:px-6 xl:grid-cols-2">
       <ProjectSettings
         project={{
           id: project.id,
@@ -90,7 +90,7 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
         canDelete={workspace.role === "owner" || workspace.role === "admin"}
       />
       {canManage && (
-        <div className="grid grid-cols-1 gap-8">
+        <div className="grid grid-cols-1 gap-6">
           <ProjectTeam
             projectId={project.id}
             leadId={project.leadId}
@@ -100,7 +100,7 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
           <ClientShare
             projectId={project.id}
             share={share ?? null}
-            appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
+            appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3002"}
           />
           <CustomFieldsManager projectId={project.id} fields={fields} />
           <RequestForms
@@ -119,7 +119,7 @@ export default async function ProjectSettingsPage({ params }: PageProps<"/w/[slu
             }))}
             statuses={statuses}
             members={members.map((m) => ({ id: m.id, name: m.name }))}
-            appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
+            appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3002"}
           />
           <ApprovalThreshold projectId={project.id} currency={project.currency} current={project.approvalThreshold} />
           <SaveAsTemplate projectId={project.id} projectName={project.name} />

@@ -30,6 +30,8 @@ import {
   Building2,
   Layers,
   FileBarChart,
+  Contact,
+  Landmark,
 } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import { cn, initials } from "@/lib/utils";
@@ -65,6 +67,8 @@ type ShellProps = {
   loanRequests: number;
   /** Owners, admins and project managers get weekly reports. */
   showReports: boolean;
+  /** HR items needing action: papers expiring, leave waiting (owners/admins only; 0 for members). */
+  hrAlerts: number;
   access: AccessState;
   isPlatformAdmin: boolean;
   children: React.ReactNode;
@@ -81,12 +85,12 @@ export function AppShell(props: ShellProps) {
 
   return (
     <div className="flex min-h-dvh">
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 border-e bg-sidebar text-sidebar-foreground lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-e bg-sidebar text-sidebar-foreground lg:flex">
         <SidebarContent {...props} onSearch={openSearch} />
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-64 bg-sidebar p-0">
+        <SheetContent side="left" className="w-72 bg-sidebar p-0">
           <SheetTitle className="sr-only">{t("Navigation")}</SheetTitle>
           <SidebarContent {...props} onNavigate={() => setMobileOpen(false)} onSearch={openSearch} />
         </SheetContent>
@@ -132,6 +136,7 @@ function SidebarContent({
   approvals,
   loanRequests,
   showReports,
+  hrAlerts,
   access,
   isPlatformAdmin,
   onNavigate,
@@ -142,169 +147,129 @@ function SidebarContent({
   const base = `/w/${workspace.slug}`;
   const [newProjectOpen, setNewProjectOpen] = useState(false);
 
+  const isAdmin = workspace.role === "owner" || workspace.role === "admin";
+  const is = (href: string) => pathname.startsWith(href);
+  const item = (href: string, icon: typeof Bell, label: string, active: boolean, badge?: React.ReactNode) => (
+    <NavLink href={href} active={active} onNavigate={onNavigate} icon={icon} badge={badge}>
+      {label}
+    </NavLink>
+  );
+  const count = (n: number, srLabel: string, tone: "brand" | "amber") => (
+    <span
+      className={cn(
+        "ms-auto rounded-full px-1.5 py-px text-[11px] font-semibold tabular-nums",
+        tone === "brand" ? "bg-brand text-white shadow-sm shadow-brand/30" : "bg-amber-400 text-amber-950",
+      )}
+    >
+      {n > 99 ? "99+" : n}
+      <span className="sr-only"> {srLabel}</span>
+    </span>
+  );
+
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="relative isolate flex h-full w-full flex-col overflow-hidden">
+      {/* The brand, quietly: a coral glow behind the top of the sidebar. */}
+      <div aria-hidden className="pointer-events-none absolute -top-24 -z-10 size-64 rounded-full bg-brand-accent/10 blur-3xl inset-s-[-6rem]" />
+
       {/* grid-cols-1 = minmax(0,1fr): a long workspace name truncates instead of widening the sidebar. */}
-      <div className="grid grid-cols-1 gap-2 p-2">
+      <div className="grid grid-cols-1 gap-3 px-3 pt-4 pb-2">
+        <Link href={`${base}/dashboard`} onClick={onNavigate} className="flex items-center px-1.5 focus-visible:outline-2 focus-visible:outline-ring" aria-label={t("Dashboard")}>
+          <Logo />
+        </Link>
         <WorkspaceSwitcher workspace={workspace} workspaces={workspaces} />
         {access.allowed && <SearchButton onClick={onSearch} />}
       </div>
 
-      <nav aria-label={t("Main")} className="flex-1 overflow-y-auto px-2 pb-2">
+      <nav aria-label={t("Main")} className="flex-1 overflow-y-auto px-3 pb-3">
         {!access.allowed ? (
+          <NavGroup>
+            {item(`${base}/billing`, CreditCard, t("Billing"), is(`${base}/billing`))}
+            {isPlatformAdmin && item("/admin", ShieldCheck, t("Platform admin"), is("/admin"))}
+          </NavGroup>
+        ) : (
           <>
-            <NavLink href={`${base}/billing`} active={pathname.startsWith(`${base}/billing`)} onNavigate={onNavigate}>
-              <CreditCard className="size-4" />
-              {t("Billing")}
-            </NavLink>
-            {isPlatformAdmin && (
-              <NavLink href="/admin" active={pathname.startsWith("/admin")} onNavigate={onNavigate}>
-                <ShieldCheck className="size-4" />
-                {t("Platform admin")}
-              </NavLink>
-            )}
-          </>
-        ) : (
-        <>
-        <NavLink href={`${base}/my-tasks`} active={pathname.startsWith(`${base}/my-tasks`)} onNavigate={onNavigate}>
-          <CheckSquare className="size-4" />
-          {t("My tasks")}
-        </NavLink>
-        <NavLink href={`${base}/inbox`} active={pathname.startsWith(`${base}/inbox`)} onNavigate={onNavigate}>
-          <Bell className="size-4" />
-          {t("Inbox")}
-          {unread > 0 && (
-            <span className="ms-auto rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground tabular-nums">
-              {unread > 99 ? "99+" : unread}
-              <span className="sr-only"> {t("unread")}</span>
-            </span>
-          )}
-        </NavLink>
-        {approvals > 0 && (
-          <NavLink href={`${base}/approvals`} active={pathname.startsWith(`${base}/approvals`)} onNavigate={onNavigate}>
-            <BadgeCheck className="size-4" />
-            {t("Approvals")}
-            <span className="ms-auto rounded-full bg-amber-400 px-1.5 text-xs font-semibold text-amber-950 tabular-nums">
-              {approvals}
-              <span className="sr-only"> {t("waiting")}</span>
-            </span>
-          </NavLink>
-        )}
-        <NavLink href={`${base}/dashboard`} active={pathname.startsWith(`${base}/dashboard`)} onNavigate={onNavigate}>
-          <LayoutDashboard className="size-4" />
-          {t("Dashboard")}
-        </NavLink>
-        <NavLink href={base} active={pathname === base} onNavigate={onNavigate}>
-          <FolderKanban className="size-4" />
-          {t("Projects")}
-        </NavLink>
-        {showReports && (
-          <NavLink href={`${base}/reports`} active={pathname.startsWith(`${base}/reports`)} onNavigate={onNavigate}>
-            <FileBarChart className="size-4" />
-            {t("Weekly reports")}
-          </NavLink>
-        )}
-        <NavLink href={`${base}/portfolios`} active={pathname.startsWith(`${base}/portfolios`)} onNavigate={onNavigate}>
-          <Layers className="size-4" />
-          {t("Portfolios")}
-        </NavLink>
-        <NavLink href={`${base}/resources`} active={pathname.startsWith(`${base}/resources`)} onNavigate={onNavigate}>
-          <Package className="size-4" />
-          {t("Resources")}
-        </NavLink>
-        <NavLink href={`${base}/loans`} active={pathname.startsWith(`${base}/loans`)} onNavigate={onNavigate}>
-          <HandCoins className="size-4" />
-          {t("Loans")}
-          {loanRequests > 0 && (
-            <span className="ms-auto rounded-full bg-amber-400 px-1.5 text-xs font-semibold text-amber-950 tabular-nums">
-              {loanRequests}
-              <span className="sr-only"> {t("waiting")}</span>
-            </span>
-          )}
-        </NavLink>
-        <NavLink href={`${base}/templates`} active={pathname.startsWith(`${base}/templates`)} onNavigate={onNavigate}>
-          <LayoutTemplate className="size-4" />
-          {t("Templates")}
-        </NavLink>
-        <NavLink href={`${base}/workload`} active={pathname.startsWith(`${base}/workload`)} onNavigate={onNavigate}>
-          <Gauge className="size-4" />
-          {t("Workload")}
-        </NavLink>
-        <NavLink href={`${base}/members`} active={pathname.startsWith(`${base}/members`)} onNavigate={onNavigate}>
-          <Users className="size-4" />
-          {t("Members")}
-        </NavLink>
-        {(workspace.role === "owner" || workspace.role === "admin") && (
-          <NavLink href={`${base}/audit`} active={pathname.startsWith(`${base}/audit`)} onNavigate={onNavigate}>
-            <ScrollText className="size-4" />
-            {t("Audit log")}
-          </NavLink>
-        )}
-        {(workspace.role === "owner" || workspace.role === "admin") && (
-          <NavLink href={`${base}/company`} active={pathname.startsWith(`${base}/company`)} onNavigate={onNavigate}>
-            <Building2 className="size-4" />
-            {t("Company profile")}
-          </NavLink>
-        )}
-        {(workspace.role === "owner" || workspace.role === "admin") && (
-          <NavLink href={`${base}/billing`} active={pathname.startsWith(`${base}/billing`)} onNavigate={onNavigate}>
-            <CreditCard className="size-4" />
-            {t("Billing")}
-          </NavLink>
-        )}
-        {isPlatformAdmin && (
-          <NavLink href="/admin" active={pathname.startsWith("/admin")} onNavigate={onNavigate}>
-            <ShieldCheck className="size-4" />
-            {t("Platform admin")}
-          </NavLink>
-        )}
+            <NavGroup>
+              {item(`${base}/dashboard`, LayoutDashboard, t("Dashboard"), is(`${base}/dashboard`))}
+              {item(`${base}/my-tasks`, CheckSquare, t("My tasks"), is(`${base}/my-tasks`))}
+              {item(`${base}/inbox`, Bell, t("Inbox"), is(`${base}/inbox`), unread > 0 && count(unread, t("unread"), "brand"))}
+              {approvals > 0 && item(`${base}/approvals`, BadgeCheck, t("Approvals"), is(`${base}/approvals`), count(approvals, t("waiting"), "amber"))}
+            </NavGroup>
 
-        <div className="mt-5 mb-1 flex items-center justify-between ps-2.5 pe-1">
-          <span className="text-xs font-medium text-muted-foreground">{t("Your projects")}</span>
-          {(workspace.role === "owner" || workspace.role === "admin") && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-7"
-              onClick={() => setNewProjectOpen(true)}
-              aria-label={t("New project")}
+            <NavGroup label={t("Work")}>
+              {item(base, FolderKanban, t("Projects"), pathname === base)}
+              {showReports && item(`${base}/reports`, FileBarChart, t("Weekly reports"), is(`${base}/reports`))}
+              {item(`${base}/portfolios`, Layers, t("Portfolios"), is(`${base}/portfolios`))}
+              {item(`${base}/workload`, Gauge, t("Workload"), is(`${base}/workload`))}
+            </NavGroup>
+
+            <NavGroup label={t("Resources & money")}>
+              {item(`${base}/resources`, Package, t("Resources"), is(`${base}/resources`))}
+              {isAdmin && item(`${base}/finance`, Landmark, t("Finance"), is(`${base}/finance`))}
+              {item(`${base}/loans`, HandCoins, t("Loans"), is(`${base}/loans`), loanRequests > 0 && count(loanRequests, t("waiting"), "amber"))}
+              {item(`${base}/templates`, LayoutTemplate, t("Templates"), is(`${base}/templates`))}
+            </NavGroup>
+
+            <NavGroup label={t("Company")}>
+              {isAdmin && item(`${base}/hr`, Contact, t("HR"), is(`${base}/hr`), hrAlerts > 0 && count(hrAlerts, t("need attention"), "amber"))}
+              {item(`${base}/members`, Users, t("Members"), is(`${base}/members`))}
+              {isAdmin && item(`${base}/audit`, ScrollText, t("Audit log"), is(`${base}/audit`))}
+              {isAdmin && item(`${base}/company`, Building2, t("Company profile"), is(`${base}/company`))}
+              {isAdmin && item(`${base}/billing`, CreditCard, t("Billing"), is(`${base}/billing`))}
+              {isPlatformAdmin && item("/admin", ShieldCheck, t("Platform admin"), is("/admin"))}
+            </NavGroup>
+
+            <NavGroup
+              label={t("Your projects")}
+              action={
+                isAdmin && (
+                  <Button variant="ghost" size="icon" className="size-6 rounded-md" onClick={() => setNewProjectOpen(true)} aria-label={t("New project")}>
+                    <Plus className="size-3.5" />
+                  </Button>
+                )
+              }
             >
-              <Plus className="size-4" />
-            </Button>
-          )}
-        </div>
-        {projects.length === 0 ? (
-          <p className="px-2.5 py-1 text-xs text-muted-foreground">{t("No projects yet.")}</p>
-        ) : (
-          <ul className="grid gap-px">
-            {projects.map((p) => {
-              const href = `${base}/p/${p.key}`;
-              return (
-                <li key={p.id}>
-                  <NavLink href={href} active={pathname.startsWith(href)} onNavigate={onNavigate}>
-                    <span aria-hidden className="size-2.5 shrink-0 rounded-sm" style={{ backgroundColor: p.color }} />
-                    <span className="truncate">{p.name}</span>
-                  </NavLink>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        </>
+              {projects.length === 0 ? (
+                <p className="px-3 py-1 text-xs text-muted-foreground">{t("No projects yet.")}</p>
+              ) : (
+                projects.map((p) => {
+                  const href = `${base}/p/${p.key}`;
+                  return (
+                    <NavLink key={p.id} href={href} active={pathname.startsWith(href)} onNavigate={onNavigate}>
+                      <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-md text-[9px] font-bold text-white" style={{ backgroundColor: p.color }}>
+                        {p.key.slice(0, 2)}
+                      </span>
+                      <span className="truncate">{p.name}</span>
+                    </NavLink>
+                  );
+                })
+              )}
+            </NavGroup>
+          </>
         )}
       </nav>
 
       {/* grid-cols-1 = minmax(0,1fr): a long email truncates instead of widening the sidebar. */}
-      <div className="grid grid-cols-1 gap-1 border-t p-2">
+      <div className="grid grid-cols-1 gap-1.5 border-t bg-sidebar/80 p-3 backdrop-blur-sm">
         <LanguageSwitcher className="justify-start" />
         <UserMenu user={user} />
       </div>
 
-      <NewProjectDialog
-        workspaceSlug={workspace.slug}
-        open={newProjectOpen}
-        onOpenChange={setNewProjectOpen}
-      />
+      <NewProjectDialog workspaceSlug={workspace.slug} open={newProjectOpen} onOpenChange={setNewProjectOpen} />
+    </div>
+  );
+}
+
+/** A labelled block of links (unlabelled for the first one). */
+function NavGroup({ label, action, children }: { label?: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="mt-4 first:mt-1">
+      {label && (
+        <div className="mb-1 flex h-6 items-center justify-between ps-3 pe-1">
+          <span className="text-[11px] font-semibold tracking-wider text-muted-foreground/80 uppercase">{label}</span>
+          {action}
+        </div>
+      )}
+      <div className="grid gap-0.5">{children}</div>
     </div>
   );
 }
@@ -313,11 +278,15 @@ function NavLink({
   href,
   active,
   onNavigate,
+  icon: Icon,
+  badge,
   children,
 }: {
   href: string;
   active: boolean;
   onNavigate?: () => void;
+  icon?: typeof Bell;
+  badge?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -326,13 +295,21 @@ function NavLink({
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex h-8 items-center gap-2 rounded-md px-2.5 text-sm transition-colors",
+        "group relative flex h-9 items-center gap-3 rounded-lg px-3 text-sm text-sidebar-foreground/85 transition-colors",
         "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         "focus-visible:outline-2 focus-visible:outline-ring",
-        active && "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
+        active && "bg-linear-to-r from-primary/15 to-primary/5 font-semibold text-primary hover:text-primary rtl:bg-linear-to-l dark:from-primary/20 dark:to-primary/5",
       )}
     >
+      {active && <span aria-hidden className="absolute inset-y-1.5 start-0 w-[3px] rounded-full bg-brand-accent" />}
+      {Icon && (
+        <Icon
+          aria-hidden
+          className={cn("size-[18px] shrink-0 transition-colors", active ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-accent-foreground")}
+        />
+      )}
       {children}
+      {badge}
     </Link>
   );
 }
@@ -342,20 +319,32 @@ function WorkspaceSwitcher({
   workspaces,
 }: Pick<ShellProps, "workspace" | "workspaces">) {
   const t = useT();
+  const role = workspace.role === "owner" ? t("Owner") : workspace.role === "admin" ? t("Admin") : t("Member");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex h-10 w-full items-center gap-2 rounded-md px-2 text-start hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-ring">
-          <Logo compact />
-          <span className="flex-1 truncate text-sm font-semibold">{workspace.name}</span>
-          <ChevronsUpDown className="size-4 text-muted-foreground" />
+        <button className="flex w-full items-center gap-2.5 rounded-xl border bg-card px-2.5 py-2 text-start shadow-xs transition-colors hover:border-primary/30 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring">
+          <span
+            aria-hidden
+            className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-xs font-bold text-white"
+          >
+            {initials(workspace.name)}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm leading-tight font-semibold">{workspace.name}</span>
+            <span className="block truncate text-xs text-muted-foreground">{role}</span>
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
+      <DropdownMenuContent align="start" className="w-60">
         <DropdownMenuLabel className="text-xs text-muted-foreground">{t("Workspaces")}</DropdownMenuLabel>
         {workspaces.map((w) => (
           <DropdownMenuItem key={w.id} asChild>
             <Link href={`/w/${w.slug}`}>
+              <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">
+                {initials(w.name)}
+              </span>
               <span className="flex-1 truncate">{w.name}</span>
               {w.id === workspace.id && <Check className="size-4" />}
             </Link>
@@ -387,8 +376,8 @@ function UserMenu({ user }: Pick<ShellProps, "user">) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex h-10 w-full items-center gap-2 rounded-md px-2 text-start hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-ring">
-          <Avatar className="size-7">
+        <button className="flex w-full items-center gap-2.5 rounded-xl border bg-card px-2.5 py-2 text-start shadow-xs transition-colors hover:border-primary/30 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring">
+          <Avatar className="size-8 ring-2 ring-primary/20 ring-offset-2 ring-offset-card">
             {user.image && <AvatarImage src={user.image} alt="" />}
             <AvatarFallback className="text-xs">{initials(user.name)}</AvatarFallback>
           </Avatar>

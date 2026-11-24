@@ -42,7 +42,7 @@ export function AcceptInvitation(props: {
     const [title, text] = messages[props.state];
     return (
       <>
-        <h1 className="text-xl font-semibold">{title}</h1>
+        <h1 className="text-xl font-bold tracking-tight">{title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{text}</p>
         <div className="mt-6 flex justify-center gap-2">
           {props.state === "wrong-account" ? (
@@ -56,7 +56,7 @@ export function AcceptInvitation(props: {
             </Button>
           ) : (
             <Button asChild>
-              <Link href={props.alreadyAccepted ? `/w/${props.workspaceSlug}` : "/"}>{t("Go to PMS")}</Link>
+              <Link href={props.alreadyAccepted ? `/w/${props.workspaceSlug}` : "/"}>{t("Go to Tamm")}</Link>
             </Button>
           )}
         </div>
@@ -82,7 +82,7 @@ export function AcceptInvitation(props: {
 
   return (
     <>
-      <h1 className="text-xl font-semibold">{t("Join {workspace}", { workspace: props.workspaceName })}</h1>
+      <h1 className="text-xl font-bold tracking-tight">{t("Join {workspace}", { workspace: props.workspaceName })}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {t("{inviter} invited you to join as", { inviter: props.inviterName ?? t("Someone") })}{" "}
         <strong className="text-foreground">{t(props.role)}</strong>.

@@ -1,4 +1,4 @@
-# PMS phone app (Flutter)
+# tamm phone app (Flutter)
 
 One app for members and managers: after signing in it opens the home that fits
 the person's role in each company. It talks only to the server's mobile API
@@ -16,9 +16,15 @@ Only these, each approved by the owner. **Ask before adding any other package.**
 | flutter_secure_storage | The sign-in token and saved screens (Keychain / Keystore) |
 | flutter_localizations + intl | Arabic / English, dates |
 | image_picker | Camera / gallery for site photos and receipts (shrunk on the phone before upload) |
+| phosphor_flutter | Icons (one family app-wide, via `lib/theme/icons.dart`; only direction icons mirror in Arabic) |
 
-Fonts are bundled files, not packages: Plus Jakarta Sans and IBM Plex Sans Arabic
-(the website's pair), with their OFL licences in `assets/fonts/`.
+Fonts are bundled files, not packages: Manrope (Latin and digits) and Readex Pro (Arabic, text
+at Medium 500), the website's pair, with their OFL licences in `assets/fonts/`. Both are static
+instances of the Google Fonts variable fonts (Readex Pro at HEXP 0), made with fontTools'
+instancer so every weight renders exactly.
+
+Brand: colours, icons and launch screens follow `brand/README.md` (Graphite #1F2933 for primary
+and the header band, Coral #F2545B for the check-mark moments only). App id: `com.tamm.app`.
 
 ## Run
 

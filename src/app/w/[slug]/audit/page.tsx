@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Download } from "lucide-react";
+import { Bot, ClipboardList, Download, Filter, History, ListChecks, ScrollText, Users, Wallet } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { listAuditEntries } from "@/lib/data/audit";
 import { listWorkspaceMembers } from "@/lib/data/members";
 import { ACTIVITY_GROUPS, activityGroup, describeActivity, type ActivityGroup } from "@/lib/activity-text";
-import { cn, formatDateTime } from "@/lib/utils";
+import { cn, formatDate, formatDateTime } from "@/lib/utils";
 import { getT } from "@/i18n/server";
 import { Button } from "@/components/ui/button";
+import { SelectBox } from "@/components/ui/select-box";
+import { EmptyState, PageHeader, PageShell, Panel, StatTile } from "@/components/page/kit";
 
 export async function generateMetadata() {
   const t = await getT();
@@ -37,81 +39,147 @@ export default async function AuditPage({ params, searchParams }: PageProps<"/w/
     return p.size ? `?${p}` : "";
   };
 
-  return (
-    <div className="grid w-full grid-cols-1 gap-5 px-4 py-6 sm:px-6 lg:py-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{t("Audit log")}</h1>
-          <p className="text-sm text-muted-foreground">{t("Everything that changed in {workspace}, newest first.", { workspace: workspace.name })}</p>
-        </div>
-        <Button variant="outline" size="sm" asChild>
-          <a href={`${base}/export${qs({})}`} download>
-            <Download className="size-4" />
-            {t("Download CSV")}
-          </a>
-        </Button>
-      </div>
+  const people = new Set(entries.flatMap((e) => (e.actorName ? [e.actorName] : []))).size;
+  const inGroup = (g: ActivityGroup) => entries.filter((e) => activityGroup(e.type) === g).length;
+  // The log, one block per day (entries arrive newest first).
+  const days: { day: string; items: typeof entries }[] = [];
+  for (const e of entries) {
+    const d = new Date(e.createdAt);
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    if (days.at(-1)?.day !== day) days.push({ day, items: [] });
+    days.at(-1)!.items.push(e);
+  }
+  const GROUP_TONE: Record<ActivityGroup, string> = {
+    tasks: "bg-primary/10 text-primary",
+    projects: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+    money: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
+    members: "bg-cyan-500/10 text-cyan-800 dark:text-cyan-300",
+    people: "bg-pink-500/10 text-pink-800 dark:text-pink-300",
+    billing: "bg-muted text-muted-foreground",
+  };
 
-      <div className="flex flex-wrap items-center gap-3">
-        <nav aria-label={t("Filter by area")} className="flex flex-wrap gap-1 rounded-lg bg-muted p-0.5">
-          {[{ key: undefined, label: "All" }, ...Object.entries(ACTIVITY_GROUPS).map(([key, label]) => ({ key, label }))].map((g) => (
-            <Link
-              key={g.label}
-              href={`${base}${qs({ group: g.key, before: undefined })}`}
-              aria-current={group === g.key ? "page" : undefined}
-              className={cn(
-                "flex h-7 items-center rounded-md px-3 text-sm text-muted-foreground hover:text-foreground",
-                group === g.key && "bg-background font-medium text-foreground shadow-sm",
-              )}
-            >
-              {t(g.label)}
-            </Link>
-          ))}
-        </nav>
-        <form className="flex items-center gap-2" action={base}>
-          {group && <input type="hidden" name="group" value={group} />}
-          <label htmlFor="audit-actor" className="text-sm text-muted-foreground">
-            {t("Person")}
-          </label>
-          <select id="audit-actor" name="actor" defaultValue={actorId ?? ""} className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm dark:bg-input/30">
-            <option value="">{t("Everyone")}</option>
-            {members.map((m) => (
-              <option key={m.userId} value={m.userId}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-          <Button type="submit" size="sm" variant="outline">
-            {t("Apply")}
+  return (
+    <PageShell>
+      <PageHeader
+        icon={ScrollText}
+        title={t("Audit log")}
+        description={t("Everything that changed in {workspace}, newest first.", { workspace: workspace.name })}
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <a href={`${base}/export${qs({})}`} download>
+              <Download className="size-4" />
+              {t("Download CSV")}
+            </a>
           </Button>
-        </form>
-      </div>
+        }
+      />
+
+      {entries.length > 0 && (
+        <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatTile
+            icon={History}
+            label={t("Changes shown")}
+            value={entries.length}
+            hint={entries.length === PAGE ? t("The newest {count}; older ones are a page away", { count: PAGE }) : t("Everything for this filter")}
+          />
+          <StatTile icon={Users} label={t("People involved")} value={people} hint={t("Who made these changes")} />
+          <StatTile icon={ListChecks} label={t("Task changes")} value={inGroup("tasks")} hint={t("Tasks, sub-tasks and comments")} />
+          <StatTile icon={Wallet} label={t("Money changes")} value={inGroup("money")} hint={t("Expenses, resources and loans")} />
+        </dl>
+      )}
+
+      <Panel id="audit-filters" title={t("Filter")} icon={Filter}>
+        <div className="flex flex-wrap items-center gap-3 border-t px-5 py-4">
+          <nav aria-label={t("Filter by area")} className="flex flex-wrap gap-1 rounded-xl bg-muted p-1">
+            {[{ key: undefined, label: "All" }, ...Object.entries(ACTIVITY_GROUPS).map(([key, label]) => ({ key, label }))].map((g) => (
+              <Link
+                key={g.label}
+                href={`${base}${qs({ group: g.key, before: undefined })}`}
+                aria-current={group === g.key ? "page" : undefined}
+                className={cn(
+                  "flex h-7 items-center rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
+                  group === g.key && "bg-card text-primary shadow-sm",
+                )}
+              >
+                {t(g.label)}
+              </Link>
+            ))}
+          </nav>
+          <form className="flex items-center gap-2" action={base}>
+            {group && <input type="hidden" name="group" value={group} />}
+            <label htmlFor="audit-actor" className="text-sm text-muted-foreground">
+              {t("Person")}
+            </label>
+            <SelectBox id="audit-actor" name="actor" defaultValue={actorId ?? ""} className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm dark:bg-input/30">
+              <option value="">{t("Everyone")}</option>
+              {members.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.name}
+                </option>
+              ))}
+            </SelectBox>
+            <Button type="submit" size="sm" variant="outline">
+              {t("Apply")}
+            </Button>
+          </form>
+        </div>
+      </Panel>
 
       {entries.length === 0 ? (
-        <p className="rounded-xl border border-dashed px-6 py-12 text-center text-sm text-muted-foreground">{t("Nothing recorded for this filter.")}</p>
+        <EmptyState icon={ScrollText} title={t("Nothing recorded for this filter.")} />
       ) : (
-        <ol className="divide-y overflow-hidden rounded-xl border bg-card">
-          {entries.map((e) => {
-            const taskRef = e.projectKey && e.taskNumber ? `${e.projectKey}-${e.taskNumber}` : null;
-            const when = new Date(e.createdAt);
-            return (
-              <li key={e.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 py-2.5 text-sm">
-                <time dateTime={when.toISOString()} className="w-36 shrink-0 text-xs text-muted-foreground tabular-nums" suppressHydrationWarning>
-                  {formatDateTime(when, t.intl)}
-                </time>
-                <p className="min-w-0 flex-1">
-                  <span className="font-medium">{e.actorName ?? (e.data.automation ? t("Automation:") : e.type === "task.created_from_form" ? t("Request form:") : systemActor)}</span> {describeActivity(e.type, e.data, taskRef, t)}
-                  {e.projectName && (
-                    <Link href={`/w/${workspace.slug}/p/${e.projectKey}/overview`} className="ms-1 text-muted-foreground hover:underline">
-                      · {e.projectName}
-                    </Link>
-                  )}
-                </p>
-                <span className="rounded border px-1.5 text-[11px] text-muted-foreground">{t(ACTIVITY_GROUPS[activityGroup(e.type)])}</span>
-              </li>
-            );
-          })}
-        </ol>
+        days.map(({ day, items }) => (
+          <Panel key={day} id={`audit-${day}`} title={formatDate(day, t.intl)} icon={History} count={items.length}>
+            <ol className="border-t px-5 py-2">
+              {items.map((e, i) => {
+                const taskRef = e.projectKey && e.taskNumber ? `${e.projectKey}-${e.taskNumber}` : null;
+                const when = new Date(e.createdAt);
+                const g = activityGroup(e.type);
+                const who = e.actorName ?? (e.data.automation ? t("Automation:") : e.type === "task.created_from_form" ? t("Request form:") : systemActor);
+                const initials = e.actorName
+                  ? e.actorName
+                      .trim()
+                      .split(/\s+/)
+                      .slice(0, 2)
+                      .map((w) => w[0])
+                      .join("")
+                      .toUpperCase()
+                  : null;
+                return (
+                  <li key={e.id} className="relative flex gap-3 py-2.5 text-sm">
+                    {/* The timeline's line, between this entry's avatar and the next. */}
+                    {i < items.length - 1 && <span aria-hidden className="absolute top-11 bottom-0 w-px bg-border inset-s-4" />}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "relative grid size-8 shrink-0 place-items-center rounded-full text-xs font-semibold",
+                        initials ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {initials ?? (e.type === "task.created_from_form" ? <ClipboardList className="size-4" /> : <Bot className="size-4" />)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p>
+                        <span className="font-semibold">{who}</span> {describeActivity(e.type, e.data, taskRef, t)}
+                        {e.projectName && (
+                          <Link href={`/w/${workspace.slug}/p/${e.projectKey}/overview`} className="ms-1 text-muted-foreground hover:underline">
+                            · {e.projectName}
+                          </Link>
+                        )}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <time dateTime={when.toISOString()} className="text-xs text-muted-foreground tabular-nums" suppressHydrationWarning>
+                          {formatDateTime(when, t.intl)}
+                        </time>
+                        <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", GROUP_TONE[g])}>{t(ACTIVITY_GROUPS[g])}</span>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </Panel>
+        ))
       )}
 
       {entries.length === PAGE && (
@@ -121,6 +189,6 @@ export default async function AuditPage({ params, searchParams }: PageProps<"/w/
           </Button>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

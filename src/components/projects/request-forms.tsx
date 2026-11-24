@@ -23,6 +23,7 @@ import { useT } from "@/i18n/client";
 import type { T } from "@/i18n/translate";
 import { FieldError } from "./project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
+import { SelectBox } from "@/components/ui/select-box";
 
 export type ManagedForm = {
   id: string;
@@ -65,11 +66,13 @@ export function RequestForms({
     });
 
   return (
-    <section aria-labelledby="forms-heading" className="rounded-xl border bg-card p-5 sm:p-6">
+    <section aria-labelledby="forms-heading" className="rounded-2xl border bg-card p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 id="forms-heading" className="flex items-center gap-2 font-semibold">
-            <ClipboardList className="size-4 text-muted-foreground" aria-hidden />
+          <h2 id="forms-heading" className="flex items-center gap-2.5 font-semibold">
+            <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+              <ClipboardList className="size-4" />
+            </span>
             {t("Request forms")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -87,7 +90,7 @@ export function RequestForms({
           {forms.map((f) => {
             const url = `${appOrigin}/f/${f.token}`;
             return (
-              <li key={f.id} className="rounded-lg border p-3">
+              <li key={f.id} className="rounded-xl border p-3 transition-colors hover:bg-accent/40">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="min-w-0 flex-1 font-medium">{f.title}</p>
                   <span className={cn("rounded-full border px-2 py-0.5 text-xs", f.enabled ? "border-primary/30 bg-primary/10 text-primary" : "text-muted-foreground")}>
@@ -238,41 +241,41 @@ function FormEditor({
       <div className="grid items-start gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label htmlFor="form-status">{t("New requests go to")}</Label>
-          <select id="form-status" value={statusId} onChange={(e) => setStatusId(e.target.value)} className={nativeSelectClass}>
+          <SelectBox id="form-status" value={statusId} onValueChange={(v) => setStatusId(v)} className={nativeSelectClass}>
             <option value="">{t("The “To do” column")}</option>
             {statuses.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
             ))}
-          </select>
+          </SelectBox>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="form-assignee">{t("Assign to")}</Label>
-          <select id="form-assignee" value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} className={nativeSelectClass}>
+          <SelectBox id="form-assignee" value={assigneeId} onValueChange={(v) => setAssigneeId(v)} className={nativeSelectClass}>
             <option value="">{t("Nobody (project manager is notified)")}</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
               </option>
             ))}
-          </select>
+          </SelectBox>
         </div>
       </div>
 
-      <fieldset className="grid gap-3 rounded-lg border p-3">
+      <fieldset className="grid gap-3 rounded-xl border p-3">
         <legend className="px-1 text-sm font-medium">{t("Ask for")}</legend>
         <p className="-mt-1 text-xs text-muted-foreground">{t("“What do you need?” and “Details” are always asked.")}</p>
         {(["askName", "askEmail", "askPhone"] as const).map((k) => (
           <div key={k} className="flex items-center justify-between gap-3 text-sm">
             <label htmlFor={`cfg-${k}`}>{{ askName: t("Name"), askEmail: t("Email"), askPhone: t("Phone") }[k]}</label>
-            <select id={`cfg-${k}`} value={config[k]} onChange={(e) => setConfig((c) => ({ ...c, [k]: e.target.value }))} className={cn(nativeSelectClass, "w-36")}>
+            <SelectBox id={`cfg-${k}`} value={config[k]} onValueChange={(v) => setConfig((c) => ({ ...c, [k]: v }))} className={cn(nativeSelectClass, "w-36")}>
               {ASK_VALUES.map((v) => (
                 <option key={v} value={v}>
                   {askLabel(v, t)}
                 </option>
               ))}
-            </select>
+            </SelectBox>
           </div>
         ))}
         {(["askPriority", "askNeededBy"] as const).map((k) => (
@@ -283,7 +286,7 @@ function FormEditor({
         ))}
       </fieldset>
 
-      <fieldset className="grid gap-3 rounded-lg border p-3">
+      <fieldset className="grid gap-3 rounded-xl border p-3">
         <legend className="px-1 text-sm font-medium">{t("Your own questions")}</legend>
         {config.questions.map((q, i) => (
           <div key={q.id} className="grid gap-2 rounded-md bg-muted/50 p-2">
@@ -295,11 +298,11 @@ function FormEditor({
               <label htmlFor={`q-type-${q.id}`} className="sr-only">
                 {t("Answer type for question {number}", { number: i + 1 })}
               </label>
-              <select id={`q-type-${q.id}`} value={q.type} onChange={(e) => setQ(i, { type: e.target.value as FormQuestion["type"] })} className={cn(nativeSelectClass, "w-36")}>
+              <SelectBox id={`q-type-${q.id}`} value={q.type} onValueChange={(v) => setQ(i, { type: v as FormQuestion["type"] })} className={cn(nativeSelectClass, "w-36")}>
                 <option value="text">{t("Short answer")}</option>
                 <option value="textarea">{t("Long answer")}</option>
                 <option value="choice">{t("Choice")}</option>
-              </select>
+              </SelectBox>
               <button
                 type="button"
                 onClick={() => setConfig((c) => ({ ...c, questions: c.questions.filter((_, j) => j !== i) }))}

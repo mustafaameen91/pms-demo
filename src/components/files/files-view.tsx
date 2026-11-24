@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   Download,
+  Files,
   FileArchive,
   FileImage,
   FileSpreadsheet,
@@ -16,6 +17,7 @@ import {
   Search,
   Trash2,
   Upload,
+  HardDrive,
 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteFile, fileHistory, updateFile, uploadFiles, uploadVersion } from "@/lib/actions/files";
@@ -29,6 +31,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
+import { SelectBox } from "@/components/ui/select-box";
+import { EmptyState, StatTile } from "@/components/page/kit";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 const ACCEPT = ".pdf,.jpg,.jpeg,.png,.webp,.dwg,.dxf,.docx,.xlsx,.pptx,.zip";
@@ -54,6 +58,15 @@ type TaskOption = { id: string; number: number; title: string };
 
 const fileUrl = (versionId: string, download = false) => `/api/files/project/${versionId}${download ? "?download=1" : ""}`;
 const categoryLabel = (v: string) => FILE_CATEGORIES.find((c) => c.value === v)?.label ?? v;
+
+/** A tinted tile per file type, so a list of files scans at a glance. */
+function typeTint(mime: string) {
+  if (mime === "image/vnd.dwg" || mime === "image/vnd.dxf") return "bg-violet-500/10 text-violet-700 dark:text-violet-300";
+  if (mime.startsWith("image/")) return "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300";
+  if (mime.includes("spreadsheet")) return "bg-green-600/10 text-green-700 dark:text-green-400";
+  if (mime === "application/zip") return "bg-amber-500/10 text-amber-700 dark:text-amber-300";
+  return "bg-primary/10 text-primary";
+}
 
 function FileIcon({ mime, className }: { mime: string; className?: string }) {
   const Icon =
@@ -104,10 +117,18 @@ export function FilesView({
   );
   const counts = new Map<string, number>();
   for (const f of files) counts.set(f.category, (counts.get(f.category) ?? 0) + 1);
+  const totalSize = files.reduce((sum, f) => sum + f.size, 0);
   const close = () => setDialog(null);
 
   return (
     <div className="grid grid-cols-1 gap-6">
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile label={t("Files")} value={files.length} icon={Files} hint={t("Each keeps its older versions")} />
+        <StatTile label={t("Drawings")} value={counts.get("drawing") ?? 0} icon={PencilRuler} />
+        <StatTile label={t("Photos")} value={counts.get("photo") ?? 0} icon={FileImage} />
+        <StatTile label={t("Space used")} value={<bdi dir="ltr">{fileSize(totalSize, t.intl)}</bdi>} icon={HardDrive} hint={t("Stored on your server")} />
+      </dl>
+
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 id="files-heading" className="flex items-center gap-2 text-lg font-semibold">
@@ -118,14 +139,30 @@ export function FilesView({
             {t("Drawings, signed contracts, permits and photos for this project, kept on your server. Uploading a new version keeps the old ones.")}
           </p>
         </div>
-        <Button onClick={() => setDialog({ kind: "upload" })}>
-          <Upload className="size-4" />
-          {t("Upload files")}
-        </Button>
+        {files.length > 0 && (
+          <Button onClick={() => setDialog({ kind: "upload" })}>
+            <Upload className="size-4" />
+            {t("Upload files")}
+          </Button>
+        )}
       </header>
 
-      <section aria-labelledby="files-heading" className="rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
+      {files.length === 0 ? (
+        <EmptyState
+          icon={FolderOpen}
+          title={t("No files yet")}
+          action={
+            <Button onClick={() => setDialog({ kind: "upload" })}>
+              <Upload className="size-4" />
+              {t("Upload files")}
+            </Button>
+          }
+        >
+          {t("Upload the project's drawings, contracts and permits so everyone works from the latest version.")}
+        </EmptyState>
+      ) : (
+      <section aria-labelledby="files-heading" className="overflow-hidden rounded-2xl border bg-card">
+        <div className="flex flex-wrap items-center gap-3 border-b px-5 py-3">
           <div role="group" aria-label={t("Category")} className="flex flex-wrap gap-1.5">
             {[{ value: "", label: "All" }, ...FILE_CATEGORIES].map((c) => {
               const n = c.value ? (counts.get(c.value) ?? 0) : files.length;
@@ -137,7 +174,7 @@ export function FilesView({
                   onClick={() => setCategory(c.value)}
                   className={cn(
                     "inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-sm text-muted-foreground hover:text-foreground",
-                    category === c.value && "border-primary bg-primary/10 font-medium text-foreground",
+                    category === c.value && "border-primary/40 bg-primary/10 font-medium text-primary",
                   )}
                 >
                   {t(c.label)} <span className="text-xs tabular-nums">{n}</span>
@@ -147,14 +184,14 @@ export function FilesView({
           </div>
           <div className="ms-auto flex flex-wrap items-center gap-2">
             {taskFilter && (
-              <select value={taskFilter} onChange={(e) => setTaskFilter(e.target.value)} className={cn(nativeSelectClass, "h-8 w-56")} aria-label={t("Task")}>
+              <SelectBox value={taskFilter} onValueChange={(v) => setTaskFilter(v)} className={cn(nativeSelectClass, "h-8 w-56")} aria-label={t("Task")}>
                 <option value="">{t("All tasks")}</option>
                 {tasks.map((task) => (
                   <option key={task.id} value={task.id}>
                     #{task.number} {task.title}
                   </option>
                 ))}
-              </select>
+              </SelectBox>
             )}
             <div className="relative">
               <Search className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
@@ -164,20 +201,18 @@ export function FilesView({
         </div>
 
         {shown.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            {files.length === 0 ? t("No files yet. Upload the project's drawings, contracts and permits so everyone works from the latest version.") : t("No files match.")}
-          </p>
+          <p className="px-5 py-12 text-center text-sm text-muted-foreground">{t("No files match.")}</p>
         ) : (
           <ul className="divide-y">
             {shown.map((f) => (
-              <li key={f.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+              <li key={f.id} className="flex flex-wrap items-center gap-3.5 px-5 py-3.5 text-sm transition-colors hover:bg-accent/40">
                 <a href={fileUrl(f.versionId)} target="_blank" rel="noreferrer" className="shrink-0" tabIndex={-1} aria-hidden>
                   {f.mime.startsWith("image/") && f.mime !== "image/vnd.dwg" && f.mime !== "image/vnd.dxf" ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={fileUrl(f.versionId)} alt="" loading="lazy" className="size-11 rounded-md border object-cover" />
+                    <img src={fileUrl(f.versionId)} alt="" loading="lazy" className="size-12 rounded-xl border object-cover" />
                   ) : (
-                    <span className="flex size-11 items-center justify-center rounded-md border bg-muted/50">
-                      <FileIcon mime={f.mime} className="size-5 text-muted-foreground" />
+                    <span className={cn("flex size-12 items-center justify-center rounded-xl", typeTint(f.mime))}>
+                      <FileIcon mime={f.mime} className="size-5" />
                     </span>
                   )}
                 </a>
@@ -186,8 +221,8 @@ export function FilesView({
                     <a href={fileUrl(f.versionId)} target="_blank" rel="noreferrer" className="font-medium hover:underline" dir="auto">
                       {f.name}
                     </a>
-                    <span className="rounded-full border px-1.5 text-[11px] font-medium text-muted-foreground tabular-nums">v{f.currentVersion}</span>
-                    <span className="rounded-full bg-muted px-1.5 text-[11px] text-muted-foreground">{t(categoryLabel(f.category))}</span>
+                    <span className="rounded-full border border-primary/30 bg-primary/5 px-1.5 text-[11px] font-semibold text-primary tabular-nums">v{f.currentVersion}</span>
+                    <span className="rounded-full bg-muted px-2 text-[11px] text-muted-foreground">{t(categoryLabel(f.category))}</span>
                   </p>
                   <p className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
                     <bdi dir="ltr">{fileSize(f.size, t.intl)}</bdi>
@@ -225,6 +260,7 @@ export function FilesView({
           </ul>
         )}
       </section>
+      )}
 
       <Dialog open={dialog !== null} onOpenChange={(o) => !o && close()}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
@@ -313,25 +349,25 @@ function UploadForm({ projectId, tasks, defaultTask, onDone }: { projectId: stri
       <div className="grid items-start gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label htmlFor="upload-category">{t("Category")}</Label>
-          <select id="upload-category" value={category} onChange={(e) => setCategory(e.target.value)} className={nativeSelectClass}>
+          <SelectBox id="upload-category" value={category} onValueChange={(v) => setCategory(v)} className={nativeSelectClass}>
             <option value="auto">{t("Choose automatically")}</option>
             {FILE_CATEGORIES.map((c) => (
               <option key={c.value} value={c.value}>
                 {t(c.label)}
               </option>
             ))}
-          </select>
+          </SelectBox>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="upload-task">{t("Task")}</Label>
-          <select id="upload-task" value={taskId} onChange={(e) => setTaskId(e.target.value)} className={nativeSelectClass}>
+          <SelectBox id="upload-task" value={taskId} onValueChange={(v) => setTaskId(v)} className={nativeSelectClass}>
             <option value="">{t("Whole project")}</option>
             {tasks.map((task) => (
               <option key={task.id} value={task.id}>
                 #{task.number} {task.title}
               </option>
             ))}
-          </select>
+          </SelectBox>
         </div>
       </div>
       <div className="grid gap-1.5">
@@ -476,24 +512,24 @@ function EditForm({ file, tasks, onDone }: { file: FileItem; tasks: TaskOption[]
       <div className="grid items-start gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label htmlFor="edit-file-category">{t("Category")}</Label>
-          <select id="edit-file-category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={nativeSelectClass}>
+          <SelectBox id="edit-file-category" value={form.category} onValueChange={(v) => setForm({ ...form, category: v })} className={nativeSelectClass}>
             {FILE_CATEGORIES.map((c) => (
               <option key={c.value} value={c.value}>
                 {t(c.label)}
               </option>
             ))}
-          </select>
+          </SelectBox>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="edit-file-task">{t("Task")}</Label>
-          <select id="edit-file-task" value={form.taskId} onChange={(e) => setForm({ ...form, taskId: e.target.value })} className={nativeSelectClass}>
+          <SelectBox id="edit-file-task" value={form.taskId} onValueChange={(v) => setForm({ ...form, taskId: v })} className={nativeSelectClass}>
             <option value="">{t("Whole project")}</option>
             {tasks.map((task) => (
               <option key={task.id} value={task.id}>
                 #{task.number} {task.title}
               </option>
             ))}
-          </select>
+          </SelectBox>
         </div>
       </div>
       <div className="grid gap-1.5">

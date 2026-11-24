@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { UserAvatar } from "@/components/tasks/task-bits";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { useT } from "@/i18n/client";
+import { SelectBox } from "@/components/ui/select-box";
 
 type Person = { id: string; name: string; email: string; role: string };
 
@@ -39,16 +40,18 @@ export function ProjectTeam({
     });
 
   return (
-    <section aria-labelledby="team-heading" className="rounded-xl border bg-card p-5 sm:p-6">
-      <h2 id="team-heading" className="flex items-center gap-2 font-semibold">
-        <Users className="size-4 text-muted-foreground" aria-hidden />
+    <section aria-labelledby="team-heading" className="rounded-2xl border bg-card p-5 sm:p-6">
+      <h2 id="team-heading" className="flex items-center gap-2.5 font-semibold">
+        <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+          <Users className="size-4" />
+        </span>
         {t("Project team")}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {t("Members only see the projects they're on. Assigning someone a task adds them automatically. Owners and admins see every project.")}
       </p>
 
-      <ul className="mt-4 grid divide-y rounded-lg border">
+      <ul className="mt-4 grid divide-y overflow-hidden rounded-xl border">
         {team.length === 0 && <li className="px-3 py-3 text-sm text-muted-foreground">{t("Nobody on the team yet.")}</li>}
         {team.map((p) => (
           <li key={p.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
@@ -92,14 +95,14 @@ export function ProjectTeam({
         >
           <div className="grid min-w-0 flex-1 gap-1.5">
             <Label htmlFor="team-add">{t("Add to the team")}</Label>
-            <select id="team-add" value={adding} onChange={(e) => setAdding(e.target.value)} className={nativeSelectClass}>
+            <SelectBox id="team-add" value={adding} onValueChange={(v) => setAdding(v)} className={nativeSelectClass}>
               <option value="">{t("Choose a member…")}</option>
               {candidates.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} · {c.email}
                 </option>
               ))}
-            </select>
+            </SelectBox>
           </div>
           <Button type="submit" variant="outline" disabled={pending || !adding}>
             {pending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}

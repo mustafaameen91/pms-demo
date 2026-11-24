@@ -66,7 +66,7 @@ export default {
   "This invitation is for {invited}, but you're logged in as {current}. Log out and sign in (or sign up) with {invited}.":
     "هذه الدعوة موجّهة إلى {invited}، لكنك مسجّل الدخول باسم {current}. سجّل الخروج ثم سجّل الدخول (أو أنشئ حسابًا) باستخدام {invited}.",
   "Log out": "تسجيل الخروج",
-  "Go to PMS": "الانتقال إلى PMS",
+  "Go to Tamm": "الانتقال إلى تمّ",
   "Something went wrong.": "حدث خطأ ما.",
   "Join {workspace}": "انضم إلى {workspace}",
   "Someone": "شخص ما",
@@ -112,7 +112,7 @@ export default {
   "Item": "البند",
   "Dates": "التواريخ",
   "Late": "متأخرة",
-  "Shared with PMS · updates automatically": "تمت المشاركة عبر PMS · يُحدَّث تلقائيًا",
+  "Shared with Tamm · updates automatically": "تمت المشاركة عبر تمّ · يُحدَّث تلقائيًا",
 
   // Project statuses (labels)
   "Planning": "التخطيط",
@@ -274,4 +274,16 @@ export default {
     "مثال:\nزين كاش: 0780 000 0000 (الاسم)\nتحويل بنكي: اسم المصرف، رقم الحساب\nيُرجى ذكر اسم مساحة العمل في ملاحظة التحويل.",
   "Contact for billing questions": "جهة التواصل لأسئلة الدفع",
   "WhatsApp +964 …, email": "واتساب ‎+964 …، البريد الإلكتروني",
+
+  // Sign-in brand panel and onboarding steps
+  "Every project, every team, in one place.": "كل مشروع وكل فريق، في مكان واحد.",
+  "Tasks, timelines and who's doing what": "المهام والجداول الزمنية ومن يعمل على ماذا",
+  "Progress against plan, the moment it slips": "التقدّم مقارنة بالخطة، لحظة التأخر",
+  "Budgets, expenses and approvals in one view": "الميزانيات والمصروفات والموافقات في عرض واحد",
+  "In Arabic and English.": "بالعربية والإنجليزية.",
+  "Set up your workspace": "جهّز مساحة عملك",
+  "Step {n} of {total}": "الخطوة {n} من {total}",
+  "Create your workspace": "أنشئ مساحة عملك",
+  "Invite your team": "ادعُ فريقك",
+  "Add your first project": "أضف مشروعك الأول",
 } satisfies Dictionary;

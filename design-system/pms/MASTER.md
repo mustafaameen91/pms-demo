@@ -1,5 +1,10 @@
 # Design System Master File
 
+> **Colours and fonts have changed (tamm identity):** the palette and fonts below are replaced by
+> graphite `#1F2933` (primary) with a coral `#F2545B` accent, and Manrope + Readex Pro. The source
+> of truth is `brand/README.md` (tokens in `src/app/globals.css`, app theme in
+> `mobile/lib/theme/theme.dart`). Layout, spacing and component rules below still apply.
+
 > **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
 > If that file exists, its rules **override** this Master file.
 > If not, strictly follow the rules below.

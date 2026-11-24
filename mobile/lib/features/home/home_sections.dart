@@ -7,6 +7,7 @@ import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/motion.dart';
 import '../hours/hours_screen.dart';
+import '../../theme/icons.dart';
 
 // The home screen's cards. Everything here is stateless and built from one
 // immutable Home, so a refresh only rebuilds what actually changed.
@@ -43,7 +44,7 @@ class _Count extends StatelessWidget {
   Widget build(BuildContext context) => Text(label, style: context.text.labelMedium!.copyWith(color: context.palette.muted));
 }
 
-// ── Focus cards (sit half on the teal header) ───────────────────────────
+// ── Focus cards (sit half on the brand header) ───────────────────────────
 
 class MemberFocusCard extends StatelessWidget {
   const MemberFocusCard({super.key, required this.slug, required this.tasks});
@@ -57,7 +58,7 @@ class MemberFocusCard extends StatelessWidget {
       return AppCard(
         child: Row(
           children: [
-            const ToneIcon(Icons.task_alt_rounded, tone: Tone.success, size: 48),
+            const ToneIcon(AppIcons.checkCircle, tone: Tone.success, size: 48),
             const SizedBox(width: Space.lg),
             Expanded(child: Text(l.noOpenTasks, style: context.text.bodyLarge)),
           ],
@@ -69,11 +70,11 @@ class MemberFocusCard extends StatelessWidget {
       child: IntrinsicHeight(
         child: Row(
           children: [
-            Expanded(child: _FocusStat(icon: Icons.error_outline_rounded, label: l.overdue, value: tasks.overdue, tone: Tone.danger, onTap: () => openTasks(context, slug, 'overdue'))),
+            Expanded(child: _FocusStat(icon: AppIcons.warningCircle, label: l.overdue, value: tasks.overdue, tone: Tone.danger, onTap: () => openTasks(context, slug, 'overdue'))),
             const _VDivider(),
-            Expanded(child: _FocusStat(icon: Icons.today_rounded, label: l.dueToday, value: tasks.today, tone: Tone.warning, onTap: () => openTasks(context, slug, 'today'))),
+            Expanded(child: _FocusStat(icon: AppIcons.calendarDot, label: l.dueToday, value: tasks.today, tone: Tone.warning, onTap: () => openTasks(context, slug, 'today'))),
             const _VDivider(),
-            Expanded(child: _FocusStat(icon: Icons.date_range_rounded, label: l.thisWeek, value: tasks.week, tone: Tone.info, onTap: () => openTasks(context, slug, 'week'))),
+            Expanded(child: _FocusStat(icon: AppIcons.calendarDots, label: l.thisWeek, value: tasks.week, tone: Tone.info, onTap: () => openTasks(context, slug, 'week'))),
           ],
         ),
       ),
@@ -101,11 +102,11 @@ class ManagerFocusCard extends StatelessWidget {
           IntrinsicHeight(
             child: Row(
               children: [
-                Expanded(child: _FocusStat(icon: Icons.fact_check_outlined, label: l.toApprove, value: m.approvals.total, tone: Tone.info)),
+                Expanded(child: _FocusStat(icon: AppIcons.listChecks, label: l.toApprove, value: m.approvals.total, tone: Tone.info)),
                 const _VDivider(),
-                Expanded(child: _FocusStat(icon: Icons.event_busy_rounded, label: l.lateTasks, value: m.lateTasks, tone: Tone.danger)),
+                Expanded(child: _FocusStat(icon: AppIcons.calendarX, label: l.lateTasks, value: m.lateTasks, tone: Tone.danger)),
                 const _VDivider(),
-                Expanded(child: _FocusStat(icon: Icons.trending_down_rounded, label: l.behindSchedule, value: m.behind, tone: Tone.warning)),
+                Expanded(child: _FocusStat(icon: AppIcons.trendDown, label: l.behindSchedule, value: m.behind, tone: Tone.warning)),
               ],
             ),
           ),
@@ -170,11 +171,11 @@ class TaskBreakdownCard extends StatelessWidget {
     final l = context.l10n;
     final p = context.palette;
     final rows = [
-      (Icons.error_outline_rounded, l.overdue, tasks.overdue, Tone.danger, 'overdue'),
-      (Icons.today_rounded, l.dueToday, tasks.today, Tone.warning, 'today'),
-      (Icons.date_range_rounded, l.thisWeek, tasks.week, Tone.info, 'week'),
-      (Icons.event_note_rounded, l.later, tasks.later, Tone.neutral, 'later'),
-      (Icons.hourglass_empty_rounded, l.noDueDate, tasks.none, Tone.neutral, 'none'),
+      (AppIcons.warningCircle, l.overdue, tasks.overdue, Tone.danger, 'overdue'),
+      (AppIcons.calendarDot, l.dueToday, tasks.today, Tone.warning, 'today'),
+      (AppIcons.calendarDots, l.thisWeek, tasks.week, Tone.info, 'week'),
+      (AppIcons.note, l.later, tasks.later, Tone.neutral, 'later'),
+      (AppIcons.hourglass, l.noDueDate, tasks.none, Tone.neutral, 'none'),
     ];
     return AppCard(
       child: Column(
@@ -218,7 +219,7 @@ class ApprovalsCard extends StatelessWidget {
       return AppCard(
         child: Row(
           children: [
-            const ToneIcon(Icons.verified_rounded, tone: Tone.success),
+            const ToneIcon(AppIcons.sealCheck, tone: Tone.success),
             const SizedBox(width: Space.md),
             Expanded(child: Text(l.nothingToApprove, style: context.text.bodyLarge)),
           ],
@@ -229,12 +230,12 @@ class ApprovalsCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.sm),
       child: Column(
         children: [
-          MetricRow(icon: Icons.receipt_long_rounded, label: l.expenses, value: approvals.expenses, tone: Tone.info, onTap: open),
+          MetricRow(icon: AppIcons.receipt, label: l.expenses, value: approvals.expenses, tone: Tone.info, onTap: open),
           const Divider(indent: 50),
-          MetricRow(icon: Icons.schedule_rounded, label: l.hours, value: approvals.hours, tone: Tone.info, onTap: open),
+          MetricRow(icon: AppIcons.clock, label: l.hours, value: approvals.hours, tone: Tone.info, onTap: open),
           if (showLoans) ...[
             const Divider(indent: 50),
-            MetricRow(icon: Icons.payments_outlined, label: l.loans, value: approvals.loans, tone: Tone.info, onTap: open),
+            MetricRow(icon: AppIcons.money, label: l.loans, value: approvals.loans, tone: Tone.info, onTap: open),
           ],
         ],
       ),
@@ -257,7 +258,7 @@ class ProjectsCard extends StatelessWidget {
       return AppCard(
         child: Row(
           children: [
-            const ToneIcon(Icons.folder_off_outlined, tone: Tone.neutral),
+            const ToneIcon(AppIcons.folderDashed, tone: Tone.neutral),
             const SizedBox(width: Space.md),
             Expanded(child: Text(l.noProjects, style: context.text.bodyLarge)),
           ],
@@ -298,11 +299,11 @@ class ProjectsCard extends StatelessWidget {
           ),
           const SizedBox(height: Space.md),
           const Divider(),
-          MetricRow(icon: Icons.money_off_rounded, label: l.overBudget, value: m.overBudget, tone: Tone.danger, onTap: open),
+          MetricRow(icon: AppIcons.coins, label: l.overBudget, value: m.overBudget, tone: Tone.danger, onTap: open),
           const Divider(indent: 50),
-          MetricRow(icon: Icons.speed_rounded, label: l.headingOver, value: m.headingOver, tone: Tone.warning, onTap: open),
+          MetricRow(icon: AppIcons.gauge, label: l.headingOver, value: m.headingOver, tone: Tone.warning, onTap: open),
           const Divider(indent: 50),
-          MetricRow(icon: Icons.event_busy_rounded, label: l.lateTasks, value: m.lateTasks, tone: Tone.danger, onTap: open),
+          MetricRow(icon: AppIcons.calendarX, label: l.lateTasks, value: m.lateTasks, tone: Tone.danger, onTap: open),
         ],
       ),
     );
@@ -419,10 +420,10 @@ class QuickActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final actions = [
-      (Icons.more_time_rounded, l.logHours, Tone.info, () => showLogHours(context, slug)),
-      (Icons.assignment_rounded, l.siteLog, Tone.success, () => context.push('/w/$slug/site-log')),
-      (Icons.add_a_photo_rounded, l.addPhoto, Tone.warning, () => context.push('/w/$slug/photos')),
-      (Icons.receipt_long_rounded, l.addExpense, Tone.neutral, () => context.push('/w/$slug/expenses/new')),
+      (AppIcons.clockClockwise, l.logHours, Tone.info, () => showLogHours(context, slug)),
+      (AppIcons.clipboardText, l.siteLog, Tone.success, () => context.push('/w/$slug/site-log')),
+      (AppIcons.cameraPlus, l.addPhoto, Tone.warning, () => context.push('/w/$slug/photos')),
+      (AppIcons.receipt, l.addExpense, Tone.neutral, () => context.push('/w/$slug/expenses/new')),
     ];
     return Padding(
       padding: const EdgeInsets.only(top: Space.xl),

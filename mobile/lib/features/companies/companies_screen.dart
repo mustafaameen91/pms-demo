@@ -10,6 +10,7 @@ import '../../widgets/common.dart';
 import '../../widgets/motion.dart';
 import '../account/account_sheet.dart';
 import 'company_tile.dart';
+import '../../theme/icons.dart';
 
 class CompaniesScreen extends ConsumerWidget {
   const CompaniesScreen({super.key});
@@ -35,6 +36,8 @@ class CompaniesScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       const BrandMark(size: 40),
+                      const SizedBox(width: Space.md),
+                      const BrandWordmark(size: 24),
                       const Spacer(),
                       IconButton(
                         tooltip: l.account,
@@ -51,13 +54,13 @@ class CompaniesScreen extends ConsumerWidget {
                 hasScrollBody: false,
                 child: Center(
                   child: ErrorPanel(
-                    icon: Icons.domain_disabled_outlined,
+                    icon: AppIcons.prohibit,
                     title: l.noCompanies,
                     message: l.noCompaniesHint,
                     actions: [
                       OutlinedButton.icon(
                         onPressed: () => ref.read(sessionProvider.notifier).refresh(),
-                        icon: const Icon(Icons.refresh_rounded),
+                        icon: const Icon(AppIcons.arrowClockwise),
                         label: Text(l.tryAgain),
                       ),
                       TextButton(onPressed: () => ref.read(sessionProvider.notifier).signOut(), child: Text(l.signOut)),

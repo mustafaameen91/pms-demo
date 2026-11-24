@@ -64,4 +64,9 @@ export default {
   "created the portfolio “{name}”": "أنشأ المحفظة «{name}»",
   "deleted the portfolio “{name}”": "حذف المحفظة «{name}»",
   "set the projects of “{name}” ({count})": "حدّد مشاريع «{name}» ({count})",
+
+  // Portfolios page (redesign)
+  "Projects in portfolios": "المشاريع في المحافظ",
+  "Every project is in a portfolio": "كل المشاريع ضمن محافظ",
+  "Create one, then choose its projects.": "أنشئ محفظة، ثم اختر مشاريعها.",
 } satisfies Dictionary;

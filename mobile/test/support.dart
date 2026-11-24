@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pms_mobile/app.dart';
-import 'package:pms_mobile/core/api.dart';
-import 'package:pms_mobile/core/models.dart';
-import 'package:pms_mobile/core/providers.dart';
-import 'package:pms_mobile/core/storage.dart';
+import 'package:tamm/app.dart';
+import 'package:tamm/core/api.dart';
+import 'package:tamm/core/models.dart';
+import 'package:tamm/core/providers.dart';
+import 'package:tamm/core/storage.dart';
 
 // ── Sample API responses (same shapes as docs/mobile-api.md) ─────────────
 
@@ -391,8 +391,11 @@ Future<void> loadFonts() async {
     await loader.load();
   }
 
-  await family('PlusJakartaSans', [for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold']) 'assets/fonts/PlusJakartaSans-$w.ttf']);
-  await family('IBMPlexSansArabic', [for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) 'assets/fonts/IBMPlexSansArabic-$w.ttf']);
+  await family('Manrope', [for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold']) 'assets/fonts/Manrope-$w.ttf']);
+  await family('ReadexPro', [for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) 'assets/fonts/ReadexPro-$w.ttf']);
+  for (final style in ['Regular', 'Fill']) {
+    await family('packages/phosphor_flutter/Phosphor$style', ['packages/phosphor_flutter/lib/fonts/Phosphor${style == 'Regular' ? '' : '-$style'}.ttf']);
+  }
   final flutterRoot = Platform.environment['FLUTTER_ROOT'] ?? '${Platform.environment['HOME']}/flutter';
   final icons = File('$flutterRoot/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf');
   if (icons.existsSync()) {

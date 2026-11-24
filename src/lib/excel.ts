@@ -25,7 +25,7 @@ export async function buildProjectWorkbook(report: ProjectReport, t: T = createT
   const pct = '0.0"%"';
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = "PMS";
+  wb.creator = "Tamm";
   wb.created = new Date();
 
   const header = (ws: ExcelJS.Worksheet) => {

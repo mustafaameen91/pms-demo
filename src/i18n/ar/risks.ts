@@ -103,4 +103,20 @@ export default {
   "Open|risk": "مفتوحة",
   "Watching|risk": "تحت المراقبة",
   "Closed|risk": "مغلقة",
+
+  // Risk register summary tiles
+  "{count} in the register": {
+    zero: "لا شيء في السجل",
+    one: "واحد في السجل",
+    two: "اثنان في السجل",
+    few: "{count} في السجل",
+    many: "{count} في السجل",
+    other: "{count} في السجل",
+  },
+  "Score 15–25: act on these first": "الدرجة 15–25: ابدأ بها أولًا",
+  "Share of active risks that are high": "نسبة المخاطر النشطة المرتفعة",
+  "No longer a threat": "لم تعد تشكّل تهديدًا",
+  "Average score": "متوسط الدرجة",
+  "Of active risks, out of 25": "للمخاطر النشطة، من 25",
+  "Start the risk register": "ابدأ سجل المخاطر",
 } satisfies Dictionary;

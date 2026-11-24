@@ -4,6 +4,7 @@ import '../core/api.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../theme/theme.dart';
 import 'motion.dart';
+import '../theme/icons.dart';
 
 extension L10nX on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
@@ -84,7 +85,11 @@ class AppCard extends StatelessWidget {
             : const [BoxShadow(color: Color(0x0F0E1A20), blurRadius: 24, offset: Offset(0, 10)), BoxShadow(color: Color(0x0A0E1A20), blurRadius: 3, offset: Offset(0, 1))],
       ),
       // Transparent Material: ink splashes and list tiles inside the card show.
-      child: Material(type: MaterialType.transparency, child: Padding(padding: padding, child: child)),
+      // Clipped to the corners, so tints and accent bars inside stay inside.
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(Radii.lg),
+        child: Material(type: MaterialType.transparency, child: Padding(padding: padding, child: child)),
+      ),
     );
   }
 }
@@ -141,7 +146,7 @@ class MetricRow extends StatelessWidget {
                 style: context.text.titleMedium!.copyWith(color: zero ? p.muted : tone.fg(p), fontWeight: FontWeight.w700),
               ),
             ),
-            if (onTap != null) Icon(Icons.chevron_right_rounded, size: 20, color: p.muted),
+            if (onTap != null) Icon(AppIcons.caretRight, size: 20, color: p.muted),
           ],
         ),
       ),

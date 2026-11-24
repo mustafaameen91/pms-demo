@@ -7,6 +7,7 @@ import * as schema from "@/lib/db/schema";
 import { appUrl, sendEmail } from "@/lib/email";
 import { eq } from "drizzle-orm";
 import { getT, tFor } from "@/i18n/server";
+import { AUTH_COOKIE_PREFIX } from "./cookie";
 
 /** Language of the account with this email, or null when there is none. */
 async function localeOfEmail(email: string) {
@@ -25,6 +26,7 @@ async function requestT() {
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
+  advanced: { cookiePrefix: AUTH_COOKIE_PREFIX },
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
@@ -34,9 +36,9 @@ export const auth = betterAuth({
       const t = tFor(await localeOfEmail(user.email));
       await sendEmail({
         to: user.email,
-        subject: t("Reset your PMS password"),
+        subject: t("Reset your Tamm password"),
         text: t(
-          "Hi {name},\n\nSomeone asked to reset the password for your PMS account.\nOpen this link to choose a new password (valid for 1 hour):\n\n{url}\n\nIf this wasn't you, you can ignore this email.",
+          "Hi {name},\n\nSomeone asked to reset the password for your Tamm account.\nOpen this link to choose a new password (valid for 1 hour):\n\n{url}\n\nIf this wasn't you, you can ignore this email.",
           { name: user.name, url },
         ),
       });
@@ -55,7 +57,7 @@ export const auth = betterAuth({
         const vars = { inviter: inviter.user.name, workspace: organization.name, role: t(role), email, link: appUrl(`/invite/${id}`) };
         await sendEmail({
           to: email,
-          subject: t("{inviter} invited you to {workspace} on PMS", vars),
+          subject: t("{inviter} invited you to {workspace} on Tamm", vars),
           text: t(
             "{inviter} invited you to join \"{workspace}\" as {role}.\n\nAccept the invitation (valid for 7 days):\n{link}\n\nSign up or log in with {email} to accept.",
             vars,

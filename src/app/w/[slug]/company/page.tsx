@@ -6,6 +6,7 @@ import { isWorkspaceAdmin } from "@/lib/permissions";
 import { getT } from "@/i18n/server";
 import { CompanyProfileForm } from "@/components/documents/company-profile-form";
 import { CompanyTabs } from "@/components/documents/company-tabs";
+import { PageHeader, PageShell } from "@/components/page/kit";
 
 export async function generateMetadata() {
   const t = await getT();
@@ -21,18 +22,15 @@ export default async function CompanyPage({ params }: PageProps<"/w/[slug]/compa
   void _c;
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
-      <CompanyTabs slug={workspace.slug} />
-      <header className="mb-6">
-        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-          <Building2 className="size-5 text-primary" aria-hidden />
-          {t("Company profile")}
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          {t("Your logo and details print on every document your team creates: contracts, purchase orders, vouchers and letters.")}
-        </p>
-      </header>
+    <PageShell>
+      <PageHeader
+        icon={Building2}
+        title={t("Company profile")}
+        description={t("Your logo and details print on every document your team creates: contracts, purchase orders, vouchers and letters.")}
+      >
+        <CompanyTabs slug={workspace.slug} className="" />
+      </PageHeader>
       <CompanyProfileForm slug={workspace.slug} profile={profile} />
-    </div>
+    </PageShell>
   );
 }

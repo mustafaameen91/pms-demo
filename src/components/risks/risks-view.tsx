@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowRight, ArrowUp, Loader2, Pencil, Plus, ShieldAlert, Trash2, X } from "lucide-react";
+import { ArrowRight, ArrowUp, Gauge, Grid3x3, ListChecks, Loader2, Pencil, Plus, ShieldAlert, ShieldCheck, ShieldX, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { deleteRisk, saveRisk } from "@/lib/actions/risks";
 import {
@@ -27,6 +27,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { LEVEL_STYLE, RiskLevelBadge } from "./risk-level";
+import { SelectBox } from "@/components/ui/select-box";
+import { EmptyState, GradientIcon, Panel, StatTile } from "@/components/page/kit";
 
 export type RiskItem = {
   id: string;
@@ -79,6 +81,7 @@ export function RisksView(props: Props) {
   const active = risks.filter(isActiveRisk);
   const counts: Record<RiskLevel, number> = { high: 0, medium: 0, low: 0 };
   for (const r of active) counts[riskLevel(riskScore(r.likelihood, r.impact))] += 1;
+  const averageScore = active.length ? Math.round((active.reduce((sum, r) => sum + riskScore(r.likelihood, r.impact), 0) / active.length) * 10) / 10 : null;
   const shown = risks
     .filter((r) => (show === "all" ? true : show === "closed" ? !isActiveRisk(r) : isActiveRisk(r)))
     .filter((r) => !cell || (r.likelihood === cell.likelihood && r.impact === cell.impact));
@@ -86,15 +89,15 @@ export function RisksView(props: Props) {
 
   return (
     <div className="grid grid-cols-1 gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <ShieldAlert className="size-5 text-primary" aria-hidden />
-            {t("Risk register")}
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            {t("Things that could go wrong on this project, scored by how likely they are and how much harm they'd do. Keep a plan for each, and close them when they're no longer a threat.")}
-          </p>
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          <GradientIcon icon={ShieldAlert} />
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold tracking-tight">{t("Risk register")}</h2>
+            <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">
+              {t("Things that could go wrong on this project, scored by how likely they are and how much harm they'd do. Keep a plan for each, and close them when they're no longer a threat.")}
+            </p>
+          </div>
         </div>
         <Button onClick={() => setDialog({ open: true })}>
           <Plus className="size-4" />
@@ -102,39 +105,64 @@ export function RisksView(props: Props) {
         </Button>
       </header>
 
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile label={t("Active risks")} value={active.length} icon={ShieldAlert} hint={t.plural(risks.length, "{count} in the register", "{count} in the register")} />
+        <StatTile
+          label={t("High")}
+          value={counts.high}
+          icon={ShieldX}
+          tone={counts.high ? "bad" : "good"}
+          hint={t("Score 15–25: act on these first")}
+          share={active.length ? counts.high / active.length : 0}
+          shareLabel={t("Share of active risks that are high")}
+        />
+        <StatTile label={t("Closed|risks")} value={risks.length - active.length} icon={ShieldCheck} tone="good" hint={t("No longer a threat")} />
+        <StatTile
+          label={t("Average score")}
+          value={averageScore === null ? "—" : averageScore}
+          icon={Gauge}
+          tone={averageScore !== null && averageScore >= 15 ? "bad" : "default"}
+          hint={t("Of active risks, out of 25")}
+        />
+      </dl>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[auto_1fr]">
         <RiskMatrix risks={active} selected={cell} onSelect={(c) => setCell(c)} />
 
-        <section aria-labelledby="risk-summary-heading" className="grid content-start gap-4 rounded-xl border bg-card p-5">
-          <h3 id="risk-summary-heading" className="font-semibold">
-            {t("Active risks")} <span className="text-muted-foreground tabular-nums">{active.length}</span>
-          </h3>
-          <dl className="grid gap-3 sm:grid-cols-3">
-            {(["high", "medium", "low"] as const).map((level) => {
-              const s = LEVEL_STYLE[level];
-              return (
-                <div key={level} className={cn("rounded-lg border px-3 py-2.5", s.badge)}>
-                  <dt className="flex items-center gap-1.5 text-xs font-medium">
-                    <s.icon className="size-3.5" aria-hidden />
-                    {t(s.label)}
-                  </dt>
-                  <dd className="mt-1 text-2xl font-semibold tabular-nums">{counts[level]}</dd>
-                </div>
-              );
-            })}
-          </dl>
-          <p className="text-xs text-muted-foreground">
-            {t("Score = likelihood × impact. 1–4 low · 5–12 medium · 15–25 high.")}{" "}
-            {t.plural(risks.length - active.length, "{count} closed risk", "{count} closed risks")}
-          </p>
-        </section>
+        <Panel id="risk-summary-heading" title={t("Active risks")} icon={ListChecks} count={active.length} className="self-start">
+          <div className="grid gap-4 px-5 pb-5">
+            <dl className="grid gap-3 sm:grid-cols-3">
+              {(["high", "medium", "low"] as const).map((level) => {
+                const s = LEVEL_STYLE[level];
+                const share = active.length ? counts[level] / active.length : 0;
+                return (
+                  <div key={level} className={cn("rounded-xl border px-4 py-3", s.badge)}>
+                    <dt className="flex items-center gap-1.5 text-xs font-medium">
+                      <s.icon className="size-3.5" aria-hidden />
+                      {t(s.label)}
+                    </dt>
+                    <dd className="mt-1 text-3xl font-bold tracking-tight tabular-nums">{counts[level]}</dd>
+                    <dd className="mt-2 h-1 overflow-hidden rounded-full bg-current/15">
+                      <span className="block h-full rounded-full bg-current" style={{ width: `${Math.round(share * 100)}%` }} />
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+            <p className="text-xs text-muted-foreground">
+              {t("Score = likelihood × impact. 1–4 low · 5–12 medium · 15–25 high.")}{" "}
+              {t.plural(risks.length - active.length, "{count} closed risk", "{count} closed risks")}
+            </p>
+          </div>
+        </Panel>
       </div>
 
-      <section aria-labelledby="risk-list-heading" className="rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-          <h3 id="risk-list-heading" className="font-semibold">
-            {t("Risks")} <span className="text-muted-foreground tabular-nums">{shown.length}</span>
-          </h3>
+      <Panel
+        id="risk-list-heading"
+        title={t("Risks")}
+        icon={ListChecks}
+        count={shown.length}
+        action={
           <div className="flex flex-wrap items-center gap-2">
             {cell && (
               <button
@@ -164,31 +192,34 @@ export function RisksView(props: Props) {
               ))}
             </div>
           </div>
-        </div>
+        }
+      >
         {shown.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            {risks.length === 0
-              ? t("No risks yet. Add the things that could delay the project, raise its cost, or hurt someone — and what you'll do about them.")
-              : t("No risks match.")}
-          </p>
+          <div className="border-t p-5">
+            <EmptyState icon={risks.length === 0 ? ShieldCheck : Grid3x3} title={risks.length === 0 ? t("Start the risk register") : t("No risks match.")} className="border-0 py-10">
+              {risks.length === 0
+                ? t("No risks yet. Add the things that could delay the project, raise its cost, or hurt someone — and what you'll do about them.")
+                : null}
+            </EmptyState>
+          </div>
         ) : (
-          <div className="relative overflow-x-auto">
+          <div className="relative overflow-x-auto border-t">
             <table className="w-full min-w-[820px] text-sm">
               <thead className="text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
-                  <th scope="col" className="py-2 pe-3 ps-4 text-start font-medium">{t("Risk")}</th>
+                  <th scope="col" className="py-2.5 pe-3 ps-5 text-start font-medium">{t("Risk")}</th>
                   <th scope="col" className="px-3 py-2 text-start font-medium">{t("Level")}</th>
                   <th scope="col" className="px-3 py-2 text-start font-medium">{t("Likelihood")}</th>
                   <th scope="col" className="px-3 py-2 text-start font-medium">{t("Impact")}</th>
                   <th scope="col" className="px-3 py-2 text-start font-medium">{t("Owner|risk")}</th>
                   <th scope="col" className="px-3 py-2 text-start font-medium">{t("Status")}</th>
-                  <th scope="col" className="py-2 pe-4 ps-3"><span className="sr-only">{t("Actions")}</span></th>
+                  <th scope="col" className="py-2.5 pe-5 ps-3"><span className="sr-only">{t("Actions")}</span></th>
                 </tr>
               </thead>
               <tbody>
                 {shown.map((r) => (
-                  <tr key={r.id} className={cn("border-b align-top last:border-0", r.status === "closed" && "text-muted-foreground")}>
-                    <td className="py-2.5 pe-3 ps-4">
+                  <tr key={r.id} className={cn("border-b align-top transition-colors last:border-0 hover:bg-accent/60", r.status === "closed" && "text-muted-foreground")}>
+                    <td className="py-3 pe-3 ps-5">
                       <p className="font-medium">
                         <span className="font-mono text-xs text-muted-foreground">R-{r.number}</span> {r.title}
                       </p>
@@ -206,18 +237,18 @@ export function RisksView(props: Props) {
                         </p>
                       )}
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-3 py-3">
                       <RiskLevelBadge likelihood={r.likelihood} impact={r.impact} t={t} />
                     </td>
-                    <td className="px-3 py-2.5 whitespace-nowrap">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <span className="tabular-nums">{r.likelihood}</span> · {t(LIKELIHOOD_LABELS[r.likelihood - 1])}
                     </td>
-                    <td className="px-3 py-2.5 whitespace-nowrap">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <span className="tabular-nums">{r.impact}</span> · {t(IMPACT_LABELS[r.impact - 1])}
                     </td>
-                    <td className="px-3 py-2.5">{r.ownerName ?? <span className="text-muted-foreground">{t("No owner")}</span>}</td>
-                    <td className="px-3 py-2.5 whitespace-nowrap">{t(statusLabel(r.status))}</td>
-                    <td className="py-2 pe-4 ps-3 text-end">
+                    <td className="px-3 py-3">{r.ownerName ?? <span className="text-muted-foreground">{t("No owner")}</span>}</td>
+                    <td className="px-3 py-3 whitespace-nowrap">{t(statusLabel(r.status))}</td>
+                    <td className="py-2.5 pe-5 ps-3 text-end">
                       {canEdit(r) && (
                         <Button variant="ghost" size="sm" onClick={() => setDialog({ open: true, risk: r })} aria-label={t("Edit risk R-{number}", { number: String(r.number) })}>
                           <Pencil className="size-4" />
@@ -231,7 +262,7 @@ export function RisksView(props: Props) {
             </table>
           </div>
         )}
-      </section>
+      </Panel>
 
       <Dialog
         open={dialog.open}
@@ -279,8 +310,9 @@ function RiskMatrix({
   const t = useT();
   const cells = riskMatrix(risks);
   return (
-    <section aria-labelledby="risk-matrix-heading" className="rounded-xl border bg-card p-5">
-      <h3 id="risk-matrix-heading" className="font-semibold">
+    <section aria-labelledby="risk-matrix-heading" className="rounded-2xl border bg-card p-5">
+      <h3 id="risk-matrix-heading" className="flex items-center gap-2 font-semibold">
+        <Grid3x3 className="size-4 text-muted-foreground" aria-hidden />
         {t("Risk matrix")}
       </h3>
       <p className="mt-0.5 text-xs text-muted-foreground">{t("Choose a square to list the risks in it.")}</p>
@@ -315,7 +347,7 @@ function RiskMatrix({
                         count: String(count),
                       })}
                       className={cn(
-                        "flex aspect-square cursor-pointer items-center justify-center rounded-md text-base font-semibold tabular-nums transition-shadow hover:ring-2 hover:ring-ring/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                        "flex aspect-square cursor-pointer items-center justify-center rounded-lg text-base font-semibold tabular-nums transition-shadow hover:ring-2 hover:ring-ring/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                         LEVEL_STYLE[level].cell,
                         isSelected && "ring-2 ring-foreground",
                         count === 0 && "font-normal text-transparent",
@@ -407,23 +439,23 @@ function RiskForm({
         <div className="grid items-start gap-4 sm:grid-cols-[1fr_1fr_auto]">
           <div className="grid gap-1.5">
             <Label htmlFor="risk-likelihood">{t("Likelihood")}</Label>
-            <select id="risk-likelihood" value={form.likelihood} onChange={(e) => set({ likelihood: e.target.value })} className={nativeSelectClass}>
+            <SelectBox id="risk-likelihood" value={form.likelihood} onValueChange={(v) => set({ likelihood: v })} className={nativeSelectClass}>
               {LIKELIHOOD_LABELS.map((label, i) => (
                 <option key={label} value={i + 1}>
                   {i + 1} · {t(label)}
                 </option>
               ))}
-            </select>
+            </SelectBox>
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="risk-impact">{t("Impact")}</Label>
-            <select id="risk-impact" value={form.impact} onChange={(e) => set({ impact: e.target.value })} className={nativeSelectClass}>
+            <SelectBox id="risk-impact" value={form.impact} onValueChange={(v) => set({ impact: v })} className={nativeSelectClass}>
               {IMPACT_LABELS.map((label, i) => (
                 <option key={label} value={i + 1}>
                   {i + 1} · {t(label)}
                 </option>
               ))}
-            </select>
+            </SelectBox>
           </div>
           <div className="grid gap-1.5">
             <span className="text-sm font-medium">{t("Score")}</span>
@@ -436,23 +468,23 @@ function RiskForm({
         <div className="grid items-start gap-4 sm:grid-cols-2">
           <div className="grid gap-1.5">
             <Label htmlFor="risk-category">{t("Category")}</Label>
-            <select id="risk-category" value={form.category} onChange={(e) => set({ category: e.target.value })} className={nativeSelectClass}>
+            <SelectBox id="risk-category" value={form.category} onValueChange={(v) => set({ category: v })} className={nativeSelectClass}>
               {RISK_CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>
                   {t(c.label)}
                 </option>
               ))}
-            </select>
+            </SelectBox>
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="risk-status">{t("Status")}</Label>
-            <select id="risk-status" value={form.status} onChange={(e) => set({ status: e.target.value })} className={nativeSelectClass}>
+            <SelectBox id="risk-status" value={form.status} onValueChange={(v) => set({ status: v })} className={nativeSelectClass}>
               {RISK_STATUSES.map((s) => (
                 <option key={s.value} value={s.value}>
                   {t(s.label)}
                 </option>
               ))}
-            </select>
+            </SelectBox>
           </div>
         </div>
 
@@ -473,14 +505,14 @@ function RiskForm({
           <div className="grid gap-1.5">
             <Label htmlFor="risk-owner">{t("Owner|risk")}</Label>
             {canManage ? (
-              <select id="risk-owner" value={form.ownerId} onChange={(e) => set({ ownerId: e.target.value })} className={nativeSelectClass} aria-describedby="risk-owner-help" aria-invalid={Boolean(errors.ownerId)}>
+              <SelectBox id="risk-owner" value={form.ownerId} onValueChange={(v) => set({ ownerId: v })} className={nativeSelectClass} aria-describedby="risk-owner-help" aria-invalid={Boolean(errors.ownerId)}>
                 <option value="">{t("No owner")}</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
                   </option>
                 ))}
-              </select>
+              </SelectBox>
             ) : (
               <p id="risk-owner" className="flex h-9 items-center text-sm">
                 {risk?.ownerName ?? <span className="text-muted-foreground">{t("The project manager chooses the owner.")}</span>}
@@ -495,14 +527,14 @@ function RiskForm({
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="risk-task">{t("Linked task")}</Label>
-            <select id="risk-task" value={form.taskId} onChange={(e) => set({ taskId: e.target.value })} className={nativeSelectClass}>
+            <SelectBox id="risk-task" value={form.taskId} onValueChange={(v) => set({ taskId: v })} className={nativeSelectClass}>
               <option value="">{t("Whole project")}</option>
               {tasks.map((task) => (
                 <option key={task.id} value={task.id}>
                   #{task.number} {task.title}
                 </option>
               ))}
-            </select>
+            </SelectBox>
             <FieldError message={errors.taskId} />
           </div>
         </div>

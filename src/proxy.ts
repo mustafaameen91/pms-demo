@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
+import { AUTH_COOKIE_PREFIX } from "@/lib/auth/cookie";
 
 // Optimistic check only (cookie present). Real session validation happens
 // server-side in requireUser()/requireWorkspace().
@@ -8,7 +9,7 @@ const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password"
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasSession = Boolean(getSessionCookie(request));
+  const hasSession = Boolean(getSessionCookie(request, { cookiePrefix: AUTH_COOKIE_PREFIX }));
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   if (!hasSession && !isPublic) {

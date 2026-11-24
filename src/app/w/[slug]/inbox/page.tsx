@@ -1,4 +1,4 @@
-import { AlertTriangle, AtSign, BadgeCheck, Bell, ClipboardList, CalendarClock, MessageSquare, UserPlus, Workflow, XCircle, HandCoins, ShieldAlert, Clock, FileBarChart } from "lucide-react";
+import { AlertTriangle, AtSign, BadgeCheck, Bell, ClipboardList, CalendarClock, MessageSquare, UserPlus, Workflow, XCircle, HandCoins, ShieldAlert, Clock, FileBarChart, Inbox, History, FileWarning, Plane } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { listNotifications } from "@/lib/data/notifications";
 import { markAllNotificationsRead } from "@/lib/actions/notifications";
@@ -6,6 +6,7 @@ import { ensureLateTaskNotifications } from "@/lib/notifications";
 import { cn, timeAgo } from "@/lib/utils";
 import { getT } from "@/i18n/server";
 import { Button } from "@/components/ui/button";
+import { EmptyState, PageHeader, PageShell, Panel } from "@/components/page/kit";
 
 export async function generateMetadata() {
   const t = await getT();
@@ -28,8 +29,10 @@ const ICONS: Record<string, typeof Bell> = {
   risk: ShieldAlert,
   time: Clock,
   "report.weekly": FileBarChart,
+  "hr.expiry": FileWarning,
+  leave: Plane,
 };
-const ALERT_TYPES = new Set(["task.late", "project.over_budget", "expense.rejected"]);
+const ALERT_TYPES = new Set(["task.late", "project.over_budget", "expense.rejected", "hr.expiry"]);
 
 export default async function InboxPage({ params }: PageProps<"/w/[slug]/inbox">) {
   const [{ slug }, t] = await Promise.all([params, getT()]);
@@ -38,70 +41,75 @@ export default async function InboxPage({ params }: PageProps<"/w/[slug]/inbox">
   const items = await listNotifications(user.id, workspace.id);
   const unread = items.filter((n) => !n.readAt).length;
 
+  const fresh = items.filter((n) => !n.readAt);
+  const earlier = items.filter((n) => n.readAt);
+  const row = (n: (typeof items)[number]) => {
+    const Icon = ICONS[n.type] ?? Bell;
+    const isUnread = !n.readAt;
+    const alert = ALERT_TYPES.has(n.type);
+    return (
+      <li key={n.id} className="relative">
+        {isUnread && <span aria-hidden className="absolute inset-y-0 start-0 w-1 bg-primary" />}
+        {/* Plain link: a full load marks it read and refreshes the sidebar badge. */}
+        <a href={`/w/${workspace.slug}/inbox/${n.id}`} className={cn("flex gap-3.5 px-5 py-3.5 transition-colors hover:bg-accent", isUnread && "bg-primary/[0.04]")}>
+          <span
+            className={cn(
+              "mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl",
+              alert ? "bg-destructive/10 text-destructive" : isUnread ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+            )}
+          >
+            <Icon className="size-4.5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className={cn("block text-sm", isUnread ? "font-semibold" : "text-foreground/90")}>{n.title}</span>
+            {n.body && <span className="mt-0.5 line-clamp-2 block text-sm text-muted-foreground">{n.body}</span>}
+            <span className="mt-1 block text-xs text-muted-foreground">{timeAgo(n.createdAt, t.intl, t("just now"))}</span>
+          </span>
+          {isUnread && (
+            <span className="mt-2 size-2.5 shrink-0 rounded-full bg-primary ring-4 ring-primary/15">
+              <span className="sr-only">{t("Unread")}</span>
+            </span>
+          )}
+        </a>
+      </li>
+    );
+  };
+
   return (
-    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{t("Inbox")}</h1>
-          <p className="text-sm text-muted-foreground">
-            {unread === 0 ? t("You're all caught up.") : t("{count} unread", { count: String(unread) })}
-          </p>
-        </div>
-        {unread > 0 && (
-          <form action={markAllNotificationsRead.bind(null, workspace.slug)}>
-            <Button type="submit" variant="outline" size="sm">
-              {t("Mark all as read")}
-            </Button>
-          </form>
-        )}
-      </div>
+    <PageShell>
+      <PageHeader
+        icon={Inbox}
+        title={t("Inbox")}
+        description={unread === 0 ? t("You're all caught up.") : t("{count} unread", { count: String(unread) })}
+        actions={
+          unread > 0 && (
+            <form action={markAllNotificationsRead.bind(null, workspace.slug)}>
+              <Button type="submit" variant="outline" size="sm">
+                {t("Mark all as read")}
+              </Button>
+            </form>
+          )
+        }
+      />
 
       {items.length === 0 ? (
-        <div className="rounded-xl border border-dashed px-6 py-14 text-center">
-          <Bell className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
-          <p className="font-medium">{t("No notifications yet")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t(
-              "You'll be notified when you're assigned a task, mentioned in a comment, a task of yours is late, or a project you manage goes over budget.",
-            )}
-          </p>
-        </div>
+        <EmptyState icon={Bell} title={t("No notifications yet")}>
+          {t("You'll be notified when you're assigned a task, mentioned in a comment, a task of yours is late, or a project you manage goes over budget.")}
+        </EmptyState>
       ) : (
-        <ul className="divide-y overflow-hidden rounded-xl border bg-card">
-          {items.map((n) => {
-            const Icon = ICONS[n.type] ?? Bell;
-            const isUnread = !n.readAt;
-            return (
-              <li key={n.id}>
-                {/* Plain link: a full load marks it read and refreshes the sidebar badge. */}
-                <a
-                  href={`/w/${workspace.slug}/inbox/${n.id}`}
-                  className={cn("flex gap-3 px-4 py-3 transition-colors hover:bg-accent/50", isUnread && "bg-primary/5")}
-                >
-                  <span
-                    className={cn(
-                      "mt-0.5 grid size-8 shrink-0 place-items-center rounded-full",
-                      ALERT_TYPES.has(n.type) ? "bg-destructive/10 text-destructive" : "bg-accent text-primary",
-                    )}
-                  >
-                    <Icon className="size-4" aria-hidden />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className={cn("block text-sm", isUnread && "font-semibold")}>{n.title}</span>
-                    {n.body && <span className="mt-0.5 line-clamp-2 block text-sm text-muted-foreground">{n.body}</span>}
-                    <span className="mt-1 block text-xs text-muted-foreground">{timeAgo(n.createdAt, t.intl, t("just now"))}</span>
-                  </span>
-                  {isUnread && (
-                    <span className="mt-2 size-2 shrink-0 rounded-full bg-primary">
-                      <span className="sr-only">{t("Unread")}</span>
-                    </span>
-                  )}
-                </a>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          {fresh.length > 0 && (
+            <Panel id="inbox-new" title={t("New|inbox")} icon={Bell} count={fresh.length}>
+              <ul className="divide-y border-t">{fresh.map(row)}</ul>
+            </Panel>
+          )}
+          {earlier.length > 0 && (
+            <Panel id="inbox-earlier" title={t("Earlier")} icon={History}>
+              <ul className="divide-y border-t">{earlier.map(row)}</ul>
+            </Panel>
+          )}
+        </>
       )}
-    </div>
+    </PageShell>
   );
 }

@@ -1,9 +1,12 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { invoices } from "@/lib/db/schema";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getVisibleProjectByKey } from "@/lib/data/project-access";
 import { getDocument } from "@/lib/data/documents";
 import { getCompanyProfile } from "@/lib/data/company";
-import { canManageProject } from "@/lib/permissions";
+import { canManageProject, isWorkspaceAdmin } from "@/lib/permissions";
 import { isPaperStyle } from "@/lib/branding";
 import { docNumber, docType } from "@/lib/documents/types";
 import { layoutDef } from "@/lib/documents/customize";
@@ -15,6 +18,11 @@ export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/
   const t = await getT();
   const { workspace } = await requireWorkspace(slug);
   const row = await getDocument(workspace.id, id);
+  // An invoice moved into Finance is edited there.
+  if (row?.doc.type === "invoice") {
+    const [moved] = await db.select({ id: invoices.id }).from(invoices).where(eq(invoices.documentId, row.doc.id));
+    if (moved && isWorkspaceAdmin(workspace.role)) redirect(`/w/${workspace.slug}/finance/invoices/${moved.id}`);
+  }
   const def = row && layoutDef(row.doc.type, row.doc.layout, docType);
   return { title: def ? docNumber(def.prefix, row.doc.number) : t("Documents") };
 }

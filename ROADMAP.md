@@ -1,4 +1,4 @@
-# PMS — Roadmap
+# tamm (تمّ) — Roadmap
 
 Self-hosted, multi-tenant project management SaaS for any kind of business project:
 weighted tasks, automatic accomplishment %, resources (materials, equipment, workers,
@@ -28,6 +28,12 @@ Company (workspace)
 Legend: `[x]` done · `[ ]` not done yet
 
 ---
+
+## Rebrand to tamm (copy of PMS)
+- [x] New name **tamm** (تمّ) and identity: T-with-check mark, graphite + coral, Manrope + Readex Pro (`brand/README.md`)
+- [x] Web app: colours, fonts, logo, icons, sign-in panel, page bands, emails, Arabic name; old Sabtly files kept in `brand/archive/sabtly/`
+- [x] Its own login cookie (`tamm.session_token`), so it no longer logs you out of the original PMS on the same machine
+- [x] Phone app: theme, fonts, logo, launcher icons, launch screen, app name, bundle id `com.tamm.app`
 
 ## Phase 0 — Foundation
 - [x] Project setup, PostgreSQL (Docker), Drizzle migrations
@@ -203,7 +209,7 @@ Lives in `mobile/`, fully separate from the web app. Libraries are only added wi
 
 ### 23b — App skeleton
 - [x] Login, choose company, home that changes with the role (member vs manager / admin)
-- [x] Arabic & English with right-to-left, the app's teal style, light / dark
+- [x] Arabic & English with right-to-left, the tamm look (graphite and coral, Manrope + Readex Pro), light / dark
 
 ### 23c — Member screens
 - [x] My tasks (status, progress), log my hours, site log, photos / receipts, comments, inbox, my loans
@@ -237,3 +243,78 @@ Lives in `mobile/`, fully separate from the web app. Libraries are only added wi
 - [ ] Weekly report timer: set `CRON_SECRET` in `.env` and a cron job every Saturday 07:00 calling `/api/cron/weekly-reports` with it
 - [ ] Calendar links only work for Google / Outlook once the app is on its public domain (they fetch the link from the internet, not from localhost)
 - [ ] Nightly backups, monitoring
+
+## Phase 28 — HR *(people, attendance, leave, payroll, company assets)*
+For companies anywhere: no country is built in. Every rule (days off, leave types, overtime rate, social
+security %, end of service) is a company setting with a sensible default. Owners / admins only for now;
+phone screens and employee self-service are on hold (to discuss later).
+
+### 28a — Employee file
+- [x] One record per person, with or without a login: linked to a member account and/or a worker from the resource library
+- [x] Job: number (EMP-001), job title, department, manager (reports to), employment type, hire date, probation end, contract end, work location
+- [x] Personal: date of birth, gender, nationality, ID number, phone, email, address, emergency contact
+- [x] Pay: monthly, daily or hourly; basic + named allowances; currency; bank and account / IBAN
+- [x] Documents with expiry: passport, ID, residency, visa, work permit, licence, contract, certificates — file upload, "expires in N days" alerts
+- [x] Departments; org chart drawn from "reports to"
+- [x] People page: search and filters, headcount, a "needs attention" list (expired / expiring documents, probation and contracts ending, missing details), birthdays and work anniversaries
+- [x] Add everyone at once from existing members and workers; Excel export; audit log; Arabic & English
+- [x] Someone who leaves: end date and reason, kept in the record (not deleted)
+
+### 28b — Company assets *(laptops, phones, cars, tools handed to people)*
+- [x] Asset register: name, category, tag / serial number, value, purchase date, condition, status
+- [x] Hand over to an employee (date, condition, note) → printable handover receipt on the company letterhead; return it back (condition on return)
+- [x] Each employee's profile shows what they hold; full history per asset
+- [x] Before someone leaves: list of what they still have to return
+
+### 28c — Attendance & shifts
+- [x] Shifts and weekly days off (per company / per employee), public holidays
+- [x] Daily attendance (present, absent, late, on leave), overtime; uses project timesheets so nothing is typed twice
+- [x] "Today" board: who's in, late, absent, on leave
+
+### 28d — Leave
+- [x] Leave types set by the company (paid / unpaid, days per year, carry over)
+- [x] Balances that build up; requests → approve / reject; team leave calendar
+- [x] Warning on projects and workload when an assignee is on leave
+
+### 28e — Payroll *(shown in Finance once Finance is built)*
+- [x] Monthly run: basic + allowances + overtime − absence − loan instalments (from Loans) − social security / other deductions = net
+- [x] Review → approve → month locked; payslips on the letterhead; bank transfer sheet (Excel)
+- [x] Labour cost per project from attendance
+
+### 28f — Contracts & end of service
+- [x] Probation / contract renewal reminders, contract history
+- [x] End-of-service calculation (company formula), final settlement, leaving checklist (assets returned, loans settled)
+
+## Phase 29 — Finance *(books that fill themselves)*
+Owners / admins. One main currency per company (other currencies at the rates you enter); sales tax is a company
+setting; financial year start is a setting. No country rules built in. Records before the start date stay out of the books.
+
+### 29a — Cash and bank accounts
+- [x] Set-up screen: main currency, financial year, start date, sales tax, cash boxes / banks / wallets with opening balances
+- [x] Balances worked out from every payment, expense, salary, loan and transfer; transfers between accounts (also across currencies)
+- [x] Each account's statement with a running balance; "paid from" on project expenses, loans, repayments and payroll
+
+### 29b — Money in
+- [x] Customers; invoices (lines, tax, retention), draft → issued → paid / partly paid / overdue; cancel or back to draft
+- [x] Bill from progress: contract value × the project's accomplishment %, less what was billed before
+- [x] Payments received, split over open invoices (oldest first), rest kept as an advance; retention collected later
+- [x] Printed on the letterhead with the company's own Invoice form; receipts; customer statements
+- [x] Project invoices from Documents moved into Finance (same numbers); new invoices are made in Finance
+
+### 29c — Money out
+- [x] Suppliers (brought in from Resources); bills (from a purchase order or by hand, with the scan), due dates, payment vouchers
+- [x] Payments made, split over open bills; supplier statements
+
+### 29d — Automatic books
+- [x] Chart of accounts (editable); every invoice, bill, payment, approved expense, loan, repayment, payroll and transfer posts itself
+- [x] Exchange differences and rounding posted automatically; missing exchange rates listed instead of guessed
+- [x] Manual entries for accountants; close the books up to a date (nothing on or before it can change)
+
+### 29e — Reports
+- [x] Profit and loss, balance sheet, cash flow, trial balance, profit by project, who owes us / whom we owe (by age), sales tax
+- [x] Any period; Excel and print / PDF on the letterhead
+
+### 29f — Overview, budget and forecast
+- [x] Cash now, owed to us, we owe, profit this year; overdue invoices and bills due soon
+- [x] 12-week cash forecast (invoices due in, bills and salaries out) with a warning when cash runs short; income vs costs, 6 months
+- [x] Budget per account per month, and budget vs actual

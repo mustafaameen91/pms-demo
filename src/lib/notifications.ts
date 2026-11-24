@@ -28,7 +28,9 @@ export type NotificationType =
   | "loan.request"
   | "risk"
   | "time"
-  | "report.weekly";
+  | "report.weekly"
+  | "hr.expiry"
+  | "leave";
 
 type Notify = {
   workspaceId: string;
@@ -86,7 +88,7 @@ export async function notify(n: Notify): Promise<string[]> {
           return sendEmail({
             to: r.email,
             subject: title,
-            text: `${t("Hi {name},", { name: r.name })}\n\n${title}${body ? `\n\n${body}` : ""}\n\n${t("Open in PMS:")} ${appUrl(n.link)}`,
+            text: `${t("Hi {name},", { name: r.name })}\n\n${title}${body ? `\n\n${body}` : ""}\n\n${t("Open in Tamm:")} ${appUrl(n.link)}`,
           });
         }),
     );

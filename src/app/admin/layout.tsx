@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
 import { isSuperAdmin } from "@/lib/billing";
@@ -12,10 +13,17 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const t = await getT();
   return (
     <div className="min-h-dvh bg-background">
-      <header className="flex h-14 items-center gap-3 border-b px-4 sm:px-6">
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur sm:px-6">
         <Logo />
-        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{t("Platform admin")}</span>
-        <Link href="/" className="ms-auto text-sm text-primary underline-offset-4 hover:underline">
+        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-white bg-brand">
+          <ShieldCheck className="size-3.5" aria-hidden />
+          {t("Platform admin")}
+        </span>
+        <Link
+          href="/"
+          className="ms-auto inline-flex h-8 items-center gap-1.5 rounded-lg border bg-card px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden />
           {t("Back to app")}
         </Link>
       </header>

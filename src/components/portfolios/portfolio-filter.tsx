@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/client";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
+import { SelectBox } from "@/components/ui/select-box";
 
 /** Dashboard: show all projects, one portfolio's, or those in none. */
 export function PortfolioFilter({ portfolios, value }: { portfolios: { id: string; name: string }[]; value: string }) {
@@ -13,9 +14,9 @@ export function PortfolioFilter({ portfolios, value }: { portfolios: { id: strin
   return (
     <label className="flex items-center gap-2 text-sm">
       <span className="text-muted-foreground">{t("Portfolio")}</span>
-      <select
+      <SelectBox
         value={value}
-        onChange={(e) => router.push(e.target.value ? `${pathname}?portfolio=${e.target.value}` : pathname)}
+        onValueChange={(v) => router.push(v ? `${pathname}?portfolio=${v}` : pathname)}
         className={cn(nativeSelectClass, "h-8 w-56")}
       >
         <option value="">{t("All projects")}</option>
@@ -25,7 +26,7 @@ export function PortfolioFilter({ portfolios, value }: { portfolios: { id: strin
           </option>
         ))}
         <option value="none">{t("Not in a portfolio")}</option>
-      </select>
+      </SelectBox>
     </label>
   );
 }

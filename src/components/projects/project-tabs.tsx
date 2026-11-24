@@ -24,15 +24,15 @@ export function ProjectTabs({ basePath, canManage = false }: { basePath: string;
   ];
 
   return (
-    <nav aria-label={t("Project")} className="-mb-px mt-3 flex gap-4 overflow-x-auto whitespace-nowrap">
+    <nav aria-label={t("Project")} className="flex min-w-0 gap-1 overflow-x-auto rounded-xl bg-muted p-1 whitespace-nowrap">
       {tabs.map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}
           aria-current={tab.active ? "page" : undefined}
           className={cn(
-            "border-b-2 border-transparent pb-2 text-sm text-muted-foreground transition-colors hover:text-foreground",
-            tab.active && "border-primary font-medium text-foreground",
+            "rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground",
+            tab.active && "bg-card text-primary shadow-sm hover:bg-card hover:text-primary",
           )}
         >
           {tab.label}

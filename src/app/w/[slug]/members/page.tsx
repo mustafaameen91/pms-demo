@@ -19,16 +19,14 @@ export default async function MembersPage({ params }: PageProps<"/w/[slug]/membe
   ]);
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
-      <MembersView
-        workspace={{ slug: workspace.slug, name: workspace.name, role: workspace.role }}
-        currentUserId={user.id}
-        members={members}
-        invitations={invitations}
-        canManage={canManage}
-        emailEnabled={emailDeliveryEnabled}
-        appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3001"}
-      />
-    </div>
+    <MembersView
+      workspace={{ slug: workspace.slug, name: workspace.name, role: workspace.role }}
+      currentUserId={user.id}
+      members={members}
+      invitations={invitations}
+      canManage={canManage}
+      emailEnabled={emailDeliveryEnabled}
+      appOrigin={process.env.BETTER_AUTH_URL ?? "http://localhost:3002"}
+    />
   );
 }

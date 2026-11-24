@@ -70,7 +70,7 @@ export async function ScheduleBadge({
 }
 
 /**
- * Single-series meter: teal fill on a lighter teal track, with a thin marker
+ * Single-series meter: brand fill on a lighter brand track, with a thin marker
  * where the project should be today.
  */
 export async function AccomplishmentMeter({

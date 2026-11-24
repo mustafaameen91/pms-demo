@@ -21,7 +21,7 @@ export function PriorityIcon({ priority, className }: { priority: Priority; clas
       aria-label={t(PRIORITIES.find((x) => x.value === priority)?.label ?? priority)}
       className={cn(
         "size-4 shrink-0",
-        priority === "urgent" ? "text-brand-accent" : "text-muted-foreground",
+        priority === "urgent" ? "text-brand-accent-text" : "text-muted-foreground",
         className,
       )}
     />

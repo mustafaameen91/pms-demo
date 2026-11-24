@@ -35,11 +35,15 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-text: var(--brand-accent-text);
+  --color-brand-tint: var(--brand-tint);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -50,76 +54,89 @@
 }
 
 :root {
-  /* Design system: design-system/pms/MASTER.md — teal primary, orange accent, cool-neutral surfaces.
-     Primary uses teal-700 (#0F766E) in light mode: white text on teal-600 is only ~3.7:1. */
-  --background: oklch(0.995 0.002 200);
-  --foreground: oklch(0.21 0.02 230);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.02 230);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.02 230);
-  --primary: oklch(0.511 0.086 186.4);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.965 0.006 200);
-  --secondary-foreground: oklch(0.25 0.02 230);
-  --muted: oklch(0.965 0.006 200);
-  --muted-foreground: oklch(0.5 0.02 230);
-  --accent: oklch(0.955 0.012 190);
-  --accent-foreground: oklch(0.25 0.03 200);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.915 0.008 210);
-  --input: oklch(0.89 0.01 210);
-  --ring: oklch(0.6 0.104 184.7);
-  --brand-accent: oklch(0.646 0.222 41.1);
-  --chart-1: oklch(0.6 0.104 184.7);
-  --chart-2: oklch(0.646 0.222 41.1);
-  --chart-3: oklch(0.55 0.15 260);
-  --chart-4: oklch(0.7 0.15 85);
-  --chart-5: oklch(0.55 0.18 330);
+  /* tamm identity (brand/README.md). Graphite is the primary (buttons, links, bands), coral is the
+     accent for "done" moments: the logo's check, active/today/milestone markers, highlights.
+     Coral is 3.4:1 on white, so it is never body text; --brand-accent-text (#c93841, 4.6:1 on mist) is for coral words.
+     Errors use a deeper red and always come with an icon or a word, so they never read as brand coral.
+     Contrast: graphite on white 14.8:1, slate on white 6.5:1 (5.9:1 on mist), white on graphite 14.8:1. */
+  --background: #f7f8fa;
+  --foreground: #1f2933;
+  --card: #ffffff;
+  --card-foreground: #1f2933;
+  --popover: #ffffff;
+  --popover-foreground: #1f2933;
+  --primary: #1f2933;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #1f2933;
+  --muted: #f3f4f6;
+  --muted-foreground: #52606d;
+  --accent: #eceef1;
+  --accent-foreground: #1f2933;
+  --destructive: #b42318;
+  --border: #e5e7eb;
+  --input: #d5d9df;
+  --ring: #52606d;
+  /* Graphite bands (page headers, auth panel), coral accent, coral for text, coral tint fills. */
+  --brand: #1f2933;
+  --brand-foreground: #ffffff;
+  --brand-accent: #f2545b;
+  --brand-accent-text: #c93841;
+  --brand-tint: #fde2e3;
+  --chart-1: #1f2933;
+  --chart-2: #f2545b;
+  --chart-3: #7b8794;
+  --chart-4: #d99a0b;
+  --chart-5: #3e7c8c;
   --radius: 0.5rem;
-  --sidebar: oklch(0.98 0.004 200);
-  --sidebar-foreground: oklch(0.25 0.02 230);
-  --sidebar-primary: oklch(0.511 0.086 186.4);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.012 195);
-  --sidebar-accent-foreground: oklch(0.21 0.02 230);
-  --sidebar-border: oklch(0.915 0.008 210);
-  --sidebar-ring: oklch(0.6 0.104 184.7);
+  --sidebar: #f3f4f6;
+  --sidebar-foreground: #1f2933;
+  --sidebar-primary: #1f2933;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e6e9ed;
+  --sidebar-accent-foreground: #1f2933;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #52606d;
 }
 
 .dark {
-  --background: oklch(0.165 0.012 230);
-  --foreground: oklch(0.96 0.005 200);
-  --card: oklch(0.2 0.014 230);
-  --card-foreground: oklch(0.96 0.005 200);
-  --popover: oklch(0.21 0.014 230);
-  --popover-foreground: oklch(0.96 0.005 200);
-  --primary: oklch(0.777 0.152 181.9);
-  --primary-foreground: oklch(0.2 0.04 192);
-  --secondary: oklch(0.26 0.014 230);
-  --secondary-foreground: oklch(0.96 0.005 200);
-  --muted: oklch(0.26 0.014 230);
-  --muted-foreground: oklch(0.72 0.015 220);
-  --accent: oklch(0.28 0.02 200);
-  --accent-foreground: oklch(0.96 0.005 200);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.13 182);
-  --brand-accent: oklch(0.75 0.183 55.9);
-  --chart-1: oklch(0.777 0.152 181.9);
-  --chart-2: oklch(0.75 0.183 55.9);
-  --chart-3: oklch(0.7 0.14 260);
-  --chart-4: oklch(0.8 0.14 85);
-  --chart-5: oklch(0.7 0.16 330);
-  --sidebar: oklch(0.185 0.013 230);
-  --sidebar-foreground: oklch(0.92 0.006 200);
-  --sidebar-primary: oklch(0.777 0.152 181.9);
-  --sidebar-primary-foreground: oklch(0.2 0.04 192);
-  --sidebar-accent: oklch(0.26 0.018 210);
-  --sidebar-accent-foreground: oklch(0.96 0.005 200);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.7 0.13 182);
+  /* Graphite turns into the surfaces; text and the primary become near-white (15.5:1 on the page). */
+  --background: #0f1419;
+  --foreground: #e8ebef;
+  --card: #161d24;
+  --card-foreground: #e8ebef;
+  --popover: #1a222b;
+  --popover-foreground: #e8ebef;
+  --primary: #e8ebef;
+  --primary-foreground: #1f2933;
+  --secondary: #1f2933;
+  --secondary-foreground: #e8ebef;
+  --muted: #1c242d;
+  --muted-foreground: #9aa5b1;
+  --accent: #232d38;
+  --accent-foreground: #f3f4f6;
+  --destructive: #f97066;
+  --border: rgb(255 255 255 / 10%);
+  --input: rgb(255 255 255 / 15%);
+  --ring: #9aa5b1;
+  --brand: #1f2933;
+  --brand-foreground: #ffffff;
+  --brand-accent: #f2545b;
+  --brand-accent-text: #f57c81;
+  --brand-tint: rgb(242 84 91 / 16%);
+  --chart-1: #e8ebef;
+  --chart-2: #f2545b;
+  --chart-3: #9aa5b1;
+  --chart-4: #f0b429;
+  --chart-5: #6cb4c4;
+  --sidebar: #131a20;
+  --sidebar-foreground: #dfe3e8;
+  --sidebar-primary: #e8ebef;
+  --sidebar-primary-foreground: #1f2933;
+  --sidebar-accent: #1f2933;
+  --sidebar-accent-foreground: #f3f4f6;
+  --sidebar-border: rgb(255 255 255 / 8%);
+  --sidebar-ring: #9aa5b1;
 }
 
 @layer base {

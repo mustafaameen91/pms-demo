@@ -9,6 +9,8 @@ import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
 import '../projects/projects_screen.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// Every Saturday, last week for the projects I manage.
 class ReportsScreen extends ConsumerWidget {
@@ -20,14 +22,14 @@ class ReportsScreen extends ConsumerWidget {
     final l = context.l10n;
     final value = ref.watch(reportsProvider(slug));
     return Scaffold(
-      appBar: AppBar(title: Text(l.weeklyReports)),
+      appBar: BrandAppBar(title: Text(l.weeklyReports)),
       body: AsyncBody(
         value: value,
         onRetry: () => ref.invalidate(reportsProvider(slug)),
         builder: (weeks) => RefreshIndicator(
           onRefresh: () => ref.refresh(reportsProvider(slug).future).then((_) {}, onError: (Object _) {}),
           child: weeks.isEmpty
-              ? ListView(children: [EmptyState(icon: Icons.insert_chart_outlined_rounded, message: l.noReports)])
+              ? ListView(children: [EmptyState(icon: AppIcons.chartBar, message: l.noReports)])
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxl),
                   itemCount: weeks.length,
@@ -49,7 +51,7 @@ class ReportsScreen extends ConsumerWidget {
                               Row(
                                 children: [
                                   Expanded(child: Text('${context.shortDate(w.start)} – ${context.shortDate(w.end)}', style: context.text.titleMedium)),
-                                  Icon(Icons.chevron_right_rounded, color: context.palette.muted),
+                                  Icon(AppIcons.caretRight, color: context.palette.muted),
                                 ],
                               ),
                               const SizedBox(height: Space.sm),
@@ -57,12 +59,12 @@ class ReportsScreen extends ConsumerWidget {
                                 spacing: Space.sm,
                                 runSpacing: 4,
                                 children: [
-                                  Pill(icon: Icons.folder_outlined, label: '${h.projects} ${l.navProjects}', tone: Tone.neutral),
-                                  if (h.behind > 0) Pill(icon: Icons.trending_down_rounded, label: '${l.behindSchedule} · ${h.behind}', tone: Tone.danger),
-                                  if (h.overBudget > 0) Pill(icon: Icons.money_off_rounded, label: '${l.overBudget} · ${h.overBudget}', tone: Tone.danger),
-                                  if (h.headingOver > 0) Pill(icon: Icons.speed_rounded, label: '${l.headingOver} · ${h.headingOver}', tone: Tone.warning),
-                                  if (h.late > 0) Pill(icon: Icons.event_busy_rounded, label: l.lateCount(h.late), tone: Tone.danger),
-                                  if (h.done > 0) Pill(icon: Icons.task_alt_rounded, label: '${l.finishedThisWeek} · ${h.done}', tone: Tone.success),
+                                  Pill(icon: AppIcons.folder, label: '${h.projects} ${l.navProjects}', tone: Tone.neutral),
+                                  if (h.behind > 0) Pill(icon: AppIcons.trendDown, label: '${l.behindSchedule} · ${h.behind}', tone: Tone.danger),
+                                  if (h.overBudget > 0) Pill(icon: AppIcons.coins, label: '${l.overBudget} · ${h.overBudget}', tone: Tone.danger),
+                                  if (h.headingOver > 0) Pill(icon: AppIcons.gauge, label: '${l.headingOver} · ${h.headingOver}', tone: Tone.warning),
+                                  if (h.late > 0) Pill(icon: AppIcons.calendarX, label: l.lateCount(h.late), tone: Tone.danger),
+                                  if (h.done > 0) Pill(icon: AppIcons.checkCircle, label: '${l.finishedThisWeek} · ${h.done}', tone: Tone.success),
                                 ],
                               ),
                             ],
@@ -90,7 +92,7 @@ class ReportScreen extends ConsumerWidget {
     final value = ref.watch(reportProvider(key));
     final r = value.value;
     return Scaffold(
-      appBar: AppBar(title: Text(r == null ? '' : '${context.shortDate(r.start)} – ${context.shortDate(r.end)}')),
+      appBar: BrandAppBar(title: Text(r == null ? '' : '${context.shortDate(r.start)} – ${context.shortDate(r.end)}')),
       body: AsyncBody(
         value: value,
         onRetry: () => ref.invalidate(reportProvider(key)),
@@ -147,7 +149,7 @@ class _ReportCard extends StatelessWidget {
             '${l.spentThisWeek} ${context.money(x.spentThisWeek, x.currency)} · ${l.spent} ${context.money(x.spent, x.currency)}${x.budget == null ? '' : ' / ${context.money(x.budget!, x.currency)}'}',
             style: context.text.bodySmall,
           ),
-          if (x.overBudget) ...[const SizedBox(height: Space.sm), Pill(icon: Icons.money_off_rounded, label: l.overBudget, tone: Tone.danger)],
+          if (x.overBudget) ...[const SizedBox(height: Space.sm), Pill(icon: AppIcons.coins, label: l.overBudget, tone: Tone.danger)],
           if (x.lateCount > 0) list(l.lateTasks, x.late, x.lateCount, p.danger),
           if (x.doneCount > 0) list(l.finishedThisWeek, x.done, x.doneCount, p.success),
           if (x.risks.isNotEmpty || x.newRisks > 0) ...[

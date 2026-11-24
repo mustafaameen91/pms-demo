@@ -9,16 +9,18 @@ import '../../core/work_models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 IconData weatherIcon(String? v) => switch (v) {
-  'sunny' => Icons.wb_sunny_rounded,
-  'cloudy' => Icons.cloud_rounded,
-  'rain' => Icons.water_drop_rounded,
-  'wind' => Icons.air_rounded,
-  'dust' => Icons.blur_on_rounded,
-  'hot' => Icons.local_fire_department_rounded,
-  'cold' => Icons.ac_unit_rounded,
-  _ => Icons.help_outline_rounded,
+  'sunny' => AppIcons.sun,
+  'cloudy' => AppIcons.cloud,
+  'rain' => AppIcons.drop,
+  'wind' => AppIcons.wind,
+  'dust' => AppIcons.cloudFog,
+  'hot' => AppIcons.fire,
+  'cold' => AppIcons.snowflake,
+  _ => AppIcons.question,
 };
 
 /// The day's site log for one project: weather, deliveries, problems, notes.
@@ -59,14 +61,14 @@ class _SiteLogScreenState extends ConsumerState<SiteLogScreen> {
     final day = value?.value;
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: BrandAppBar(
         title: Text(l.siteLog),
-        actions: [IconButton(tooltip: l.date, onPressed: _pickDate, icon: const Icon(Icons.calendar_month_rounded))],
+        actions: [IconButton(tooltip: l.date, onPressed: _pickDate, icon: const Icon(AppIcons.calendar))],
       ),
       body: list == null
           ? AsyncBody(value: projects, onRetry: () => ref.invalidate(projectsProvider(widget.slug)), builder: (_) => const SizedBox())
           : list.isEmpty
-          ? EmptyState(icon: Icons.apartment_rounded, message: l.notOnProjects)
+          ? EmptyState(icon: AppIcons.buildings, message: l.notOnProjects)
           : ListView(
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxl),
               children: [
@@ -122,7 +124,7 @@ class _DayChips extends StatelessWidget {
                 selected: d == selected,
                 avatar: byDate[d] == null
                     ? null
-                    : Icon(byDate[d]!.problems ? Icons.report_problem_rounded : weatherIcon(byDate[d]!.weather), size: 16, color: byDate[d]!.problems ? p.warning : null),
+                    : Icon(byDate[d]!.problems ? AppIcons.warning : weatherIcon(byDate[d]!.weather), size: 16, color: byDate[d]!.problems ? p.warning : null),
                 label: Text(d == today ? context.l10n.today : context.shortDate(d)),
                 onSelected: (_) => onSelected(d),
               ),
@@ -224,18 +226,18 @@ class _SiteLogFormState extends ConsumerState<_SiteLogForm> {
           controller: _temperature,
           keyboardType: const TextInputType.numberWithOptions(signed: true),
           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^-?\d{0,2}'))],
-          decoration: field(l.temperature, Icons.thermostat_rounded, 'temperature'),
+          decoration: field(l.temperature, AppIcons.thermometer, 'temperature'),
         ),
         const SizedBox(height: Space.md),
-        TextField(controller: _deliveries, minLines: 2, maxLines: 6, maxLength: 2000, decoration: field(l.deliveries, Icons.local_shipping_rounded, 'deliveries')),
+        TextField(controller: _deliveries, minLines: 2, maxLines: 6, maxLength: 2000, decoration: field(l.deliveries, AppIcons.truck, 'deliveries')),
         const SizedBox(height: Space.sm),
-        TextField(controller: _problems, minLines: 2, maxLines: 6, maxLength: 2000, decoration: field(l.problems, Icons.report_problem_outlined, 'problems')),
+        TextField(controller: _problems, minLines: 2, maxLines: 6, maxLength: 2000, decoration: field(l.problems, AppIcons.warning, 'problems')),
         const SizedBox(height: Space.sm),
-        TextField(controller: _notes, minLines: 3, maxLines: 10, maxLength: 4000, decoration: field(l.notes, Icons.notes_rounded, 'notes')),
+        TextField(controller: _notes, minLines: 3, maxLines: 10, maxLength: 4000, decoration: field(l.notes, AppIcons.notepad, 'notes')),
         const SizedBox(height: Space.md),
         FilledButton.icon(
           onPressed: _saving ? null : _save,
-          icon: _saving ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_rounded),
+          icon: _saving ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(AppIcons.floppyDisk),
           label: Text(l.save),
         ),
       ],

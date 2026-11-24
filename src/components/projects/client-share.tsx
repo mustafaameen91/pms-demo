@@ -30,9 +30,11 @@ export function ClientShare({
     });
 
   return (
-    <section aria-labelledby="client-heading" className="rounded-xl border bg-card p-5 sm:p-6">
-      <h2 id="client-heading" className="flex items-center gap-2 font-semibold">
-        <Link2 className="size-4 text-muted-foreground" aria-hidden />
+    <section aria-labelledby="client-heading" className="rounded-2xl border bg-card p-5 sm:p-6">
+      <h2 id="client-heading" className="flex items-center gap-2.5 font-semibold">
+        <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+          <Link2 className="size-4" />
+        </span>
         {t("Client access")}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">

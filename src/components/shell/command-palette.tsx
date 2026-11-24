@@ -86,9 +86,9 @@ export function CommandPalette({
   };
 
   const pages = [
+    { label: t("Dashboard"), href: `${base}/dashboard`, icon: LayoutDashboard },
     { label: t("My tasks"), href: `${base}/my-tasks`, icon: CheckSquare },
     { label: t("Inbox"), href: `${base}/inbox`, icon: Bell },
-    { label: t("Dashboard"), href: `${base}/dashboard`, icon: LayoutDashboard },
     { label: t("Projects"), href: base, icon: FolderKanban },
     { label: t("Workload"), href: `${base}/workload`, icon: Users },
     { label: t("Resources"), href: `${base}/resources`, icon: Package },
@@ -192,11 +192,11 @@ export function SearchButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex h-8 w-full items-center gap-2 rounded-md border bg-background px-2.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+      className="flex h-9 w-full items-center gap-2 rounded-lg border bg-card px-3 text-sm text-muted-foreground shadow-xs transition-colors hover:border-primary/30 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
     >
       <Search className="size-4" />
       {t("Search")}
-      <kbd className="ms-auto rounded border bg-muted px-1.5 font-sans text-[11px]">{mac ? "⌘K" : "Ctrl K"}</kbd>
+      <kbd className="ms-auto rounded-md border bg-muted px-1.5 py-px font-sans text-[11px]">{mac ? "⌘K" : "Ctrl K"}</kbd>
     </button>
   );
 }

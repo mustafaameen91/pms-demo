@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans_Arabic, Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
+import { Manrope, Readex_Pro, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { dirOf } from "@/i18n/config";
 import { dictionaryFor, getLocale } from "@/i18n/server";
 import "./globals.css";
 
-const sans = Plus_Jakarta_Sans({
+// tamm identity (brand/README.md): Manrope for Latin text and digits…
+const sans = Manrope({
   variable: "--font-latin",
   subsets: ["latin"],
 });
 
-// Arabic letters fall back to this; Latin text and digits keep Plus Jakarta Sans.
-const arabic = IBM_Plex_Sans_Arabic({
+// …and Readex Pro for Arabic letters (Latin text and digits keep Manrope).
+const arabic = Readex_Pro({
   variable: "--font-arabic",
   subsets: ["arabic"],
-  weight: ["400", "500", "600", "700"],
 });
 
 const mono = Geist_Mono({
@@ -23,8 +23,8 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "PMS", template: "%s · PMS" },
-  description: "Project management for teams",
+  title: { default: "tamm", template: "%s · tamm" },
+  description: "Project management · تمّ",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

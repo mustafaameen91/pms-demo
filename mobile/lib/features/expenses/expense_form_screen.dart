@@ -12,6 +12,8 @@ import '../../core/work_models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// Add an expense: amount, category, what it was for, and a photo of the receipt.
 /// Bought with a cash advance? Link it, and it settles the advance once approved.
@@ -115,11 +117,11 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     final tasks = _project == null ? null : ref.watch(projectTasksProvider((slug: widget.slug, id: _project!))).value;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.addExpense)),
+      appBar: BrandAppBar(title: Text(l.addExpense)),
       body: projects.value == null
           ? AsyncBody(value: projects, onRetry: () => ref.invalidate(projectsProvider(widget.slug)), builder: (_) => const SizedBox())
           : list.isEmpty
-          ? EmptyState(icon: Icons.apartment_rounded, message: l.notOnProjects)
+          ? EmptyState(icon: AppIcons.buildings, message: l.notOnProjects)
           : ListView(
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxl),
               children: [
@@ -141,7 +143,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   style: context.text.headlineSmall!.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                   decoration: InputDecoration(
                     labelText: l.amount,
-                    prefixIcon: const Icon(Icons.payments_outlined),
+                    prefixIcon: const Icon(AppIcons.money),
                     suffixText: project?.currency,
                     errorText: _errors['amount'],
                   ),
@@ -168,20 +170,20 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   controller: _description,
                   maxLength: 300,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: InputDecoration(labelText: l.whatFor, prefixIcon: const Icon(Icons.edit_note_rounded), errorText: _errors['description']),
+                  decoration: InputDecoration(labelText: l.whatFor, prefixIcon: const Icon(AppIcons.notePencil), errorText: _errors['description']),
                 ),
                 const SizedBox(height: Space.sm),
                 TextField(
                   controller: _payee,
                   maxLength: 120,
-                  decoration: InputDecoration(labelText: l.payeeOptional, prefixIcon: const Icon(Icons.storefront_outlined), errorText: _errors['payee']),
+                  decoration: InputDecoration(labelText: l.payeeOptional, prefixIcon: const Icon(AppIcons.storefront), errorText: _errors['payee']),
                 ),
                 const SizedBox(height: Space.sm),
                 InkWell(
                   borderRadius: BorderRadius.circular(Radii.md),
                   onTap: _pickDate,
                   child: InputDecorator(
-                    decoration: InputDecoration(labelText: l.date, prefixIcon: const Icon(Icons.event_rounded), errorText: _errors['date']),
+                    decoration: InputDecoration(labelText: l.date, prefixIcon: const Icon(AppIcons.calendarBlank), errorText: _errors['date']),
                     child: Text(context.day(_date), style: context.text.bodyLarge),
                   ),
                 ),
@@ -190,7 +192,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   key: ValueKey('task-$_project-${tasks?.tasks.length}'),
                   initialValue: _task,
                   isExpanded: true,
-                  decoration: InputDecoration(labelText: l.taskOptional, prefixIcon: const Icon(Icons.task_alt_rounded), errorText: _errors['taskId']),
+                  decoration: InputDecoration(labelText: l.taskOptional, prefixIcon: const Icon(AppIcons.checkCircle), errorText: _errors['taskId']),
                   items: [
                     DropdownMenuItem<String?>(value: null, child: Text(l.noTask)),
                     for (final t in tasks?.tasks ?? const <TaskLink>[])
@@ -226,7 +228,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(64)),
                     onPressed: _pickReceipt,
-                    icon: const Icon(Icons.add_a_photo_rounded),
+                    icon: const Icon(AppIcons.cameraPlus),
                     label: Text(l.addReceipt),
                   )
                 else
@@ -241,7 +243,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                         end: Space.sm,
                         child: FilledButton.tonalIcon(
                           onPressed: () => setState(() => _receipt = null),
-                          icon: const Icon(Icons.close_rounded),
+                          icon: const Icon(AppIcons.x),
                           label: Text(l.remove),
                         ),
                       ),

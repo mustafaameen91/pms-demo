@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FieldError } from "@/components/projects/project-fields";
+import { SelectBox } from "@/components/ui/select-box";
 
 export const nativeSelectClass =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30";
@@ -82,12 +83,12 @@ export function ResourceFields({
     <div className="grid gap-4">
       <div className="grid gap-1.5">
         <Label htmlFor={id("type")}>{t("Type")}</Label>
-        <select
+        <SelectBox
           id={id("type")}
           value={value.type}
           disabled={lockType}
-          onChange={(e) => {
-            const type = e.target.value as ResourceType;
+          onValueChange={(v) => {
+            const type = v as ResourceType;
             onChange({ ...value, type, unit: t(resourceTypeInfo(type).defaultUnit) });
           }}
           className={nativeSelectClass}
@@ -97,7 +98,7 @@ export function ResourceFields({
               {t(rt.label)}
             </option>
           ))}
-        </select>
+        </SelectBox>
       </div>
 
       <div className="grid gap-1.5">
@@ -177,10 +178,10 @@ export function ResourceFields({
             <label htmlFor={id("currency")} className="sr-only">
               {t("Currency")}
             </label>
-            <select
+            <SelectBox
               id={id("currency")}
               value={value.currency}
-              onChange={(e) => set("currency", e.target.value)}
+              onValueChange={(v) => set("currency", v)}
               className={cn(nativeSelectClass, "w-auto")}
             >
               {CURRENCIES.map((c) => (
@@ -188,7 +189,7 @@ export function ResourceFields({
                   {c}
                 </option>
               ))}
-            </select>
+            </SelectBox>
           </div>
           <FieldError message={errors.unitCost} />
         </div>

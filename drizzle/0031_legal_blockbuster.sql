@@ -1,0 +1,1 @@
+ALTER TABLE "finance_settings" ADD COLUMN "default_money_account_id" text;

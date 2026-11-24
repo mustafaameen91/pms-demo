@@ -11,6 +11,8 @@ import '../../core/work_models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// The manager marks who was on site today (and for how long). It fills in each
 /// worker's used days and cost on the project, like the website's attendance.
@@ -83,7 +85,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final tasks = ref.watch(projectTasksProvider((slug: widget.slug, id: widget.projectId))).value;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.attendance)),
+      appBar: BrandAppBar(title: Text(l.attendance)),
       bottomNavigationBar: day == null || day.workers.isEmpty
           ? null
           : StickyAction(
@@ -105,7 +107,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   borderRadius: BorderRadius.circular(Radii.md),
                   onTap: _pickDate,
                   child: InputDecorator(
-                    decoration: InputDecoration(labelText: l.date, prefixIcon: const Icon(Icons.event_rounded)),
+                    decoration: InputDecoration(labelText: l.date, prefixIcon: const Icon(AppIcons.calendarBlank)),
                     child: Text(_date == day.today ? '${l.today} · ${context.day(_date)}' : context.day(_date), style: context.text.bodyLarge),
                   ),
                 ),
@@ -114,7 +116,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   key: ValueKey('task-${tasks?.tasks.length}'),
                   initialValue: _task,
                   isExpanded: true,
-                  decoration: InputDecoration(labelText: l.taskOptional, prefixIcon: const Icon(Icons.task_alt_rounded)),
+                  decoration: InputDecoration(labelText: l.taskOptional, prefixIcon: const Icon(AppIcons.checkCircle)),
                   items: [
                     DropdownMenuItem<String?>(value: null, child: Text(l.noTask)),
                     for (final t in tasks?.tasks ?? const <TaskLink>[])
@@ -133,7 +135,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 6),
                             child: Row(
                               children: [
-                                Icon(Icons.check_circle_rounded, size: 20, color: p.success),
+                                Icon(AppIcons.checkCircleFill, size: 20, color: p.success),
                                 const SizedBox(width: Space.md),
                                 Expanded(child: Text(r.name, style: context.text.bodyLarge)),
                                 Text('${context.hours(r.quantity)} ${r.unitLabel}', style: context.text.bodyMedium!.copyWith(color: p.muted)),
@@ -146,7 +148,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                 ],
                 FieldLabel(l.workersLabel),
                 if (day.workers.isEmpty)
-                  InlineBanner(icon: Icons.info_outline_rounded, tone: Tone.info, message: l.noWorkers)
+                  InlineBanner(icon: AppIcons.info, tone: Tone.info, message: l.noWorkers)
                 else
                   AppCard(
                     padding: const EdgeInsets.symmetric(vertical: Space.xs),
@@ -168,7 +170,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                     ),
                   ),
                 const SizedBox(height: Space.lg),
-                TextField(controller: _note, maxLength: 500, decoration: InputDecoration(labelText: l.noteOptional, prefixIcon: const Icon(Icons.notes_rounded))),
+                TextField(controller: _note, maxLength: 500, decoration: InputDecoration(labelText: l.noteOptional, prefixIcon: const Icon(AppIcons.notepad))),
               ],
             ),
     );
@@ -209,10 +211,10 @@ class _WorkerRow extends StatelessWidget {
               IconButton(
                 tooltip: '−',
                 onPressed: quantity! - step <= 0 ? null : () => onQuantity(quantity! - step),
-                icon: const Icon(Icons.remove_circle_outline_rounded),
+                icon: const Icon(AppIcons.minusCircle),
               ),
               Text('${context.hours(quantity!)} ${w.unitLabel}', style: context.text.titleSmall!.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
-              IconButton(tooltip: '+', onPressed: () => onQuantity(quantity! + step), icon: const Icon(Icons.add_circle_outline_rounded)),
+              IconButton(tooltip: '+', onPressed: () => onQuantity(quantity! + step), icon: const Icon(AppIcons.plusCircle)),
             ] else
               Text(w.unitLabel, style: context.text.bodySmall!.copyWith(color: p.muted)),
           ],

@@ -106,4 +106,22 @@ export default {
   "Dust storm": "عاصفة ترابية",
   "Very hot": "حار جدًا",
   "Cold": "بارد",
+
+  // Timesheets and site log summary tiles
+  "Hours this week": "ساعات هذا الأسبوع",
+  "Logged by the team, waiting ones included": "سجّلها الفريق، بما فيها التي تنتظر الموافقة",
+  "Worker days this week": "أيام العمّال هذا الأسبوع",
+  "From attendance": "من سجل الحضور",
+  "Who logged time this week": "من سجّل وقتًا هذا الأسبوع",
+  "Hours the project manager hasn't decided yet": "ساعات لم يقرر فيها مدير المشروع بعد",
+  "Your hours not decided yet": "ساعاتك التي لم يُقرَّر فيها بعد",
+  "Days logged": "الأيام المسجّلة",
+  "Recent days (up to 30)": "الأيام الأخيرة (حتى 30)",
+  "Last log": "آخر سجل",
+  "Today is logged": "تم تسجيل اليوم",
+  "Latest day with a log": "آخر يوم له سجل",
+  "Days with problems": "أيام فيها مشكلات",
+  "Among recent days": "من بين الأيام الأخيرة",
+  "Share of recent days with problems": "نسبة الأيام الأخيرة التي فيها مشكلات",
+  "On site this day": "في الموقع هذا اليوم",
 } satisfies Dictionary;

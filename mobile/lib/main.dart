@@ -17,7 +17,7 @@ Future<void> main() async {
   DateFormat.useNativeDigitsByDefaultFor('ar', false);
 
   LicenseRegistry.addLicense(() async* {
-    for (final (font, file) in [('Plus Jakarta Sans', 'PlusJakartaSans'), ('IBM Plex Sans Arabic', 'IBMPlexSansArabic')]) {
+    for (final (font, file) in [('Manrope', 'Manrope'), ('Readex Pro', 'ReadexPro')]) {
       yield LicenseEntryWithLineBreaks([font], await rootBundle.loadString('assets/fonts/OFL-$file.txt'));
     }
   });

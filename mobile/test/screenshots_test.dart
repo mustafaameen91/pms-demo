@@ -5,7 +5,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pms_mobile/app.dart';
+import 'package:tamm/app.dart';
 
 import 'support.dart';
 
@@ -37,7 +37,9 @@ void main() {
     final api = FakeApi()..meData = me;
     await pumpApp(tester, api: api, saved: signedIn(lastSlug: ws['slug'] as String, me: me, locale: locale, theme: theme));
     for (final t in taps) {
-      await tester.tap(find.text(t).first);
+      // Tabs show their label only when open, so find them by tooltip.
+      final tab = find.byTooltip(t);
+      await tester.tap(tab.evaluate().isNotEmpty ? tab.first : find.text(t).first);
       await settle(tester);
     }
     await settle(tester);

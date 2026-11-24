@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight, Clock, Download, HardHat, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { CalendarRange, Check, ChevronLeft, ChevronRight, Clock, Download, HardHat, Hourglass, ListChecks, ListTodo, Loader2, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { decideTimeEntry, deleteTimeEntry, logHours, recordAttendance } from "@/lib/actions/timesheets";
 import { addDays, buildWeek, defaultQuantity, totalsByTask, weekDays } from "@/lib/timesheets";
@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { ApprovalBadge } from "@/components/expenses/approval";
+import { SelectBox } from "@/components/ui/select-box";
+import { EmptyState, GradientIcon, Panel, StatTile } from "@/components/page/kit";
 
 export type EntryItem = {
   id: string;
@@ -81,20 +83,26 @@ export function TimesheetsView(props: Props) {
   };
   const canEdit = (e: EntryItem) => e.kind === "member" && (canManage || (e.userId === props.currentUserId && e.status !== "approved"));
   const canDelete = (e: EntryItem) => canManage || (e.userId === props.currentUserId && e.status !== "approved");
+  // The week's numbers (rejected time doesn't count).
+  const counted = entries.filter((e) => e.status !== "rejected");
+  const sumOf = (unit: string) => counted.filter((e) => e.unit === unit).reduce((sum, e) => sum + Number(e.quantity), 0);
+  const weekHours = sumOf("hour");
+  const weekDaysWorked = sumOf("day");
+  const waiting = entries.filter((e) => e.status === "pending").length;
 
   return (
     <div className="grid grid-cols-1 gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Clock className="size-5 text-primary" aria-hidden />
-            {t("Timesheets")}
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          <GradientIcon icon={Clock} />
+          <div className="min-w-0">
+          <h2 className="text-xl font-bold tracking-tight">{t("Timesheets")}</h2>
+          <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">
             {canManage
               ? t("Who worked on this project and for how long. Workers' attendance fills in their used days and cost on the Resources tab.")
               : t("Log the hours you worked on this project. The project manager approves them.")}
           </p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {canManage && (
@@ -110,10 +118,25 @@ export function TimesheetsView(props: Props) {
         </div>
       </header>
 
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile label={t("Hours this week")} value={formatNumber(weekHours, t.intl)} icon={Clock} hint={t("Logged by the team, waiting ones included")} />
+        <StatTile label={t("Worker days this week")} value={formatNumber(weekDaysWorked, t.intl)} icon={HardHat} hint={t("From attendance")} />
+        <StatTile label={t("People")} value={rows.length} icon={Users} hint={t("Who logged time this week")} />
+        <StatTile
+          label={t("Waiting for approval")}
+          value={waiting}
+          icon={Hourglass}
+          tone={waiting ? "bad" : "good"}
+          hint={canManage ? t("Hours the project manager hasn't decided yet") : t("Your hours not decided yet")}
+        />
+      </dl>
+
       {canManage && pending.length > 0 && (
-        <section aria-labelledby="time-approve-heading" className="overflow-hidden rounded-xl border border-amber-500/40 bg-card">
-          <h3 id="time-approve-heading" className="border-b bg-amber-500/10 px-4 py-3 font-semibold">
-            {t("Waiting for your approval")} <span className="text-muted-foreground tabular-nums">{pending.length}</span>
+        <section aria-labelledby="time-approve-heading" className="overflow-hidden rounded-2xl border border-amber-500/40 bg-card">
+          <h3 id="time-approve-heading" className="flex items-center gap-2 border-b bg-amber-500/10 px-5 py-3 font-semibold">
+            <Hourglass className="size-4 text-amber-700 dark:text-amber-300" aria-hidden />
+            {t("Waiting for your approval")}
+            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold tabular-nums">{pending.length}</span>
           </h3>
           <ul className="divide-y">
             {pending.map((e) => (
@@ -123,11 +146,11 @@ export function TimesheetsView(props: Props) {
         </section>
       )}
 
-      <section aria-labelledby="week-heading" className="rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-          <h3 id="week-heading" className="font-semibold">
-            {t("Week of {start} – {end}", { start: formatDate(days[0], t.intl), end: formatDate(days[6], t.intl) })}
-          </h3>
+      <Panel
+        id="week-heading"
+        title={t("Week of {start} – {end}", { start: formatDate(days[0], t.intl), end: formatDate(days[6], t.intl) })}
+        icon={CalendarRange}
+        action={
           <nav aria-label={t("Choose week")} className="flex flex-wrap items-center gap-1">
             <Button asChild variant="ghost" size="sm">
               <Link href={weekHref(addDays(weekStart, -7))}>
@@ -151,34 +174,37 @@ export function TimesheetsView(props: Props) {
               </a>
             </Button>
           </nav>
-        </div>
+        }
+      >
         {rows.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t("No time logged this week.")}</p>
+          <div className="border-t p-5">
+            <EmptyState icon={Clock} title={t("No time logged this week.")} className="border-0 py-10" />
+          </div>
         ) : (
-          <div className="relative overflow-x-auto">
+          <div className="relative overflow-x-auto border-t">
             <table className="w-full min-w-[860px] text-sm">
               <thead className="text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
-                  <th scope="col" className="py-2 pe-3 ps-4 text-start font-medium">{t("Person")}</th>
+                  <th scope="col" className="py-2.5 pe-3 ps-5 text-start font-medium">{t("Person")}</th>
                   {days.map((d) => (
-                    <th key={d} scope="col" className={cn("px-2 py-2 text-center font-medium", d === props.today && "text-foreground")}>
-                      {dayHead.format(new Date(`${d}T00:00:00Z`))}
+                    <th key={d} scope="col" className={cn("px-2 py-2.5 text-center font-medium", d === props.today && "text-primary")}>
+                      <span className={cn(d === props.today && "rounded-full bg-primary/10 px-2 py-0.5")}>{dayHead.format(new Date(`${d}T00:00:00Z`))}</span>
                     </th>
                   ))}
-                  <th scope="col" className="py-2 pe-4 ps-2 text-end font-medium">{t("Total")}</th>
+                  <th scope="col" className="py-2.5 pe-5 ps-2 text-end font-medium">{t("Total")}</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.personKey} className="border-b last:border-0">
-                    <th scope="row" className="py-2.5 pe-3 ps-4 text-start font-medium">
+                  <tr key={r.personKey} className="border-b transition-colors last:border-0 hover:bg-accent/60">
+                    <th scope="row" className="py-3 pe-3 ps-5 text-start font-medium">
                       {r.personName}
                       <span className="ms-2 rounded-full border px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">
                         {r.kind === "member" ? t("Member") : t("Worker")}
                       </span>
                     </th>
                     {days.map((d) => (
-                      <td key={d} className="px-2 py-2.5 text-center tabular-nums">
+                      <td key={d} className={cn("px-2 py-3 text-center tabular-nums", d === props.today && "bg-primary/[0.04]")}>
                         {(r.days[d] ?? []).map((c) => (
                           <span key={c.unit} className={cn("block whitespace-nowrap", c.pending && "text-amber-800 dark:text-amber-300")}>
                             {qtyLabel(c.quantity, c.unit, t)}
@@ -192,7 +218,7 @@ export function TimesheetsView(props: Props) {
                         ))}
                       </td>
                     ))}
-                    <td className="py-2.5 pe-4 ps-2 text-end font-medium whitespace-nowrap tabular-nums">
+                    <td className="py-3 pe-5 ps-2 text-end font-semibold whitespace-nowrap tabular-nums">
                       {r.totals.map((x) => (
                         <span key={x.unit} className="block">
                           {qtyLabel(x.quantity, x.unit, t)}
@@ -205,33 +231,27 @@ export function TimesheetsView(props: Props) {
             </table>
           </div>
         )}
-      </section>
+      </Panel>
 
       {byTask.length > 0 && (
-        <section aria-labelledby="by-task-heading" className="rounded-xl border bg-card">
-          <h3 id="by-task-heading" className="border-b px-4 py-3 font-semibold">
-            {t("Time by task this week")}
-          </h3>
-          <ul className="divide-y text-sm">
+        <Panel id="by-task-heading" title={t("Time by task this week")} icon={ListTodo} count={byTask.length}>
+          <ul className="divide-y border-t text-sm">
             {byTask.map(([taskId, totals]) => (
-              <li key={taskId ?? "project"} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
+              <li key={taskId ?? "project"} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 transition-colors hover:bg-accent/60">
                 <span className="min-w-0">{taskLabel(taskId)}</span>
                 <span className="font-medium tabular-nums">{totals.map((x) => qtyLabel(x.quantity, x.unit, t)).join(" · ")}</span>
               </li>
             ))}
           </ul>
-          <p className="border-t px-4 py-2 text-xs text-muted-foreground">{t("Approved time only.")}</p>
-        </section>
+          <p className="border-t px-5 py-2.5 text-xs text-muted-foreground">{t("Approved time only.")}</p>
+        </Panel>
       )}
 
       {entries.length > 0 && (
-        <section aria-labelledby="entries-heading" className="rounded-xl border bg-card">
-          <h3 id="entries-heading" className="border-b px-4 py-3 font-semibold">
-            {t("Entries this week")} <span className="text-muted-foreground tabular-nums">{entries.length}</span>
-          </h3>
-          <ul className="divide-y text-sm">
+        <Panel id="entries-heading" title={t("Entries this week")} icon={ListChecks} count={entries.length}>
+          <ul className="divide-y border-t text-sm">
             {[...entries].reverse().map((e) => (
-              <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
+              <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 transition-colors hover:bg-accent/60">
                 <span className="w-28 shrink-0 text-muted-foreground tabular-nums">{formatDate(e.date, t.intl)}</span>
                 <span className="min-w-0 flex-1">
                   <span className="font-medium">{e.personName}</span> · {qtyLabel(e.quantity, e.unit, t)} · <span className="text-muted-foreground">{taskLabel(e.taskId)}</span>
@@ -249,7 +269,7 @@ export function TimesheetsView(props: Props) {
               </li>
             ))}
           </ul>
-        </section>
+        </Panel>
       )}
 
       <Dialog open={hoursDialog.open} onOpenChange={(open) => setHoursDialog((d) => ({ ...d, open }))}>
@@ -373,14 +393,14 @@ function DeleteEntry({ entry }: { entry: EntryItem }) {
 function TaskSelect({ id, value, onChange, tasks }: { id: string; value: string; onChange: (v: string) => void; tasks: TaskOption[] }) {
   const t = useT();
   return (
-    <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={nativeSelectClass}>
+    <SelectBox id={id} value={value} onValueChange={(v) => onChange(v)} className={nativeSelectClass}>
       <option value="">{t("Whole project")}</option>
       {tasks.map((task) => (
         <option key={task.id} value={task.id}>
           #{task.number} {task.title}
         </option>
       ))}
-    </select>
+    </SelectBox>
   );
 }
 

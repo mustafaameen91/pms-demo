@@ -25,7 +25,7 @@ export default async function ProjectResourcesPage({ params }: PageProps<"/w/[sl
   ]);
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6">
+    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
       <ProjectResourcesView
         canEdit={canManageProject(workspace.role, user.id, project)}
         project={{

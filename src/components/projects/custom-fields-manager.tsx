@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useT } from "@/i18n/client";
 import { FieldError } from "./project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
+import { SelectBox } from "@/components/ui/select-box";
 
 export function CustomFieldsManager({ projectId, fields }: { projectId: string; fields: FieldDef[] }) {
   const t = useT();
@@ -33,9 +34,11 @@ export function CustomFieldsManager({ projectId, fields }: { projectId: string; 
     });
 
   return (
-    <section aria-labelledby="cf-heading" className="rounded-xl border bg-card p-5 sm:p-6">
-      <h2 id="cf-heading" className="flex items-center gap-2 font-semibold">
-        <SlidersHorizontal className="size-4 text-muted-foreground" aria-hidden />
+    <section aria-labelledby="cf-heading" className="rounded-2xl border bg-card p-5 sm:p-6">
+      <h2 id="cf-heading" className="flex items-center gap-2.5 font-semibold">
+        <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+          <SlidersHorizontal className="size-4" />
+        </span>
         {t("Custom fields")}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -45,7 +48,7 @@ export function CustomFieldsManager({ projectId, fields }: { projectId: string; 
       </p>
 
       {fields.length > 0 && (
-        <ul className="mt-4 grid divide-y rounded-lg border">
+        <ul className="mt-4 grid divide-y overflow-hidden rounded-xl border">
           {fields.map((f) => (
             <li key={f.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
               {renaming === f.id ? (
@@ -124,13 +127,13 @@ export function CustomFieldsManager({ projectId, fields }: { projectId: string; 
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="cf-type">{t("Type")}</Label>
-          <select id="cf-type" value={type} onChange={(e) => setType(e.target.value as FieldType)} className={nativeSelectClass}>
+          <SelectBox id="cf-type" value={type} onValueChange={(v) => setType(v as FieldType)} className={nativeSelectClass}>
             {FIELD_TYPES.map((ft) => (
               <option key={ft.value} value={ft.value}>
                 {t(ft.label)}
               </option>
             ))}
-          </select>
+          </SelectBox>
         </div>
         <Button type="submit" variant="outline" disabled={pending || !name.trim()} className="sm:mt-6">
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
-import { ArrowLeft, Loader2, Lock, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
+import { FileText, Loader2, Lock, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { resetDocType, saveDocTypeSettings } from "@/lib/actions/document-settings";
 import { EXTRA_KINDS, MAX_EXTRA_FIELDS, applySettings, isLockedField, newExtraKey, type DocTypeSettings } from "@/lib/documents/customize";
@@ -17,6 +16,8 @@ import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { Paper } from "./paper";
 import { DocumentBody } from "./document-body";
+import { SelectBox } from "@/components/ui/select-box";
+import { PageHeader } from "@/components/page/kit";
 
 const PREVIEW_SCALE = 0.56;
 type Pair = { en?: string; ar?: string };
@@ -33,7 +34,20 @@ type State = {
 
 const KIND_LABEL = { text: "Short text", textarea: "Paragraph", date: "Date", money: "Amount" } as const;
 
-export function DocFormEditor({ slug, def, initial, profile }: { slug: string; def: DocTypeDef; initial: DocTypeSettings; profile: CompanyProfile }) {
+export function DocFormEditor({
+  slug,
+  def,
+  initial,
+  profile,
+  tabs,
+}: {
+  slug: string;
+  def: DocTypeDef;
+  initial: DocTypeSettings;
+  profile: CompanyProfile;
+  /** The Company section tabs, shown under the title. */
+  tabs?: React.ReactNode;
+}) {
   const t = useT();
   const ui = t.locale === "ar" ? "ar" : "en";
   const [s, setS] = useState<State>({
@@ -65,57 +79,55 @@ export function DocFormEditor({ slug, def, initial, profile }: { slug: string; d
 
   return (
     <div className="grid grid-cols-1 gap-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <Link href={`/w/${slug}/company/forms`} className="mb-1 flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden />
-            {t("Document forms")}
-          </Link>
-          <h1 className="text-xl font-semibold tracking-tight">{t("Customise: {name}", { name: preview.title[ui] })}</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            {t("Changes apply to new documents. Documents already made keep the form they were made with.")}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant={confirmReset ? "destructive" : "ghost"}
-            disabled={pending}
-            onBlur={() => setConfirmReset(false)}
-            onClick={() => {
-              if (!confirmReset) return setConfirmReset(true);
-              startTransition(async () => {
-                const res = await resetDocType(slug, def.key);
-                if (!res.ok) return void toast.error(res.error);
-                set({ title: {}, prefix: "", labels: {}, hidden: [], defaults: {}, extra: [], signatures: [] });
-                setConfirmReset(false);
-                toast.success(t("Back to the built-in form"));
-              });
-            }}
-          >
-            <RotateCcw className="size-4" />
-            {confirmReset ? t("Click again to reset") : t("Reset to built-in")}
-          </Button>
-          <Button
-            type="button"
-            disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
-                setErrors({});
-                const res = await saveDocTypeSettings(slug, def.key, settings);
-                if (!res.ok) {
-                  setErrors(res.fieldErrors ?? {});
-                  return void toast.error(res.error);
+      <PageHeader
+        icon={FileText}
+        back={{ href: `/w/${slug}/company/forms`, label: t("Document forms") }}
+        title={t("Customise: {name}", { name: preview.title[ui] })}
+        description={t("Changes apply to new documents. Documents already made keep the form they were made with.")}
+        actions={
+          <>
+              <Button
+                type="button"
+                variant={confirmReset ? "destructive" : "ghost"}
+                disabled={pending}
+                onBlur={() => setConfirmReset(false)}
+                onClick={() => {
+                  if (!confirmReset) return setConfirmReset(true);
+                  startTransition(async () => {
+                    const res = await resetDocType(slug, def.key);
+                    if (!res.ok) return void toast.error(res.error);
+                    set({ title: {}, prefix: "", labels: {}, hidden: [], defaults: {}, extra: [], signatures: [] });
+                    setConfirmReset(false);
+                    toast.success(t("Back to the built-in form"));
+                  });
+                }}
+              >
+                <RotateCcw className="size-4" />
+                {confirmReset ? t("Click again to reset") : t("Reset to built-in")}
+              </Button>
+              <Button
+                type="button"
+                disabled={pending}
+                onClick={() =>
+                  startTransition(async () => {
+                    setErrors({});
+                    const res = await saveDocTypeSettings(slug, def.key, settings);
+                    if (!res.ok) {
+                      setErrors(res.fieldErrors ?? {});
+                      return void toast.error(res.error);
+                    }
+                    toast.success(t("Form saved"));
+                  })
                 }
-                toast.success(t("Form saved"));
-              })
-            }
-          >
-            {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            {t("Save form")}
-          </Button>
-        </div>
-      </header>
+              >
+                {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                {t("Save form")}
+              </Button>
+          </>
+        }
+      >
+        {tabs}
+      </PageHeader>
 
       <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,1fr)_auto]">
         <div className="grid content-start gap-6">
@@ -203,13 +215,13 @@ export function DocFormEditor({ slug, def, initial, profile }: { slug: string; d
                       <LabeledInput id={`x-${x.key}-ar`} label={t("Name (Arabic)")} dir="rtl" value={x.label.ar} onChange={(v) => update({ label: { ...x.label, ar: v } })} small />
                       <label className="grid gap-1 text-xs">
                         <span className="font-medium">{t("Kind")}</span>
-                        <select value={x.kind} onChange={(e) => update({ kind: e.target.value as Extra["kind"] })} className={cn(nativeSelectClass, "h-8")}>
+                        <SelectBox value={x.kind} onValueChange={(v) => update({ kind: v as Extra["kind"] })} className={cn(nativeSelectClass, "h-8")}>
                           {EXTRA_KINDS.map((k) => (
                             <option key={k} value={k}>
                               {t(KIND_LABEL[k])}
                             </option>
                           ))}
-                        </select>
+                        </SelectBox>
                       </label>
                       <label className="flex h-8 cursor-pointer items-center gap-1.5 text-xs">
                         <input type="checkbox" checked={Boolean(x.half)} disabled={x.kind === "textarea"} onChange={(e) => update({ half: e.target.checked })} className="size-4 accent-primary" />

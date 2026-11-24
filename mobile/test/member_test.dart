@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pms_mobile/core/api.dart';
-import 'package:pms_mobile/features/expenses/expense_form_screen.dart';
-import 'package:pms_mobile/features/hours/hours_screen.dart';
-import 'package:pms_mobile/features/inbox/inbox_screen.dart';
-import 'package:pms_mobile/features/tasks/task_screen.dart';
-import 'package:pms_mobile/features/tasks/tasks_screen.dart';
+import 'package:tamm/core/api.dart';
+import 'package:tamm/features/expenses/expense_form_screen.dart';
+import 'package:tamm/features/hours/hours_screen.dart';
+import 'package:tamm/features/inbox/inbox_screen.dart';
+import 'package:tamm/features/tasks/task_screen.dart';
+import 'package:tamm/features/tasks/tasks_screen.dart';
 
 import 'support.dart';
 
@@ -25,7 +25,7 @@ void expectSent(FakeApi api, String method, String path, Map<String, Object?>? b
 }
 
 Future<void> tab(WidgetTester tester, String label) async {
-  await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text(label)));
+  await tester.tap(find.byTooltip(label));
   await settle(tester);
 }
 

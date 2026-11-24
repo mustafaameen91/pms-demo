@@ -9,6 +9,8 @@ import '../../core/manage_models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 Tone riskTone(String level) => switch (level) {
   'high' => Tone.danger,
@@ -55,6 +57,7 @@ class RisksScreen extends ConsumerWidget {
   final String projectId;
 
   Future<void> _open(BuildContext context, RisksPage page, Risk? risk) => showModalBottomSheet<void>(
+    useRootNavigator: true,
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -69,17 +72,17 @@ class RisksScreen extends ConsumerWidget {
     final value = ref.watch(risksProvider(key));
     final page = value.value;
     return Scaffold(
-      appBar: AppBar(title: Text(l.risks)),
+      appBar: BrandAppBar(title: Text(l.risks)),
       floatingActionButton: page == null
           ? null
-          : FloatingActionButton.extended(onPressed: () => _open(context, page, null), icon: const Icon(Icons.add_rounded), label: Text(l.raiseRisk)),
+          : FloatingActionButton.extended(onPressed: () => _open(context, page, null), icon: const Icon(AppIcons.plus), label: Text(l.raiseRisk)),
       body: AsyncBody(
         value: value,
         onRetry: () => ref.invalidate(risksProvider(key)),
         builder: (page) => RefreshIndicator(
           onRefresh: () => ref.refresh(risksProvider(key).future).then((_) {}, onError: (Object _) {}),
           child: page.risks.isEmpty
-              ? ListView(children: [EmptyState(icon: Icons.shield_outlined, message: l.noRisks)])
+              ? ListView(children: [EmptyState(icon: AppIcons.shieldCheck, message: l.noRisks)])
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 96),
                   itemCount: page.risks.length,
@@ -120,7 +123,7 @@ class RisksScreen extends ConsumerWidget {
                                     ],
                                   ),
                                 ),
-                                if (r.canEdit) Icon(Icons.edit_outlined, size: 18, color: p.muted),
+                                if (r.canEdit) Icon(AppIcons.pencilSimple, size: 18, color: p.muted),
                               ],
                             ),
                           ),
@@ -269,7 +272,7 @@ class _RiskFormState extends ConsumerState<_RiskForm> {
               DropdownButtonFormField<String?>(
                 initialValue: _owner,
                 isExpanded: true,
-                decoration: InputDecoration(labelText: l.riskOwner, prefixIcon: const Icon(Icons.person_outline_rounded), errorText: _errors['ownerId']),
+                decoration: InputDecoration(labelText: l.riskOwner, prefixIcon: const Icon(AppIcons.user), errorText: _errors['ownerId']),
                 items: [
                   DropdownMenuItem<String?>(value: null, child: Text(l.noOwner)),
                   for (final person in page.people) DropdownMenuItem(value: person.id, child: Text(person.name)),

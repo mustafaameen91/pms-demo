@@ -18,9 +18,11 @@ export function SaveAsTemplate({ projectId, projectName }: { projectId: string; 
   const [pending, startTransition] = useTransition();
 
   return (
-    <section aria-labelledby="template-heading" className="rounded-xl border bg-card p-5 sm:p-6">
-      <h2 id="template-heading" className="flex items-center gap-2 font-semibold">
-        <LayoutTemplate className="size-4 text-muted-foreground" aria-hidden />
+    <section aria-labelledby="template-heading" className="rounded-2xl border bg-card p-5 sm:p-6">
+      <h2 id="template-heading" className="flex items-center gap-2.5 font-semibold">
+        <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+          <LayoutTemplate className="size-4" />
+        </span>
         {t("Save as template")}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">

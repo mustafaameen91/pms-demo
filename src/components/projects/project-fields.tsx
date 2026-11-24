@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useT } from "@/i18n/client";
+import { SelectBox } from "@/components/ui/select-box";
 
 export type ProjectFieldValues = {
   name: string;
@@ -113,7 +114,7 @@ export function ProjectFields({
           <label htmlFor="project-currency" className="sr-only">
             {t("Currency")}
           </label>
-          <select
+          <SelectBox
             id="project-currency"
             name="currency"
             defaultValue={defaults?.currency ?? "USD"}
@@ -124,7 +125,7 @@ export function ProjectFields({
                 {c}
               </option>
             ))}
-          </select>
+          </SelectBox>
         </div>
         <p id="project-budget-help" className="text-xs text-muted-foreground">
           {t("Total money planned for this project. Expenses will be compared against it.")}

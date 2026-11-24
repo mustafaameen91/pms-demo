@@ -12,6 +12,7 @@ import '../../theme/theme.dart';
 import '../../widgets/brand.dart';
 import '../../widgets/common.dart';
 import '../../widgets/motion.dart';
+import '../../theme/icons.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -79,7 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               SizedBox(
                 height: heroHeight,
                 width: double.infinity,
-                child: BlueprintBackdrop(
+                child: HeroBackdrop(
                   child: Padding(
                     padding: EdgeInsetsDirectional.fromSTEB(Space.xxl, top + Space.sm, Space.md, 56),
                     child: Column(
@@ -87,14 +88,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       children: [
                         const Align(alignment: AlignmentDirectional.centerEnd, child: _LanguageSwitch()),
                         const Spacer(),
-                        const Entrance(child: BrandMark(size: 60)),
+                        const Entrance(child: BrandMark(size: 60, onDark: true)),
                         const SizedBox(height: Space.xl),
-                        Entrance(
-                          delay: const Duration(milliseconds: 60),
-                          child: Text(
-                            l.appName,
-                            style: context.text.displaySmall!.copyWith(color: Colors.white, letterSpacing: 1.5),
-                          ),
+                        const Entrance(
+                          delay: Duration(milliseconds: 60),
+                          child: BrandWordmark(size: 40, color: Colors.white),
                         ),
                         const SizedBox(height: Space.xs),
                         Entrance(
@@ -150,7 +148,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Text(l.signInSubtitle, style: context.text.bodyMedium!.copyWith(color: p.muted)),
             if (expiredMessage != null && _error == null) ...[
               const SizedBox(height: Space.lg),
-              InlineBanner(icon: Icons.lock_clock_outlined, message: expiredMessage, tone: Tone.info),
+              InlineBanner(icon: AppIcons.lockKey, message: expiredMessage, tone: Tone.info),
             ],
             const SizedBox(height: Space.xxl),
             TextFormField(
@@ -163,7 +161,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               enableSuggestions: false,
               // Email addresses are always written left to right, even in Arabic.
               textDirection: TextDirection.ltr,
-              decoration: InputDecoration(labelText: l.email, prefixIcon: const Icon(Icons.alternate_email_rounded)),
+              decoration: InputDecoration(labelText: l.email, prefixIcon: const Icon(AppIcons.at)),
               validator: (v) {
                 final value = v?.trim() ?? '';
                 if (value.isEmpty) return l.emailRequired;
@@ -183,10 +181,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               textDirection: TextDirection.ltr,
               decoration: InputDecoration(
                 labelText: l.password,
-                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                prefixIcon: const Icon(AppIcons.lock),
                 suffixIcon: IconButton(
                   tooltip: _obscure ? l.showPassword : l.hidePassword,
-                  icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                  icon: Icon(_obscure ? AppIcons.eye : AppIcons.eyeSlash),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
@@ -200,7 +198,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   : Padding(
                       key: ValueKey(_error),
                       padding: const EdgeInsets.only(top: Space.lg),
-                      child: InlineBanner(icon: Icons.error_outline_rounded, message: _error!, tone: Tone.danger),
+                      child: InlineBanner(icon: AppIcons.warningCircle, message: _error!, tone: Tone.danger),
                     ),
             ),
             const SizedBox(height: Space.xxl),
@@ -248,7 +246,7 @@ class _LanguageSwitch extends ConsumerWidget {
         HapticFeedback.selectionClick();
         ref.read(languageProvider.notifier).set(arabic ? 'en' : 'ar');
       },
-      icon: const Icon(Icons.translate_rounded, size: 18),
+      icon: const Icon(AppIcons.translate, size: 18),
       // Each name is written in its own language, so anyone can find theirs.
       label: Text(arabic ? 'English' : 'العربية', style: const TextStyle(fontWeight: FontWeight.w600)),
     );

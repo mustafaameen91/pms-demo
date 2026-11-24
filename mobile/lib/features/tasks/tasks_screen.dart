@@ -9,6 +9,8 @@ import '../../core/work_models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 String dueGroupLabel(BuildContext context, DueGroup g) => switch (g) {
   DueGroup.overdue => context.l10n.overdue,
@@ -62,7 +64,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverAppBar.medium(title: Text(l.myTasks), pinned: true),
+            BrandSliverHeader(title: l.myTasks, icon: AppIcons.checkSquare, slug: widget.slug),
+            // Breathing room between the header and the first card.
+            const SliverToBoxAdapter(child: SizedBox(height: Space.lg)),
             if (value.value case final data?) ...[
               SliverToBoxAdapter(child: _Filters(tasks: data.tasks, selected: _filter, onSelected: (g) => setState(() => _filter = g))),
               ..._list(context, data),
@@ -81,7 +85,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   List<Widget> _list(BuildContext context, MyTasks data) {
     final l = context.l10n;
     if (data.tasks.isEmpty) {
-      return [SliverToBoxAdapter(child: EmptyState(icon: Icons.task_alt_rounded, message: l.noOpenTasks))];
+      return [SliverToBoxAdapter(child: EmptyState(icon: AppIcons.checkCircle, message: l.noOpenTasks))];
     }
     // Headers and tasks in one flat, lazily built list.
     final items = <Object>[];
@@ -94,7 +98,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         ..addAll(inGroup);
     }
     return [
-      if (items.isEmpty) SliverToBoxAdapter(child: EmptyState(icon: Icons.filter_alt_off_rounded, message: l.nothingInGroup)),
+      if (items.isEmpty) SliverToBoxAdapter(child: EmptyState(icon: AppIcons.funnelX, message: l.nothingInGroup)),
       SliverPadding(
         padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.lg),
         sliver: SliverList.builder(
@@ -198,7 +202,7 @@ class TaskCard extends StatelessWidget {
     final l = context.l10n;
     final p = context.palette;
     final t = task;
-    final projectColor = Color(parseHex(t.project.color) ?? Brand.teal600.toARGB32());
+    final projectColor = Color(parseHex(t.project.color) ?? Brand.graphite.toARGB32());
     final dueTone = dueGroupTone(t.group);
     return Material(
       color: p.card,
@@ -222,8 +226,8 @@ class TaskCard extends StatelessWidget {
                           Text(t.key, style: context.text.labelSmall!.copyWith(color: p.muted, fontFeatures: const [FontFeature.tabularFigures()])),
                           Text('  ·  ', style: context.text.labelSmall!.copyWith(color: p.muted)),
                           Flexible(child: Text(t.project.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.labelSmall!.copyWith(color: p.muted))),
-                          if (t.isMilestone) ...[const SizedBox(width: 6), Icon(Icons.flag_rounded, size: 14, color: p.warning, semanticLabel: l.milestone)],
-                          if (t.isSubtask) ...[const SizedBox(width: 6), Icon(Icons.subdirectory_arrow_right_rounded, size: 14, color: p.muted, semanticLabel: l.subtask)],
+                          if (t.isMilestone) ...[const SizedBox(width: 6), Icon(AppIcons.flagFill, size: 14, color: p.accent, semanticLabel: l.milestone)],
+                          if (t.isSubtask) ...[const SizedBox(width: 6), Icon(AppIcons.arrowElbowDownRight, size: 14, color: p.muted, semanticLabel: l.subtask)],
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -238,7 +242,7 @@ class TaskCard extends StatelessWidget {
                                 Flexible(child: StatusPill(status: t.status, dense: true)),
                                 if (t.dueDate != null) ...[
                                   const SizedBox(width: Space.sm),
-                                  Icon(Icons.event_rounded, size: 14, color: dueTone == Tone.neutral ? p.muted : dueTone.fg(p)),
+                                  Icon(AppIcons.calendarBlank, size: 14, color: dueTone == Tone.neutral ? p.muted : dueTone.fg(p)),
                                   const SizedBox(width: 3),
                                   Text(
                                     context.shortDate(t.dueDate!),

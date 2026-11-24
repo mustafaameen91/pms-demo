@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pms_mobile/core/api.dart';
-import 'package:pms_mobile/core/providers.dart';
-import 'package:pms_mobile/features/companies/companies_screen.dart';
-import 'package:pms_mobile/features/home/home_screen.dart';
-import 'package:pms_mobile/features/login/login_screen.dart';
+import 'package:tamm/core/api.dart';
+import 'package:tamm/core/providers.dart';
+import 'package:tamm/features/companies/companies_screen.dart';
+import 'package:tamm/features/home/home_screen.dart';
+import 'package:tamm/features/login/login_screen.dart';
 
 import 'support.dart';
 

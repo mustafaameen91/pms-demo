@@ -8,9 +8,10 @@ export const PRIORITIES = [
 
 export type Priority = (typeof PRIORITIES)[number]["value"];
 
+// The first is the default for a new project: tamm graphite.
 export const PROJECT_COLORS = [
+  "#1f2933",
   "#0d9488",
-  "#2563eb",
   "#7c3aed",
   "#db2777",
   "#ea580c",

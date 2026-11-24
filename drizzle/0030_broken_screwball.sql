@@ -1,0 +1,1 @@
+ALTER TABLE "ledger_accounts" ADD COLUMN "opening_balance" numeric(16, 2) DEFAULT '0' NOT NULL;

@@ -12,6 +12,7 @@ import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/client";
+import { SelectBox } from "@/components/ui/select-box";
 
 const req = <span aria-hidden className="text-destructive"> *</span>;
 
@@ -24,7 +25,7 @@ export function RequestForm({ token, config, renderedAt }: { token: string; conf
 
   if (reference) {
     return (
-      <div role="status" className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-6 text-center">
+      <div role="status" className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-6 text-center">
         <CircleCheck className="mx-auto size-10 text-primary" aria-hidden />
         <h2 className="mt-3 text-lg font-semibold">{t("Request sent")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("Your reference number is")}</p>
@@ -105,12 +106,12 @@ export function RequestForm({ token, config, renderedAt }: { token: string; conf
             {q.type === "textarea" ? (
               <Textarea id={id} name={`q-${q.id}`} rows={3} maxLength={5000} required={q.required} aria-invalid={Boolean(err)} />
             ) : q.type === "choice" ? (
-              <select id={id} name={`q-${q.id}`} defaultValue="" required={q.required} className={cn(nativeSelectClass, "h-10")} aria-invalid={Boolean(err)}>
+              <SelectBox id={id} name={`q-${q.id}`} defaultValue="" required={q.required} className={cn(nativeSelectClass, "h-10")} aria-invalid={Boolean(err)}>
                 <option value="">{t("Choose…")}</option>
                 {(q.options ?? []).map((o) => (
                   <option key={o}>{o}</option>
                 ))}
-              </select>
+              </SelectBox>
             ) : (
               <Input id={id} name={`q-${q.id}`} maxLength={500} required={q.required} className="h-10" aria-invalid={Boolean(err)} />
             )}
@@ -124,13 +125,13 @@ export function RequestForm({ token, config, renderedAt }: { token: string; conf
           {config.askPriority && (
             <div className="grid gap-1.5">
               <Label htmlFor="f-priority">{t("How urgent?")}</Label>
-              <select id="f-priority" name="priority" defaultValue="" className={cn(nativeSelectClass, "h-10")}>
+              <SelectBox id="f-priority" name="priority" defaultValue="" className={cn(nativeSelectClass, "h-10")}>
                 <option value="">{t("Normal")}</option>
                 <option value="low">{t("Low")}</option>
                 <option value="medium">{t("Medium")}</option>
                 <option value="high">{t("High")}</option>
                 <option value="urgent">{t("Urgent")}</option>
-              </select>
+              </SelectBox>
             </div>
           )}
           {config.askNeededBy && (

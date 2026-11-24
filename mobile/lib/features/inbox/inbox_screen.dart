@@ -9,6 +9,8 @@ import '../../theme/theme.dart';
 import '../../widgets/brand.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// My notifications. Tapping one marks it read and opens its task when the app has it.
 class InboxScreen extends ConsumerWidget {
@@ -26,19 +28,22 @@ class InboxScreen extends ConsumerWidget {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverAppBar.medium(
-              title: Text(l.inbox),
-              pinned: true,
+            BrandSliverHeader(
+              title: l.inbox,
+              icon: AppIcons.bell,
+              slug: slug,
               actions: [
                 if ((data?.unread ?? 0) > 0)
                   TextButton.icon(
                     onPressed: () => ref.read(inboxProvider(slug).notifier).markAllRead(),
-                    icon: const Icon(Icons.done_all_rounded, size: 18),
+                    icon: const Icon(AppIcons.checks, size: 18),
                     label: Text(l.markAllRead),
                   ),
                 const SizedBox(width: Space.sm),
               ],
             ),
+            // Breathing room between the header and the first card.
+            const SliverToBoxAdapter(child: SizedBox(height: Space.lg)),
             if (data == null)
               SliverFillRemaining(
                 // The skeleton is a list of its own.
@@ -46,28 +51,43 @@ class InboxScreen extends ConsumerWidget {
                 child: AsyncBody(value: value, onRetry: () => ref.invalidate(inboxProvider(slug)), builder: (_) => const SizedBox()),
               )
             else if (data.items.isEmpty)
-              SliverToBoxAdapter(child: EmptyState(icon: Icons.notifications_none_rounded, message: l.inboxEmpty))
+              SliverToBoxAdapter(child: EmptyState(icon: AppIcons.bell, message: l.inboxEmpty))
             else
               SliverPadding(
-                padding: const EdgeInsets.only(bottom: Space.xxl),
-                sliver: SliverList.separated(
-                  itemCount: data.items.length,
-                  separatorBuilder: (_, _) => const Divider(indent: 76),
-                  itemBuilder: (context, i) {
-                    final n = data.items[i];
-                    return _NoticeTile(
-                      key: ValueKey(n.id),
-                      notice: n,
-                      onTap: () {
-                        ref.read(inboxProvider(slug).notifier).markRead(n);
-                        if (n.taskKey != null) {
-                          context.push('/w/$slug/task/${n.taskKey}');
-                        } else {
-                          toast(context, l.onlyOnWebsite);
-                        }
-                      },
-                    );
-                  },
+                padding: EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xxl + MediaQuery.paddingOf(context).bottom),
+                sliver: SliverList.list(
+                  children: [
+                    // Unread first, then the rest, each in its own card (as on the website).
+                    for (final (title, icon, items) in [
+                      (l.inboxNew, AppIcons.bellFill, data.items.where((n) => !n.read).toList()),
+                      (l.inboxEarlier, AppIcons.clockClockwise, data.items.where((n) => n.read).toList()),
+                    ])
+                      if (items.isNotEmpty) ...[
+                        PanelTitle(title, icon: icon, count: items.length),
+                        AppCard(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              for (final (i, n) in items.indexed) ...[
+                                if (i > 0) const Divider(indent: 72),
+                                _NoticeTile(
+                                  key: ValueKey(n.id),
+                                  notice: n,
+                                  onTap: () {
+                                    ref.read(inboxProvider(slug).notifier).markRead(n);
+                                    if (n.taskKey != null) {
+                                      context.push('/w/$slug/task/${n.taskKey}');
+                                    } else {
+                                      toast(context, l.onlyOnWebsite);
+                                    }
+                                  },
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                  ],
                 ),
               ),
           ],
@@ -89,8 +109,12 @@ class _NoticeTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        color: n.read ? null : context.colors.primaryContainer.withValues(alpha: 0.18),
-        padding: const EdgeInsets.symmetric(horizontal: Space.gutter, vertical: Space.md),
+        // Unread: a soft tint and an accent bar on the leading edge.
+        decoration: BoxDecoration(
+          color: n.read ? null : context.colors.primaryContainer.withValues(alpha: 0.22),
+          border: n.read ? null : BorderDirectional(start: BorderSide(color: context.colors.primary, width: 3)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -98,7 +122,7 @@ class _NoticeTile extends StatelessWidget {
               width: 44,
               child: n.actorName != null
                   ? InitialsAvatar(name: n.actorName!, size: 44)
-                  : const ToneIcon(Icons.notifications_rounded, tone: Tone.info, size: 44),
+                  : const ToneIcon(AppIcons.bell, tone: Tone.info, size: 44),
             ),
             const SizedBox(width: Space.md),
             Expanded(

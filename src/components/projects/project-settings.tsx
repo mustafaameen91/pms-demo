@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useState, useTransition } from "react";
-import { Archive, Loader2, Trash2 } from "lucide-react";
+import { Archive, FolderCog, KeyRound, Loader2, TriangleAlert, Trash2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   changeProjectKey,
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { useT } from "@/i18n/client";
 import { FieldError, ProjectFields, type ProjectFieldValues } from "./project-fields";
+import { SelectBox } from "@/components/ui/select-box";
 
 type SettingsProject = ProjectFieldValues & {
   id: string;
@@ -48,9 +49,9 @@ export function ProjectSettings({
 }) {
   const t = useT();
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-6">
       {!canManage && (
-        <p role="status" className="rounded-lg border bg-muted px-4 py-3 text-sm">
+        <p role="status" className="rounded-2xl border bg-muted px-5 py-3.5 text-sm">
           {t("You can view these settings. Only workspace admins and the project manager can change them.")}
         </p>
       )}
@@ -66,16 +67,23 @@ export function ProjectSettings({
 function Section({
   title,
   description,
+  icon: Icon,
   children,
 }: {
   title: string;
   description?: string;
+  icon: LucideIcon;
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border bg-card p-5 sm:p-6">
-      <h2 className="font-semibold">{title}</h2>
-      {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+    <section className="rounded-2xl border bg-card p-5 sm:p-6">
+      <h2 className="flex items-center gap-2.5 font-semibold">
+        <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+          <Icon className="size-4" />
+        </span>
+        {title}
+      </h2>
+      {description && <p className="mt-2 text-sm text-muted-foreground">{description}</p>}
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -95,7 +103,7 @@ function DetailsSection({
   const errors = state?.fieldErrors ?? {};
 
   return (
-    <Section title={t("Project details")}>
+    <Section title={t("Project details")} icon={FolderCog}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -109,24 +117,24 @@ function DetailsSection({
           <div className="grid items-start gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="project-status">{t("Status")}</Label>
-              <select id="project-status" name="status" defaultValue={project.status} className={selectClass}>
+              <SelectBox id="project-status" name="status" defaultValue={project.status} className={selectClass}>
                 {PROJECT_STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>
                     {t(s.label)}
                   </option>
                 ))}
-              </select>
+              </SelectBox>
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="project-lead">{t("Project manager")}</Label>
-              <select id="project-lead" name="leadId" defaultValue={project.leadId ?? ""} className={selectClass}>
+              <SelectBox id="project-lead" name="leadId" defaultValue={project.leadId ?? ""} className={selectClass}>
                 <option value="">{t("No manager")}</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
                   </option>
                 ))}
-              </select>
+              </SelectBox>
               <FieldError message={errors.leadId} />
             </div>
           </div>
@@ -163,6 +171,7 @@ function KeySection({ project }: { project: SettingsProject }) {
   return (
     <Section
       title={t("Project key")}
+      icon={KeyRound}
       description={t("Used in task IDs ({key}-1, {key}-2…). Changing it renames every task ID and breaks old links.", { key: project.key })}
     >
       <form
@@ -212,8 +221,13 @@ function DangerZone({
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   return (
-    <section className="rounded-xl border border-destructive/40 p-5 sm:p-6">
-      <h2 className="font-semibold text-destructive">{t("Danger zone")}</h2>
+    <section className="rounded-2xl border border-destructive/40 bg-destructive/[0.03] p-5 sm:p-6">
+      <h2 className="flex items-center gap-2.5 font-semibold text-destructive">
+        <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-destructive/10">
+          <TriangleAlert className="size-4" />
+        </span>
+        {t("Danger zone")}
+      </h2>
       <div className="mt-4 grid gap-4">
         {canArchive && (
           <div className="flex flex-wrap items-center justify-between gap-3">

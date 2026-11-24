@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,8 @@ import '../../core/work_models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// My hours, a week at a time (Saturday to Friday, like the website).
 class HoursScreen extends ConsumerStatefulWidget {
@@ -58,17 +62,23 @@ class _HoursScreenState extends ConsumerState<HoursScreen> {
     final value = ref.watch(hoursProvider(key));
     final data = value.value;
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showLogHours(context, widget.slug, date: data != null && data.today.compareTo(data.to) > 0 ? data.to : null),
-        icon: const Icon(Icons.more_time_rounded),
-        label: Text(l.logHours),
+      // Above the floating tab bar (the scaffold only clears the safe area).
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: math.max(0, MediaQuery.paddingOf(context).bottom - MediaQuery.viewPaddingOf(context).bottom)),
+        child: FloatingActionButton.extended(
+          onPressed: () => showLogHours(context, widget.slug, date: data != null && data.today.compareTo(data.to) > 0 ? data.to : null),
+          icon: const Icon(AppIcons.plus),
+          label: Text(l.logHours),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(hoursProvider(key).future).then((_) {}, onError: (Object _) {}),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverAppBar.medium(title: Text(l.myHours), pinned: true),
+            BrandSliverHeader(title: l.myHours, icon: AppIcons.clock, slug: widget.slug),
+            // Breathing room between the header and the first card.
+            const SliverToBoxAdapter(child: SizedBox(height: Space.lg)),
             if (data == null)
               SliverFillRemaining(
                 // The skeleton is a list of its own.
@@ -88,10 +98,10 @@ class _HoursScreenState extends ConsumerState<HoursScreen> {
                 ),
               ),
               if (data.entries.isEmpty)
-                SliverToBoxAdapter(child: EmptyState(icon: Icons.schedule_rounded, message: l.noHours))
+                SliverToBoxAdapter(child: EmptyState(icon: AppIcons.clock, message: l.noHours))
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, 96),
+                  padding: EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, 96 + MediaQuery.paddingOf(context).bottom),
                   sliver: SliverList.list(children: [for (final day in _byDay(data.entries)) _DayGroup(day: day, onDelete: _delete)]),
                 ),
             ],
@@ -129,7 +139,7 @@ class _WeekCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              IconButton(tooltip: l.previousWeek, onPressed: onPrevious, icon: const Icon(Icons.chevron_left_rounded)),
+              IconButton(tooltip: l.previousWeek, onPressed: onPrevious, icon: const Icon(AppIcons.caretLeft)),
               Expanded(
                 child: Text(
                   '${context.shortDate(week.from)} – ${context.shortDate(week.to)}',
@@ -137,7 +147,7 @@ class _WeekCard extends StatelessWidget {
                   style: context.text.titleMedium,
                 ),
               ),
-              IconButton(tooltip: l.nextWeek, onPressed: onNext, icon: const Icon(Icons.chevron_right_rounded)),
+              IconButton(tooltip: l.nextWeek, onPressed: onNext, icon: const Icon(AppIcons.caretRight)),
             ],
           ),
           const SizedBox(height: Space.sm),
@@ -220,7 +230,7 @@ class _DayGroup extends StatelessWidget {
                         style: context.text.titleLarge!.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                       ),
                       if (e.status != Approval.approved)
-                        IconButton(tooltip: l.delete, onPressed: () => onDelete(e), icon: Icon(Icons.delete_outline_rounded, color: p.muted)),
+                        IconButton(tooltip: l.delete, onPressed: () => onDelete(e), icon: Icon(AppIcons.trash, color: p.muted)),
                     ],
                   ),
                 ),
@@ -235,6 +245,7 @@ class _DayGroup extends StatelessWidget {
 
 /// The "Log hours" sheet. [projectId]/[taskId] preselect (e.g. from a task).
 Future<void> showLogHours(BuildContext context, String slug, {String? projectId, String? taskId, String? date}) => showModalBottomSheet<void>(
+  useRootNavigator: true,
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
@@ -335,7 +346,7 @@ class _LogHoursSheetState extends ConsumerState<_LogHoursSheet> {
             if (projects.value == null && projects.isLoading)
               const LinearProgressIndicator()
             else if (list.isEmpty)
-              InlineBanner(icon: Icons.info_outline_rounded, tone: Tone.info, message: l.notOnProjects)
+              InlineBanner(icon: AppIcons.info, tone: Tone.info, message: l.notOnProjects)
             else ...[
               ProjectField(
                 projects: list,
@@ -351,7 +362,7 @@ class _LogHoursSheetState extends ConsumerState<_LogHoursSheet> {
                 key: ValueKey('task-$_project-${tasks?.tasks.length}'),
                 initialValue: _task,
                 isExpanded: true,
-                decoration: InputDecoration(labelText: l.taskOptional, prefixIcon: const Icon(Icons.task_alt_rounded), errorText: _errors['taskId']),
+                decoration: InputDecoration(labelText: l.taskOptional, prefixIcon: const Icon(AppIcons.checkCircle), errorText: _errors['taskId']),
                 items: [
                   DropdownMenuItem<String?>(value: null, child: Text(l.noTask)),
                   for (final t in tasks?.tasks ?? const <TaskLink>[])
@@ -365,7 +376,7 @@ class _LogHoursSheetState extends ConsumerState<_LogHoursSheet> {
               borderRadius: BorderRadius.circular(Radii.md),
               onTap: _pickDate,
               child: InputDecorator(
-                decoration: InputDecoration(labelText: l.date, prefixIcon: const Icon(Icons.event_rounded), errorText: _errors['date']),
+                decoration: InputDecoration(labelText: l.date, prefixIcon: const Icon(AppIcons.calendarBlank), errorText: _errors['date']),
                 child: Text(context.day(_date), style: context.text.bodyLarge),
               ),
             ),
@@ -374,7 +385,7 @@ class _LogHoursSheetState extends ConsumerState<_LogHoursSheet> {
               controller: _hours,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-              decoration: InputDecoration(labelText: l.hoursLabel, prefixIcon: const Icon(Icons.timer_outlined), errorText: _errors['hours']),
+              decoration: InputDecoration(labelText: l.hoursLabel, prefixIcon: const Icon(AppIcons.timer), errorText: _errors['hours']),
             ),
             const SizedBox(height: Space.sm),
             Wrap(
@@ -394,7 +405,7 @@ class _LogHoursSheetState extends ConsumerState<_LogHoursSheet> {
             TextField(
               controller: _note,
               maxLength: 500,
-              decoration: InputDecoration(labelText: l.noteOptional, prefixIcon: const Icon(Icons.notes_rounded), errorText: _errors['note']),
+              decoration: InputDecoration(labelText: l.noteOptional, prefixIcon: const Icon(AppIcons.notepad), errorText: _errors['note']),
             ),
             const SizedBox(height: Space.md),
             FilledButton(

@@ -11,6 +11,8 @@ import '../../theme/theme.dart';
 import '../../widgets/brand.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 String priorityLabel(BuildContext context, String p) => switch (p) {
   'low' => context.l10n.priorityLow,
@@ -92,8 +94,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     final value = ref.watch(taskProvider(_key));
     final t = value.value;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(t?.key ?? '', style: context.text.titleMedium),
+      appBar: BrandAppBar(
+        title: Text(t?.key ?? '', style: context.text.titleMedium!.copyWith(color: Colors.white)),
         bottom: value.isLoading && t != null
             ? const PreferredSize(preferredSize: Size.fromHeight(2), child: LinearProgressIndicator(minHeight: 2))
             : null,
@@ -127,11 +129,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             Container(
               width: 10,
               height: 10,
-              decoration: BoxDecoration(color: Color(parseHex(t.project.color) ?? Brand.teal600.toARGB32()), borderRadius: BorderRadius.circular(3)),
+              decoration: BoxDecoration(color: Color(parseHex(t.project.color) ?? Brand.graphite.toARGB32()), borderRadius: BorderRadius.circular(3)),
             ),
             const SizedBox(width: Space.sm),
             Expanded(child: Text(t.project.name, style: context.text.labelLarge!.copyWith(color: p.muted))),
-            if (t.isMilestone) _Tag(icon: Icons.flag_rounded, label: l.milestone, tone: Tone.warning),
+            if (t.isMilestone) _Tag(icon: AppIcons.flagFill, label: l.milestone, tone: Tone.warning),
           ],
         ),
         const SizedBox(height: Space.sm),
@@ -143,14 +145,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         if (t.blockedBy.isNotEmpty) ...[
           const SizedBox(height: Space.lg),
           InlineBanner(
-            icon: Icons.link_rounded,
+            icon: AppIcons.link,
             tone: Tone.warning,
             message: '${l.waitingOn}: ${t.blockedBy.map((b) => '${b.key} ${b.title}').join(' · ')}',
           ),
         ],
         if (t.readOnly) ...[
           const SizedBox(height: Space.lg),
-          InlineBanner(icon: Icons.visibility_outlined, tone: Tone.info, message: l.readOnlyTask),
+          InlineBanner(icon: AppIcons.eye, tone: Tone.info, message: l.readOnlyTask),
         ],
 
         FieldLabel(l.status),
@@ -221,13 +223,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.xs),
           child: Column(
             children: [
-              _Detail(icon: Icons.event_available_rounded, label: l.startLabel, value: t.startDate == null ? '—' : context.day(t.startDate!)),
+              _Detail(icon: AppIcons.calendarCheck, label: l.startLabel, value: t.startDate == null ? '—' : context.day(t.startDate!)),
               const Divider(),
-              _Detail(icon: Icons.event_rounded, label: l.dueLabel, value: t.dueDate == null ? '—' : context.day(t.dueDate!)),
+              _Detail(icon: AppIcons.calendarBlank, label: l.dueLabel, value: t.dueDate == null ? '—' : context.day(t.dueDate!)),
               const Divider(),
-              _Detail(icon: Icons.flag_outlined, label: l.priority, value: priorityLabel(context, t.priority)),
+              _Detail(icon: AppIcons.flag, label: l.priority, value: priorityLabel(context, t.priority)),
               const Divider(),
-              _Detail(icon: Icons.person_outline_rounded, label: l.assignee, value: t.assignee?.name ?? l.unassigned),
+              _Detail(icon: AppIcons.user, label: l.assignee, value: t.assignee?.name ?? l.unassigned),
             ],
           ),
         ),
@@ -249,7 +251,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     constraints: const BoxConstraints(minHeight: 48),
                     child: Row(
                       children: [
-                        Icon(s.done ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, size: 22, color: s.done ? p.success : p.muted),
+                        Icon(s.done ? AppIcons.checkCircleFill : AppIcons.circle, size: 22, color: s.done ? p.success : p.muted),
                         const SizedBox(width: Space.md),
                         Expanded(
                           child: Text(
@@ -374,7 +376,7 @@ class _AddPhotoTile extends StatelessWidget {
               if (busy)
                 const SizedBox.square(dimension: 26, child: CircularProgressIndicator(strokeWidth: 2.5))
               else
-                Icon(Icons.add_a_photo_rounded, color: p.info, size: 28),
+                Icon(AppIcons.cameraPlus, color: p.info, size: 28),
               const SizedBox(height: Space.sm),
               Text(busy ? context.l10n.uploading : context.l10n.addPhoto, textAlign: TextAlign.center, style: context.text.labelMedium!.copyWith(color: p.info)),
             ],
@@ -509,7 +511,7 @@ class _ComposerState extends ConsumerState<_Composer> {
                 style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
                 icon: _sending
                     ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.send_rounded),
+                    : const Icon(AppIcons.paperPlaneRight),
               ),
             ],
           ),

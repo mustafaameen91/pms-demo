@@ -9,6 +9,9 @@ import { Logo } from "@/components/logo";
 import { LanguageSwitcher } from "@/components/shell/language-switcher";
 import { getT } from "@/i18n/server";
 import { RequestForm } from "./request-form";
+import { ClipboardList, Lock } from "lucide-react";
+import { BrandBackdrop } from "@/components/auth/brand-panel";
+import { EmptyState, GradientIcon } from "@/components/page/kit";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -33,29 +36,44 @@ export default async function PublicFormPage({ params }: PageProps<"/f/[token]">
 
   return (
     <LightTheme>
-      <main className="mx-auto w-full max-w-xl px-4 py-10 sm:py-14">
-        <div className="mb-6 flex items-center justify-between gap-2">
-          <Logo />
-          <LanguageSwitcher />
-        </div>
-        {!open ? (
-          <div className="rounded-xl border p-6 text-center">
-            <h1 className="text-xl font-semibold">{t("This form is closed")}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {t("It may have been turned off or replaced. Please contact the team that shared it.")}
-            </p>
+      <BrandBackdrop
+        band={
+          <div className="mx-auto grid max-w-xl gap-6">
+            <div className="flex items-center justify-between gap-3">
+              <Logo onDark className="text-white" />
+              <LanguageSwitcher className="text-white hover:bg-white/15 hover:text-white" />
+            </div>
+            {open && (
+              <div>
+                <p className="text-xs font-medium text-white/80">
+                  {row.workspaceName} · {row.projectName}
+                </p>
+                <h1 className="mt-1 text-3xl font-bold tracking-tight">{row.form.title}</h1>
+              </div>
+            )}
           </div>
-        ) : (
-          <>
-            <p className="text-xs text-muted-foreground">
-              {row.workspaceName} · {row.projectName}
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold">{row.form.title}</h1>
-            {row.form.intro && <p className="mt-2 text-sm whitespace-pre-wrap text-muted-foreground">{row.form.intro}</p>}
-            <RequestForm token={token} config={config!.data} renderedAt={now()} />
-          </>
-        )}
-      </main>
+        }
+      >
+        <div className="mx-auto max-w-xl">
+          {!open ? (
+            <EmptyState icon={Lock} title={t("This form is closed")} className="border-solid shadow-xl shadow-primary/5">
+              {t("It may have been turned off or replaced. Please contact the team that shared it.")}
+            </EmptyState>
+          ) : (
+            <div className="rounded-2xl border bg-card p-6 shadow-xl shadow-primary/5 sm:p-8">
+              <div className="flex items-start gap-4">
+                <GradientIcon icon={ClipboardList} />
+                {row.form.intro ? (
+                  <p className="text-sm whitespace-pre-wrap text-muted-foreground">{row.form.intro}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t("Send a request")}</p>
+                )}
+              </div>
+              <RequestForm token={token} config={config!.data} renderedAt={now()} />
+            </div>
+          )}
+        </div>
+      </BrandBackdrop>
     </LightTheme>
   );
 }

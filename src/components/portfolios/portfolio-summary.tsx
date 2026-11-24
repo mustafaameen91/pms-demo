@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { AlertTriangle, FolderKanban, ShieldAlert, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { AlertTriangle, FolderKanban, Gauge, ShieldAlert, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import type { PortfolioSummary } from "@/lib/portfolio";
 import { riskLevel, riskScore } from "@/lib/risks";
 import { cn, formatMoney } from "@/lib/utils";
 import { getT } from "@/i18n/server";
 import { AccomplishmentMeter, fmtPct } from "@/components/projects/accomplishment";
 import { LEVEL_STYLE, RiskLevelBadge } from "@/components/risks/risk-level";
+import { Panel, StatTile } from "@/components/page/kit";
 
 type Risk = { id: string; number: number; title: string; likelihood: number; impact: number; projectKey: string; projectName: string };
 
@@ -15,47 +16,38 @@ export async function PortfolioSummaryView({ summary: s, risks, base }: { summar
   const levels = { high: 0, medium: 0, low: 0 };
   for (const r of risks) levels[riskLevel(riskScore(r.likelihood, r.impact))] += 1;
   const tiles = [
-    { icon: FolderKanban, label: t("Projects"), value: String(s.projects), hint: t("{open} open · {finished} finished", { open: s.open, finished: s.finished }), bad: false },
-    { icon: TrendingDown, label: t("Behind schedule"), value: String(s.behind), hint: t("Done less than planned"), bad: s.behind > 0 },
-    { icon: AlertTriangle, label: t("Over budget"), value: String(s.overBudget), hint: s.headingOver ? t.plural(s.headingOver, "Spent more than budget · {count} more heading over", "Spent more than budget · {count} more heading over") : t("Spent more than budget"), bad: s.overBudget > 0 },
-    { icon: ShieldAlert, label: t("High risks"), value: String(levels.high), hint: t("{medium} medium · {low} low", { medium: levels.medium, low: levels.low }), bad: levels.high > 0 },
+    { icon: FolderKanban, label: t("Projects"), value: s.projects, hint: t("{open} open · {finished} finished", { open: s.open, finished: s.finished }), tone: "default" as const },
+    { icon: TrendingDown, label: t("Behind schedule"), value: s.behind, hint: t("Done less than planned"), tone: s.behind > 0 ? ("bad" as const) : ("good" as const), share: s.open ? s.behind / s.open : 0 },
+    { icon: AlertTriangle, label: t("Over budget"), value: s.overBudget, hint: s.headingOver ? t.plural(s.headingOver, "Spent more than budget · {count} more heading over", "Spent more than budget · {count} more heading over") : t("Spent more than budget"), tone: s.overBudget > 0 ? ("bad" as const) : ("good" as const), share: s.open ? s.overBudget / s.open : 0 },
+    { icon: ShieldAlert, label: t("High risks"), value: levels.high, hint: t("{medium} medium · {low} low", { medium: levels.medium, low: levels.low }), tone: levels.high > 0 ? ("bad" as const) : ("good" as const) },
   ];
 
   return (
     <div className="grid grid-cols-1 gap-6">
       <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {tiles.map((k) => (
-          <div key={k.label} className="rounded-xl border bg-card p-4">
-            <dt className="flex items-center gap-2 text-sm text-muted-foreground">
-              <k.icon className={cn("size-4", k.bad && "text-destructive")} aria-hidden />
-              {k.label}
-            </dt>
-            <dd className={cn("mt-1 text-3xl font-semibold tabular-nums", k.bad && "text-destructive")}>{k.value}</dd>
-            <p className="mt-0.5 text-xs text-muted-foreground">{k.hint}</p>
-          </div>
+          <StatTile key={k.label} icon={k.icon} label={k.label} value={k.value} hint={k.hint} tone={k.tone} share={"share" in k ? k.share : undefined} shareLabel={k.label} />
         ))}
       </dl>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <section aria-labelledby="pf-progress" className="rounded-xl border bg-card p-5">
-          <h2 id="pf-progress" className="font-semibold">
-            {t("Average accomplishment")}
-          </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">{t("Each project counts equally.")}</p>
-          <p className="mt-3 text-4xl font-semibold tabular-nums">{fmtPct(s.avgActual)}</p>
-          {s.avgActual !== null && (
-            <AccomplishmentMeter actual={s.avgActual} planned={s.avgPlanned} label={t("Average accomplishment")} className="mt-3" />
-          )}
-          <p className="mt-2 text-xs text-muted-foreground">
-            {s.avgPlanned === null ? t("No schedule") : t("Planned by today: {pct}", { pct: fmtPct(s.avgPlanned) })}
-          </p>
-        </section>
+        <Panel id="pf-progress" title={t("Average accomplishment")} icon={Gauge}>
+          <div className="px-5 pb-5">
+            <p className="text-xs text-muted-foreground">{t("Each project counts equally.")}</p>
+            <p className="mt-3 text-5xl font-bold tracking-tight tabular-nums">{fmtPct(s.avgActual)}</p>
+            {s.avgActual !== null && <AccomplishmentMeter actual={s.avgActual} planned={s.avgPlanned} label={t("Average accomplishment")} className="mt-4" />}
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+              {s.avgPlanned !== null && <span aria-hidden className="h-3 w-0.5 rounded-full bg-foreground/60" />}
+              {s.avgPlanned === null ? t("No schedule") : t("Planned by today: {pct}", { pct: fmtPct(s.avgPlanned) })}
+            </p>
+          </div>
+        </Panel>
 
-        <section aria-labelledby="pf-risks" className="rounded-xl border bg-card p-5">
-          <div className="flex items-center justify-between gap-2">
-            <h2 id="pf-risks" className="font-semibold">
-              {t("Top risks")}
-            </h2>
+        <Panel
+          id="pf-risks"
+          title={t("Top risks")}
+          icon={ShieldAlert}
+          action={
             <div className="flex gap-1.5 text-xs">
               {(["high", "medium", "low"] as const).map((l) => {
                 const st = LEVEL_STYLE[l];
@@ -67,40 +59,37 @@ export async function PortfolioSummaryView({ summary: s, risks, base }: { summar
                 );
               })}
             </div>
-          </div>
+          }
+        >
           {risks.length === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">{t("No active risks in these projects.")}</p>
+            <p className="px-5 pb-5 text-sm text-muted-foreground">{t("No active risks in these projects.")}</p>
           ) : (
-            <ol className="mt-4 grid gap-2">
+            <ol className="divide-y border-t">
               {risks.slice(0, 5).map((r) => (
                 <li key={r.id}>
-                  <Link href={`${base}/p/${r.projectKey}/risks?risk=${r.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-sm hover:bg-accent/50">
+                  <Link href={`${base}/p/${r.projectKey}/risks?risk=${r.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 text-sm transition-colors hover:bg-accent">
                     <RiskLevelBadge likelihood={r.likelihood} impact={r.impact} t={t} />
                     <span className="min-w-0 flex-1 truncate font-medium">{r.title}</span>
-                    <span className="text-xs text-muted-foreground">{r.projectName}</span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{r.projectName}</span>
                   </Link>
                 </li>
               ))}
             </ol>
           )}
-        </section>
+        </Panel>
       </div>
 
       {s.money.length > 0 && (
-        <section aria-labelledby="pf-money" className="rounded-xl border bg-card p-5">
-          <h2 id="pf-money" className="flex items-center gap-2 font-semibold">
-            <Wallet className="size-4 text-muted-foreground" aria-hidden />
-            {t("Money")}
-          </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+        <Panel id="pf-money" title={t("Money")} icon={Wallet}>
+          <p className="-mt-1 px-5 text-xs text-muted-foreground">
             {t("Per currency. Expected final cost uses each project's forecast; a project without one yet counts at its budget.")}
           </p>
-          <ul className="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+          <ul className="grid gap-3 p-5 lg:grid-cols-2 2xl:grid-cols-3">
             {s.money.map((m) => {
               const money = (v: number) => formatMoney(v, m.currency, t.intl);
               const over = m.overBy !== null && m.overBy > 0;
               return (
-                <li key={m.currency} className="rounded-lg border p-4">
+                <li key={m.currency} className="rounded-xl border bg-muted/30 p-4">
                   <p className="text-xs text-muted-foreground">
                     {m.currency} · {t.plural(m.projects, "{count} project", "{count} projects")}
                   </p>
@@ -132,7 +121,7 @@ export async function PortfolioSummaryView({ summary: s, risks, base }: { summar
               );
             })}
           </ul>
-        </section>
+        </Panel>
       )}
     </div>
   );

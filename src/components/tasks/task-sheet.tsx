@@ -27,6 +27,7 @@ import type { FieldDef } from "@/lib/custom-fields";
 import { RECURRENCE_LABELS } from "@/lib/recurrence";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { Dependencies } from "./dependencies";
+import { SelectBox } from "@/components/ui/select-box";
 
 const UNASSIGNED = "__unassigned__";
 
@@ -495,10 +496,10 @@ function TaskEditor({
                 <Label htmlFor="task-repeat">{t("Repeat")}</Label>
               </dt>
               <dd>
-                <select
+                <SelectBox
                   id="task-repeat"
                   value={task.recurrence ?? ""}
-                  onChange={(e) => save({ recurrence: (e.target.value || null) as TaskPatch["recurrence"] })}
+                  onValueChange={(v) => save({ recurrence: (v || null) as TaskPatch["recurrence"] })}
                   aria-describedby="task-repeat-help"
                   disabled={!can("recurrence")}
                   className={cn(nativeSelectClass, "w-full sm:w-56")}
@@ -509,7 +510,7 @@ function TaskEditor({
                       {t(RECURRENCE_LABELS[r])}
                     </option>
                   ))}
-                </select>
+                </SelectBox>
                 {task.recurrence && (
                   <p id="task-repeat-help" className="mt-1 text-xs text-muted-foreground">
                     {t("When it's done, the next one is created with its dates moved forward.")}

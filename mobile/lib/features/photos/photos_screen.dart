@@ -6,6 +6,8 @@ import '../../core/work.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// A project's photos (its file library's "Photos"), newest first; add from the camera or gallery.
 class PhotosScreen extends ConsumerStatefulWidget {
@@ -51,20 +53,20 @@ class _PhotosScreenState extends ConsumerState<PhotosScreen> {
     final value = key == null ? null : ref.watch(photosProvider(key));
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.photos)),
+      appBar: BrandAppBar(title: Text(l.photos)),
       floatingActionButton: _project == null
           ? null
           : FloatingActionButton.extended(
               onPressed: _uploading ? null : _add,
               icon: _uploading
                   ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2.5))
-                  : const Icon(Icons.add_a_photo_rounded),
+                  : const Icon(AppIcons.cameraPlus),
               label: Text(_uploading ? l.uploading : l.addPhoto),
             ),
       body: list == null
           ? AsyncBody(value: projects, onRetry: () => ref.invalidate(projectsProvider(widget.slug)), builder: (_) => const SizedBox())
           : list.isEmpty
-          ? EmptyState(icon: Icons.apartment_rounded, message: l.notOnProjects)
+          ? EmptyState(icon: AppIcons.buildings, message: l.notOnProjects)
           : Column(
               children: [
                 if (list.length > 1)
@@ -77,7 +79,7 @@ class _PhotosScreenState extends ConsumerState<PhotosScreen> {
                     value: value!,
                     onRetry: () => ref.invalidate(photosProvider(key!)),
                     builder: (photos) => photos.isEmpty
-                        ? SingleChildScrollView(child: EmptyState(icon: Icons.photo_camera_outlined, message: l.noPhotos))
+                        ? SingleChildScrollView(child: EmptyState(icon: AppIcons.camera, message: l.noPhotos))
                         : RefreshIndicator(
                             onRefresh: () => ref.refresh(photosProvider(key!).future).then((_) {}, onError: (Object _) {}),
                             child: LayoutBuilder(

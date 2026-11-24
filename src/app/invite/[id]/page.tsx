@@ -5,6 +5,9 @@ import { getT } from "@/i18n/server";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { AcceptInvitation } from "./accept-invitation";
+import { MailOpen } from "lucide-react";
+import { BrandBackdrop } from "@/components/auth/brand-panel";
+import { GradientIcon } from "@/components/page/kit";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -29,11 +32,15 @@ export default async function InvitePage({ params }: PageProps<"/invite/[id]">) 
           : "ok";
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-muted/40 px-4 py-12">
-      <div className="mb-8">
-        <Logo />
-      </div>
-      <div className="w-full max-w-md rounded-xl border bg-card p-6 text-center shadow-sm sm:p-8">
+    <BrandBackdrop
+      band={
+        <div className="flex justify-center">
+          <Logo onDark className="text-white" />
+        </div>
+      }
+    >
+      <div className="mx-auto flex w-full max-w-md flex-col items-center rounded-2xl border bg-card p-6 text-center shadow-xl shadow-primary/5 sm:p-8">
+        <GradientIcon icon={MailOpen} className="mb-5 size-14 [&_svg]:size-6" />
         <AcceptInvitation
           state={state}
           invitationId={id}
@@ -46,6 +53,6 @@ export default async function InvitePage({ params }: PageProps<"/invite/[id]">) 
           alreadyAccepted={invite?.status === "accepted"}
         />
       </div>
-    </main>
+    </BrandBackdrop>
   );
 }

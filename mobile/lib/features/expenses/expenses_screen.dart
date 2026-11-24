@@ -8,6 +8,8 @@ import '../../core/work_models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// The expenses I added, with where each stands; "Add expense" with a receipt photo.
 class ExpensesScreen extends ConsumerWidget {
@@ -19,10 +21,10 @@ class ExpensesScreen extends ConsumerWidget {
     final l = context.l10n;
     final value = ref.watch(expensesProvider(slug));
     return Scaffold(
-      appBar: AppBar(title: Text(l.expensesReceipts)),
+      appBar: BrandAppBar(title: Text(l.expensesReceipts)),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/w/$slug/expenses/new'),
-        icon: const Icon(Icons.add_rounded),
+        icon: const Icon(AppIcons.plus),
         label: Text(l.addExpense),
       ),
       body: AsyncBody(
@@ -31,7 +33,7 @@ class ExpensesScreen extends ConsumerWidget {
         builder: (page) => RefreshIndicator(
           onRefresh: () => ref.refresh(expensesProvider(slug).future).then((_) {}, onError: (Object _) {}),
           child: page.expenses.isEmpty
-              ? ListView(children: [EmptyState(icon: Icons.receipt_long_rounded, message: l.noExpenses)])
+              ? ListView(children: [EmptyState(icon: AppIcons.receipt, message: l.noExpenses)])
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 96),
                   itemCount: page.expenses.length,
@@ -68,7 +70,7 @@ class _ExpenseCard extends StatelessWidget {
               ),
             )
           else
-            const ToneIcon(Icons.receipt_long_rounded, tone: Tone.neutral, size: 56),
+            const ToneIcon(AppIcons.receipt, tone: Tone.neutral, size: 56),
           const SizedBox(width: Space.md),
           Expanded(
             child: Column(

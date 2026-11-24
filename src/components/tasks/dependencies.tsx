@@ -11,6 +11,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { useT } from "@/i18n/client";
+import { SelectBox } from "@/components/ui/select-box";
 
 type Linked = TaskLinks["predecessors"][number];
 
@@ -108,14 +109,14 @@ export function Dependencies({
           <label htmlFor="dep-pick" className="sr-only">
             {t("Add a task this one waits on")}
           </label>
-          <select id="dep-pick" value={pick} onChange={(e) => setPick(e.target.value)} className={nativeSelectClass}>
+          <SelectBox id="dep-pick" value={pick} onValueChange={(v) => setPick(v)} className={nativeSelectClass}>
             <option value="">{available.length ? t("Add a task it waits on…") : t("No other tasks to add")}</option>
             {available.map((o) => (
               <option key={o.id} value={o.id}>
                 {projectKey}-{o.number} {o.title}
               </option>
             ))}
-          </select>
+          </SelectBox>
           <Button type="submit" size="sm" variant="outline" disabled={pending || !pick}>
             {t("Add")}
           </Button>

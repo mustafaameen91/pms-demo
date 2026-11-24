@@ -9,6 +9,7 @@ import '../core/work_models.dart';
 import '../theme/theme.dart';
 import 'common.dart';
 import 'motion.dart';
+import '../theme/icons.dart';
 
 /// Loading → a skeleton; failed with nothing to show → message + "Try again";
 /// otherwise the data (a refresh that fails keeps what's on screen).
@@ -27,13 +28,13 @@ class AsyncBody<T> extends StatelessWidget {
       return Center(
         child: SingleChildScrollView(
           child: ErrorPanel(
-            icon: Icons.cloud_off_rounded,
+            icon: AppIcons.cloudSlash,
             title: errorText(context, value.error!),
             actions: [
               FilledButton.icon(
                 style: FilledButton.styleFrom(minimumSize: const Size(180, 52)),
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded),
+                icon: const Icon(AppIcons.arrowClockwise),
                 label: Text(context.l10n.tryAgain),
               ),
             ],
@@ -78,11 +79,25 @@ class EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // A soft brand glow behind a tinted tile, like the website's empty states.
           Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(color: p.infoSoft, shape: BoxShape.circle),
-            child: Icon(icon, size: 34, color: p.info),
+            width: 112,
+            height: 112,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(colors: [p.info.withValues(alpha: 0.16), p.info.withValues(alpha: 0)]),
+            ),
+            child: Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                color: p.infoSoft,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: p.info.withValues(alpha: 0.12), width: 6),
+              ),
+              child: Icon(icon, size: 30, color: p.info),
+            ),
           ),
           const SizedBox(height: Space.lg),
           Text(message, textAlign: TextAlign.center, style: context.text.bodyLarge!.copyWith(color: p.muted)),
@@ -104,7 +119,7 @@ void toast(BuildContext context, String message, {bool warning = false, bool err
       duration: Duration(seconds: warning || error ? 5 : 3),
       content: Row(
         children: [
-          Icon(error ? Icons.error_outline_rounded : (warning ? Icons.info_outline_rounded : Icons.check_circle_rounded), color: Colors.white, size: 20),
+          Icon(error ? AppIcons.warningCircle : (warning ? AppIcons.info : AppIcons.checkCircleFill), color: Colors.white, size: 20),
           const SizedBox(width: Space.sm),
           Expanded(child: Text(message)),
         ],
@@ -165,9 +180,9 @@ class ApprovalPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final (tone, icon, label) = switch (status) {
-      Approval.pending => (Tone.warning, Icons.hourglass_top_rounded, l.statusPending),
-      Approval.approved => (Tone.success, Icons.check_rounded, l.statusApproved),
-      Approval.rejected => (Tone.danger, Icons.close_rounded, l.statusRejected),
+      Approval.pending => (Tone.warning, AppIcons.hourglassHigh, l.statusPending),
+      Approval.approved => (Tone.success, AppIcons.check, l.statusApproved),
+      Approval.rejected => (Tone.danger, AppIcons.x, l.statusRejected),
     };
     final p = context.palette;
     return Container(
@@ -212,7 +227,7 @@ class AuthImage extends ConsumerWidget {
       loadingBuilder: (context, child, progress) => progress == null ? child : ColoredBox(color: p.neutralSoft, child: child),
       errorBuilder: (context, _, _) => ColoredBox(
         color: p.neutralSoft,
-        child: Center(child: Icon(Icons.broken_image_outlined, color: p.muted)),
+        child: Center(child: Icon(AppIcons.imageBroken, color: p.muted)),
       ),
     );
   }
@@ -250,6 +265,7 @@ class PhotoViewer extends StatelessWidget {
 Future<String?> pickPhoto(BuildContext context) async {
   final l = context.l10n;
   final source = await showModalBottomSheet<ImageSource>(
+    useRootNavigator: true,
     context: context,
     useSafeArea: true,
     builder: (context) => Padding(
@@ -259,13 +275,13 @@ Future<String?> pickPhoto(BuildContext context) async {
         children: [
           ListTile(
             minTileHeight: 56,
-            leading: const ToneIcon(Icons.photo_camera_rounded, tone: Tone.info),
+            leading: const ToneIcon(AppIcons.camera, tone: Tone.info),
             title: Text(l.takePhoto),
             onTap: () => Navigator.pop(context, ImageSource.camera),
           ),
           ListTile(
             minTileHeight: 56,
-            leading: const ToneIcon(Icons.photo_library_rounded, tone: Tone.info),
+            leading: const ToneIcon(AppIcons.images, tone: Tone.info),
             title: Text(l.chooseFromGallery),
             onTap: () => Navigator.pop(context, ImageSource.gallery),
           ),
@@ -291,7 +307,7 @@ class ProjectField extends StatelessWidget {
     return DropdownButtonFormField<String>(
       initialValue: value,
       isExpanded: true,
-      decoration: InputDecoration(labelText: context.l10n.project, prefixIcon: const Icon(Icons.apartment_rounded), errorText: error),
+      decoration: InputDecoration(labelText: context.l10n.project, prefixIcon: const Icon(AppIcons.buildings), errorText: error),
       items: [for (final p in projects) DropdownMenuItem(value: p.id, child: Text(p.name, overflow: TextOverflow.ellipsis))],
       onChanged: onChanged,
     );

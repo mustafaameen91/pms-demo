@@ -239,6 +239,13 @@ export default {
 
   // Inbox
   "You're all caught up.": "لا جديد لديك.",
+  "New|inbox": "جديدة",
+  "Earlier": "سابقًا",
+  "Not counted in spending yet": "لم تُحتسب في المصروف بعد",
+  "No budget set": "لم تُحدَّد ميزانية",
+  "Left to use": "المتبقي للاستخدام",
+  "Planned minus used": "المخطط ناقص المستخدم",
+  "Nothing spent yet": "لا مصروفات بعد",
   "{count} unread": "{count} غير مقروءة",
   "Mark all as read": "تعليم الكل كمقروء",
   "No notifications yet": "لا توجد إشعارات بعد",

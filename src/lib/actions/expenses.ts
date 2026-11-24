@@ -1,11 +1,11 @@
 "use server";
 
 import { refreshPage } from "@/lib/refresh-page";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { activities, expenses, loans, projectResources, projects, tasks } from "@/lib/db/schema";
+import { activities, expenses, ledgerAccounts, loans, projectResources, projects, tasks } from "@/lib/db/schema";
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
 import { canManageProject, isWorkspaceAdmin } from "@/lib/permissions";
 import { currentBalance, syncPaidOff } from "@/lib/loan-settlement";
@@ -137,6 +137,18 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
     }
   }
 
+  // Finance: which cash box / bank paid it (must be one of this company's money accounts).
+  const moneyAccountRaw = String(formData.get("moneyAccountId") ?? "");
+  let moneyAccountId: string | null | undefined;
+  if (moneyAccountRaw) {
+    const [acc] = await db
+      .select({ id: ledgerAccounts.id })
+      .from(ledgerAccounts)
+      .where(and(eq(ledgerAccounts.id, moneyAccountRaw), eq(ledgerAccounts.workspaceId, project.workspaceId), isNotNull(ledgerAccounts.moneyKind)))
+      .limit(1);
+    moneyAccountId = acc ? acc.id : undefined;
+  }
+
   // Receipt: new upload replaces the old file; "removeReceipt" clears it.
   const file = formData.get("receipt");
   let receipt: { receiptPath: string | null; receiptName: string | null; receiptType: string | null } | undefined;
@@ -158,7 +170,7 @@ export async function saveExpense(formData: FormData): Promise<ExpenseResult> {
     ? { approvalStatus: "pending" as const, decidedById: null, decidedAt: null, decisionNote: null }
     : { approvalStatus: "approved" as const };
 
-  const values = { ...data, category: data.category as Category, amount: data.amount!, ...approval };
+  const values = { ...data, category: data.category as Category, amount: data.amount!, ...approval, ...(moneyAccountId !== undefined ? { moneyAccountId } : {}) };
   let newExpenseId: string | undefined;
   try {
     await db.transaction(async (tx) => {

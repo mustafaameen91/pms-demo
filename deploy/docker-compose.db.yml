@@ -1,0 +1,26 @@
+# PostgreSQL for tamm, on the server.
+# Listens on 127.0.0.1:5433 only: reachable from the server itself, never from the internet,
+# and on a different port from any other database already on the machine (MySQL uses 3306).
+#
+#   docker compose -f deploy/docker-compose.db.yml --env-file /var/www/pms.codility.tech/db.env up -d
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: tamm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tamm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in db.env}
+      POSTGRES_DB: tamm
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - tamm-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tamm -d tamm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  tamm-db-data:

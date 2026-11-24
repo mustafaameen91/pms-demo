@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2, MoreHorizontal, Plus } from "lucide-react";
+import { AlertTriangle, Building2, CheckCircle2, Clock, Loader2, Lock, MoreHorizontal, Plus, Receipt, Settings2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { recordPayment, savePlatformSettings, setSubscriptionStatus } from "@/lib/actions/admin";
 import { accessFor } from "@/lib/access";
@@ -31,6 +31,8 @@ import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { useT } from "@/i18n/client";
 import type { T } from "@/i18n/translate";
+import { SelectBox } from "@/components/ui/select-box";
+import { EmptyState, PageHeader, PageShell, Panel, StatTile } from "@/components/page/kit";
 
 type Settings = {
   price: string | null;
@@ -99,6 +101,8 @@ export function AdminPanel({
     soon: statuses.filter((s) => s.tone === "warn").length,
   };
 
+  const members = workspaces.reduce((sum, w) => sum + Number(w.members), 0);
+
   const setStatus = (w: AdminWorkspace, action: "complimentary" | "cancel" | "pending", message: string) =>
     startTransition(async () => {
       const result = await setSubscriptionStatus({ workspaceId: w.id, action });
@@ -107,37 +111,32 @@ export function AdminPanel({
     });
 
   return (
-    <div className="grid w-full grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:py-8">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{t("Customers")}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t("Record payments you receive to activate or extend a workspace. Plan: Pro (unlimited).")}
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        icon={Building2}
+        title={t("Customers")}
+        description={t("Record payments you receive to activate or extend a workspace. Plan: Pro (unlimited).")}
+      />
 
-      <dl className="grid gap-4 sm:grid-cols-4">
-        {[
-          { label: t("Workspaces"), value: workspaces.length },
-          { label: t("Active"), value: counts.active },
-          { label: t("Awaiting payment"), value: counts.waiting, bad: counts.waiting > 0 },
-          { label: t("Expired / ending in 7 days"), value: `${counts.expired} / ${counts.soon}`, bad: counts.expired > 0 },
-        ].map((k) => (
-          <div key={k.label} className="rounded-xl border bg-card p-4">
-            <dt className="text-sm text-muted-foreground">{k.label}</dt>
-            <dd className={cn("mt-1 text-2xl font-semibold", k.bad && "text-destructive")}>{k.value}</dd>
-          </div>
-        ))}
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile icon={Building2} label={t("Workspaces")} value={workspaces.length} hint={t.plural(members, "{count} member across all workspaces", "{count} members across all workspaces")} />
+        <StatTile icon={CheckCircle2} tone="good" label={t("Active")} value={counts.active} share={workspaces.length ? counts.active / workspaces.length : 0} shareLabel={t("Share of workspaces active")} />
+        <StatTile icon={Clock} tone={counts.waiting ? "bad" : "default"} label={t("Awaiting payment")} value={counts.waiting} />
+        <StatTile
+          icon={Lock}
+          tone={counts.expired ? "bad" : "default"}
+          label={t("Expired")}
+          value={counts.expired}
+          hint={t.plural(counts.soon, "{count} more ending in 7 days", "{count} more ending in 7 days")}
+        />
       </dl>
 
-      <section aria-labelledby="ws-heading" className="overflow-hidden rounded-xl border bg-card">
-        <h2 id="ws-heading" className="border-b px-4 py-3 font-semibold">
-          {t("Workspaces")}
-        </h2>
-        <div className="relative overflow-x-auto">
+      <Panel id="ws-heading" title={t("Workspaces")} icon={Users} count={workspaces.length}>
+        <div className="relative overflow-x-auto border-t">
           <table className="w-full min-w-[900px] text-sm">
             <thead className="text-start text-xs text-muted-foreground">
               <tr className="border-b bg-muted/40">
-                <th scope="col" className="py-2 pe-3 ps-4 font-medium">{t("Workspace")}</th>
+                <th scope="col" className="py-2.5 pe-3 ps-5 font-medium">{t("Workspace")}</th>
                 <th scope="col" className="px-3 py-2 font-medium">{t("Owner")}</th>
                 <th scope="col" className="px-3 py-2 text-end font-medium">{t("Members")}</th>
                 <th scope="col" className="px-3 py-2 text-end font-medium">{t("Projects")}</th>
@@ -150,10 +149,15 @@ export function AdminPanel({
               {workspaces.map((w, i) => {
                 const s = statuses[i];
                 return (
-                  <tr key={w.id} className="border-b last:border-b-0">
-                    <td className="py-2.5 pe-3 ps-4">
-                      <p className="font-medium">{w.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                  <tr key={w.id} className="border-b transition-colors last:border-b-0 hover:bg-accent">
+                    <td className="py-3 pe-3 ps-5">
+                      <p className="flex items-center gap-2.5 font-medium">
+                        <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-xs font-bold text-primary uppercase">
+                          {w.name.trim().slice(0, 2)}
+                        </span>
+                        {w.name}
+                      </p>
+                      <p className="ps-10.5 text-xs text-muted-foreground">
                         {t("since {date}", { date: formatDate(new Date(w.createdAt).toISOString().slice(0, 10), t.intl) })}
                       </p>
                     </td>
@@ -163,13 +167,14 @@ export function AdminPanel({
                     <td className="px-3 py-2.5">
                       <span
                         className={cn(
-                          "inline-flex rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap",
+                          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap",
                           s.tone === "good" && "border-primary/30 bg-primary/10 text-primary",
                           s.tone === "warn" && "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300",
                           s.tone === "bad" && "border-destructive/30 bg-destructive/10 text-destructive",
                           s.tone === "muted" && "text-muted-foreground",
                         )}
                       >
+                        <StatusIcon tone={s.tone} />
                         {s.label}
                       </span>
                     </td>
@@ -208,20 +213,19 @@ export function AdminPanel({
             </tbody>
           </table>
         </div>
-      </section>
+      </Panel>
 
-      <section aria-labelledby="payments-heading" className="overflow-hidden rounded-xl border bg-card">
-        <h2 id="payments-heading" className="border-b px-4 py-3 font-semibold">
-          {t("Recent payments")}
-        </h2>
+      <Panel id="payments-heading" title={t("Recent payments")} icon={Receipt} count={payments.length}>
         {payments.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("No payments recorded yet.")}</p>
+          <div className="border-t p-5">
+            <EmptyState icon={Receipt} title={t("No payments recorded yet.")} className="py-10" />
+          </div>
         ) : (
-          <div className="relative overflow-x-auto">
+          <div className="relative overflow-x-auto border-t">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="text-start text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
-                  <th scope="col" className="py-2 pe-3 ps-4 font-medium">{t("Date")}</th>
+                  <th scope="col" className="py-2.5 pe-3 ps-5 font-medium">{t("Date")}</th>
                   <th scope="col" className="px-3 py-2 font-medium">{t("Workspace")}</th>
                   <th scope="col" className="px-3 py-2 font-medium">{t("Method")}</th>
                   <th scope="col" className="px-3 py-2 font-medium">{t("Covers until")}</th>
@@ -231,8 +235,8 @@ export function AdminPanel({
               </thead>
               <tbody>
                 {payments.map((p) => (
-                  <tr key={p.id} className="border-b last:border-b-0">
-                    <td className="py-2.5 pe-3 ps-4 tabular-nums">{formatDate(new Date(p.createdAt).toISOString().slice(0, 10), t.intl)}</td>
+                  <tr key={p.id} className="border-b transition-colors last:border-b-0 hover:bg-accent">
+                    <td className="py-3 pe-3 ps-5 tabular-nums">{formatDate(new Date(p.createdAt).toISOString().slice(0, 10), t.intl)}</td>
                     <td className="px-3 py-2.5">{p.workspaceName}</td>
                     <td className="px-3 py-2.5">
                       {t(p.method)}
@@ -240,20 +244,26 @@ export function AdminPanel({
                     </td>
                     <td className="px-3 py-2.5 tabular-nums">{formatDate(p.coversUntil, t.intl)}</td>
                     <td className="px-3 py-2.5 text-muted-foreground">{p.recordedBy ?? "—"}</td>
-                    <td className="py-2.5 pe-4 ps-3 text-end font-medium tabular-nums">{formatMoney(p.amount, p.currency, t.intl)}</td>
+                    <td className="py-3 pe-5 ps-3 text-end font-semibold tabular-nums">{formatMoney(p.amount, p.currency, t.intl)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </section>
+      </Panel>
 
       <SettingsForm settings={settings} />
 
       <PaymentDialog workspace={paying} settings={settings} onClose={() => setPaying(null)} />
-    </div>
+    </PageShell>
   );
+}
+
+/** Status shown with an icon as well as colour. */
+function StatusIcon({ tone }: { tone: string }) {
+  const Icon = tone === "good" ? CheckCircle2 : tone === "warn" ? Clock : tone === "bad" ? AlertTriangle : Lock;
+  return <Icon className="size-3.5" aria-hidden />;
 }
 
 function PaymentDialog({
@@ -334,23 +344,23 @@ function PaymentForm({
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="pay-currency">{t("Currency")}</Label>
-          <select id="pay-currency" value={currency} onChange={(e) => setCurrency(e.target.value)} className={nativeSelectClass}>
+          <SelectBox id="pay-currency" value={currency} onValueChange={(v) => setCurrency(v)} className={nativeSelectClass}>
             {CURRENCIES.map((c) => (
               <option key={c}>{c}</option>
             ))}
-          </select>
+          </SelectBox>
         </div>
       </div>
       <div className="grid items-start gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label htmlFor="pay-method">{t("Method")}</Label>
-          <select id="pay-method" value={method} onChange={(e) => setMethod(e.target.value)} className={nativeSelectClass}>
+          <SelectBox id="pay-method" value={method} onValueChange={(v) => setMethod(v)} className={nativeSelectClass}>
             {METHODS.map((m) => (
               <option key={m} value={m}>
                 {t(m)}
               </option>
             ))}
-          </select>
+          </SelectBox>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="pay-ref">
@@ -412,13 +422,10 @@ function SettingsForm({ settings }: { settings: Settings }) {
   const [pending, startTransition] = useTransition();
 
   return (
-    <section aria-labelledby="settings-heading" className="rounded-xl border bg-card p-5 sm:p-6">
-      <h2 id="settings-heading" className="font-semibold">
-        {t("Price & payment instructions")}
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">{t("Shown to customers on their Billing page.")}</p>
+    <Panel id="settings-heading" title={t("Price & payment instructions")} icon={Settings2}>
+      <p className="-mt-2 px-5 pb-3 text-sm text-muted-foreground">{t("Shown to customers on their Billing page.")}</p>
       <form
-        className="mt-4 grid gap-4"
+        className="grid gap-4 border-t p-5"
         onSubmit={(e) => {
           e.preventDefault();
           startTransition(async () => {
@@ -446,18 +453,18 @@ function SettingsForm({ settings }: { settings: Settings }) {
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="set-currency">{t("Currency")}</Label>
-            <select id="set-currency" value={currency} onChange={(e) => setCurrency(e.target.value)} className={nativeSelectClass}>
+            <SelectBox id="set-currency" value={currency} onValueChange={(v) => setCurrency(v)} className={nativeSelectClass}>
               {CURRENCIES.map((c) => (
                 <option key={c}>{c}</option>
               ))}
-            </select>
+            </SelectBox>
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="set-period">{t("Per")}</Label>
-            <select id="set-period" value={period} onChange={(e) => setPeriod(e.target.value)} className={nativeSelectClass}>
+            <SelectBox id="set-period" value={period} onValueChange={(v) => setPeriod(v)} className={nativeSelectClass}>
               <option value="month">{t("Month")}</option>
               <option value="year">{t("Year")}</option>
-            </select>
+            </SelectBox>
           </div>
         </div>
         <div className="grid gap-1.5">
@@ -484,6 +491,6 @@ function SettingsForm({ settings }: { settings: Settings }) {
           </Button>
         </div>
       </form>
-    </section>
+    </Panel>
   );
 }

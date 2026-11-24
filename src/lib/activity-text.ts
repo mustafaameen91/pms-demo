@@ -1,5 +1,7 @@
 /** Description of an activity row for the audit log, in the viewer's language (pure). */
 import { createT, type T } from "@/i18n/translate";
+import { EMPLOYEE_DOC_TYPES, labelOf } from "@/lib/hr";
+import { ASSET_STATUSES } from "@/lib/hr-rules";
 const s = (v: unknown) => (typeof v === "string" ? v : v === null || v === undefined ? "" : String(v));
 
 export const ACTIVITY_GROUPS = {
@@ -7,14 +9,16 @@ export const ACTIVITY_GROUPS = {
   projects: "Projects",
   money: "Money",
   members: "Members",
+  people: "People (HR)",
   billing: "Billing",
 } as const;
 export type ActivityGroup = keyof typeof ACTIVITY_GROUPS;
 
 export function activityGroup(type: string): ActivityGroup {
   if (type.startsWith("task.") || type.startsWith("subtask.") || type.startsWith("comment.")) return "tasks";
-  if (type.startsWith("expense.") || type.startsWith("resource.") || type.startsWith("loan.")) return "money";
+  if (["expense.", "resource.", "loan.", "finance.", "invoice.", "bill.", "payment.", "journal."].some((p) => type.startsWith(p))) return "money";
   if (type.startsWith("member.")) return "members";
+  if (["employee.", "department.", "attendance.", "leave.", "payroll.", "asset.", "hr."].some((p) => type.startsWith(p))) return "people";
   if (type.startsWith("subscription.")) return "billing";
   return "projects";
 }
@@ -23,8 +27,9 @@ export function activityGroup(type: string): ActivityGroup {
 export const GROUP_PREFIXES: Record<ActivityGroup, string[]> = {
   tasks: ["task.", "subtask.", "comment."],
   projects: ["project.", "share.", "risk.", "time.", "sitelog.", "company.", "document.", "document_form.", "file.", "portfolio."],
-  money: ["expense.", "resource.", "loan."],
+  money: ["expense.", "resource.", "loan.", "finance.", "invoice.", "bill.", "payment.", "journal."],
   members: ["member."],
+  people: ["employee.", "department.", "attendance.", "leave.", "payroll.", "asset.", "hr."],
   billing: ["subscription."],
 };
 
@@ -102,6 +107,49 @@ export function describeActivity(type: string, data: Record<string, unknown>, ta
     case "file.uploaded": return t("uploaded the file “{name}”", { name: s(data.name) });
     case "file.version": return t("uploaded version {version} of “{name}”", { name: s(data.name), version: s(data.version) });
     case "file.deleted": return t("deleted the file “{name}”", { name: s(data.name) });
+    case "employee.created": return t("added {name} ({code}) to HR", { name: s(data.name), code: s(data.code) });
+    case "employee.updated": return t("updated {name}'s file ({fields})", { name: s(data.name), fields: (Array.isArray(data.fields) ? data.fields : []).map((f) => t(String(f))).join(t(", ")) });
+    case "employee.imported": return t("added {count} people to HR from members and workers", { count: s(data.count) });
+    case "employee.left": return t("recorded that {name} leaves on {date}", { name: s(data.name), date: s(data.date) });
+    case "employee.rehired": return t("brought {name} back to work", { name: s(data.name) });
+    case "employee.deleted": return t("deleted the HR file of {name} ({code})", { name: s(data.name), code: s(data.code) });
+    case "employee.document_added": return t("added a document ({doc}) to {name}'s file", { name: s(data.name), doc: t(labelOf(EMPLOYEE_DOC_TYPES, s(data.docType))) });
+    case "employee.document_updated": return t("updated a document ({doc}) on {name}'s file", { name: s(data.name), doc: t(labelOf(EMPLOYEE_DOC_TYPES, s(data.docType))) });
+    case "employee.document_deleted": return t("removed a document ({doc}) from {name}'s file", { name: s(data.name), doc: t(labelOf(EMPLOYEE_DOC_TYPES, s(data.docType))) });
+    case "employee.contract_added": return t("added a contract for {name} ({from} to {to})", { name: s(data.name), from: s(data.from), to: s(data.to) || t("open-ended") });
+    case "attendance.saved": return t("recorded attendance for {date} ({count})", { date: s(data.date), count: s(data.count) });
+    case "attendance.from_timesheets": return t("filled attendance for {date} from timesheets ({count})", { date: s(data.date), count: s(data.count) });
+    case "leave.requested": return t("recorded a leave request for {name}: {type}, {from} to {to}", { name: s(data.name), type: t(s(data.leaveType)), from: s(data.from), to: s(data.to) });
+    case "leave.approved": return t("approved leave for {name}: {type}, {from} to {to}", { name: s(data.name), type: t(s(data.leaveType)), from: s(data.from), to: s(data.to) });
+    case "leave.rejected": return t("didn't approve leave for {name}: {type}, {from} to {to}", { name: s(data.name), type: t(s(data.leaveType)), from: s(data.from), to: s(data.to) });
+    case "leave.cancelled": return t("cancelled leave for {name} ({from} to {to})", { name: s(data.name), from: s(data.from), to: s(data.to) });
+    case "payroll.created": return t("worked out payroll for {month} ({count} people)", { month: s(data.month), count: s(data.count) });
+    case "payroll.approved": return t("approved payroll for {month}", { month: s(data.month) });
+    case "payroll.reopened": return t("reopened payroll for {month}", { month: s(data.month) });
+    case "payroll.paid": return t("marked payroll for {month} as paid", { month: s(data.month) });
+    case "payroll.unpaid": return t("marked payroll for {month} as not paid", { month: s(data.month) });
+    case "payroll.deleted": return t("deleted the draft payroll for {month}", { month: s(data.month) });
+    case "asset.created": return t("added the asset {name} ({code})", { name: s(data.name), code: s(data.code) });
+    case "asset.assigned": return t("handed {name} ({code}) to {person}", { name: s(data.name), code: s(data.code), person: s(data.person) });
+    case "asset.returned": return t("took back {name} ({code}) from {person}", { name: s(data.name), code: s(data.code), person: s(data.person) });
+    case "asset.status": return t("marked {name} ({code}) as {status}", { name: s(data.name), code: s(data.code), status: t(labelOf(ASSET_STATUSES, s(data.status))).toLowerCase() });
+    case "asset.deleted": return t("deleted the asset {name} ({code})", { name: s(data.name), code: s(data.code) });
+    case "hr.settings_updated": return t("changed the HR settings");
+    case "finance.setup": return t("set up Finance (main currency {currency})", { currency: s(data.currency) });
+    case "finance.settings_updated": return t("changed the Finance settings");
+    case "finance.closed": return t("closed the books up to {date}", { date: s(data.date) });
+    case "finance.reopened": return t("reopened the closed books");
+    case "invoice.issued": return t("issued invoice {code}", { code: s(data.code) });
+    case "invoice.cancelled": return t("cancelled invoice {code}", { code: s(data.code) });
+    case "invoice.draft": return t("put invoice {code} back to draft", { code: s(data.code) });
+    case "bill.created": return t("recorded bill {code}", { code: s(data.code) });
+    case "bill.cancelled": return t("cancelled bill {code}", { code: s(data.code) });
+    case "payment.received": return t("recorded {amount} {currency} received from {name} ({code})", { amount: s(data.amount), currency: s(data.currency), name: s(data.name), code: s(data.code) });
+    case "payment.made": return t("recorded {amount} {currency} paid to {name} ({code})", { amount: s(data.amount), currency: s(data.currency), name: s(data.name), code: s(data.code) });
+    case "payment.deleted": return t("deleted payment {code} ({amount} {currency})", { code: s(data.code), amount: s(data.amount), currency: s(data.currency) });
+    case "journal.saved": return t("saved a manual entry: {memo}", { memo: s(data.memo) });
+    case "department.created": return t("created the department “{name}”", { name: s(data.name) });
+    case "department.deleted": return t("deleted the department “{name}”", { name: s(data.name) });
     case "portfolio.created": return t("created the portfolio “{name}”", { name: s(data.name) });
     case "portfolio.deleted": return t("deleted the portfolio “{name}”", { name: s(data.name) });
     case "portfolio.projects_changed": return t("set the projects of “{name}” ({count})", { name: s(data.name), count: s(data.count) });

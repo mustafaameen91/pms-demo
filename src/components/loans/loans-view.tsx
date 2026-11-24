@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, ChevronRight, HandCoins, Loader2, Plus, X } from "lucide-react";
+import { BadgeCheck, Check, ChevronRight, CircleCheckBig, HandCoins, Hourglass, Landmark, Loader2, Plus, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { cancelLoanRequest, createLoan, decideLoanRequest, requestLoan } from "@/lib/actions/loans";
 import { CURRENCIES } from "@/lib/constants";
@@ -15,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FieldError } from "@/components/projects/project-fields";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
+import { SelectBox } from "@/components/ui/select-box";
+import { EmptyState, PageHeader, Panel, StatTile } from "@/components/page/kit";
 
 export type LoanItem = {
   id: string;
@@ -46,6 +48,8 @@ export type LoanRequestItem = {
 type Totals = { currency: string; lent: string; outstanding: string; active: number }[];
 
 type Props = {
+  /** Finance's cash boxes and banks (empty until Finance is set up). */
+  moneyAccounts?: { id: string; name: string; isDefault: boolean }[];
   slug: string;
   isAdmin: boolean;
   defaultCurrency: string;
@@ -69,51 +73,59 @@ export function LoansView(props: Props) {
 
   return (
     <div className="grid grid-cols-1 gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-            <HandCoins className="size-5 text-primary" aria-hidden />
-            {isAdmin ? t("Loans") : t("My loans")}
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            {isAdmin
-              ? t("Money the company lends to members and workers, or advances from a project's budget. Record repayments of any amount until the balance is zero.")
-              : t("Loans the company gave you and what's left to repay. You can also ask for a new loan.")}
-          </p>
-        </div>
-        {isAdmin ? (
-          <Button onClick={() => setNewOpen(true)}>
-            <Plus className="size-4" />
-            {t("New loan")}
-          </Button>
-        ) : (
-          <Button onClick={() => setRequestOpen(true)}>
-            <Plus className="size-4" />
-            {t("Request a loan")}
-          </Button>
-        )}
-      </header>
+      <PageHeader
+        icon={HandCoins}
+        title={isAdmin ? t("Loans") : t("My loans")}
+        description={
+          isAdmin
+            ? t("Money the company lends to members and workers, or advances from a project's budget. Record repayments of any amount until the balance is zero.")
+            : t("Loans the company gave you and what's left to repay. You can also ask for a new loan.")
+        }
+        actions={
+          isAdmin ? (
+            <Button onClick={() => setNewOpen(true)}>
+              <Plus className="size-4" />
+              {t("New loan")}
+            </Button>
+          ) : (
+            <Button onClick={() => setRequestOpen(true)}>
+              <Plus className="size-4" />
+              {t("Request a loan")}
+            </Button>
+          )
+        }
+      />
 
-      {props.totals.length > 0 && (
-        <section aria-label={t("Totals")} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {loans.length > 0 && (
+        <dl aria-label={t("Totals")} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {props.totals.map((tot) => (
-            <div key={tot.currency} className="rounded-xl border bg-card p-4">
-              <p className="text-xs text-muted-foreground">{isAdmin ? t("Still owed to the company") : t("You still owe")}</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{money(tot.outstanding, tot.currency)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t.plural(tot.active, "{count} open loan", "{count} open loans")} · {t("{amount} lent in total", { amount: money(tot.lent, tot.currency) })}
-              </p>
-            </div>
+            <StatTile
+              key={tot.currency}
+              icon={Wallet}
+              tone={Number(tot.outstanding) > 0 ? "default" : "good"}
+              label={isAdmin ? t("Still owed to the company") : t("You still owe")}
+              value={money(tot.outstanding, tot.currency)}
+              hint={t("{amount} lent in total", { amount: money(tot.lent, tot.currency) })}
+              share={Number(tot.lent) > 0 ? 1 - Number(tot.outstanding) / Number(tot.lent) : undefined}
+              shareLabel={t("Share of {currency} loans repaid", { currency: tot.currency })}
+            />
           ))}
-        </section>
+          <StatTile icon={Landmark} label={t("Open loans")} value={loans.filter((l) => !l.paidOff).length} hint={t("Not fully repaid yet")} />
+          <StatTile icon={CircleCheckBig} tone="good" label={t("Paid off")} value={loans.filter((l) => l.paidOff).length} hint={t("Repaid in full")} />
+          {isAdmin && (
+            <StatTile icon={Hourglass} tone={pending.length ? "bad" : "default"} label={t("Loan requests waiting")} value={pending.length} hint={t("Waiting for your decision")} />
+          )}
+        </dl>
       )}
 
       {isAdmin && pending.length > 0 && (
-        <section aria-labelledby="requests-heading" className="rounded-xl border border-amber-500/40 bg-amber-500/5">
-          <h2 id="requests-heading" className="border-b border-amber-500/30 px-4 py-3 font-semibold">
-            {t("Loan requests waiting")} <span className="text-muted-foreground tabular-nums">{pending.length}</span>
+        <section aria-labelledby="requests-heading" className="overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-500/5">
+          <h2 id="requests-heading" className="flex items-center gap-2 border-b border-amber-500/30 px-5 py-3.5 font-semibold">
+            <BadgeCheck className="size-4 text-amber-700 dark:text-amber-300" aria-hidden />
+            {t("Loan requests waiting")}
+            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-900 tabular-nums dark:text-amber-200">{pending.length}</span>
           </h2>
-          <ul className="divide-y">
+          <ul className="divide-y divide-amber-500/20">
             {pending.map((r) => (
               <RequestDecision key={r.id} request={r} />
             ))}
@@ -121,47 +133,53 @@ export function LoansView(props: Props) {
         </section>
       )}
 
-      <section aria-labelledby="loans-heading" className="rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-          <h2 id="loans-heading" className="font-semibold">
-            {isAdmin ? t("All loans") : t("Your loans")}
-          </h2>
-          <nav aria-label={t("Show")} className="flex rounded-lg bg-muted p-0.5 text-sm">
-            {(["active", "paid", "all"] as const).map((f) => (
-              <Link
-                key={f}
-                href={`?show=${f}`}
-                aria-current={filter === f ? "page" : undefined}
-                className={cn("rounded-md px-3 py-1 text-muted-foreground hover:text-foreground", filter === f && "bg-background font-medium text-foreground shadow-sm")}
-              >
-                {{ active: t("Open|loans"), paid: t("Paid off"), all: t("All") }[f]}
-              </Link>
-            ))}
-          </nav>
-        </div>
+      <Panel
+        id="loans-heading"
+        icon={HandCoins}
+        title={isAdmin ? t("All loans") : t("Your loans")}
+        count={shown.length}
+        action={
+            <nav aria-label={t("Show")} className="flex rounded-lg bg-muted p-0.5 text-sm">
+              {(["active", "paid", "all"] as const).map((f) => (
+                <Link
+                  key={f}
+                  href={`?show=${f}`}
+                  aria-current={filter === f ? "page" : undefined}
+                  className={cn("rounded-md px-3 py-1 text-muted-foreground hover:text-foreground", filter === f && "bg-background font-medium text-foreground shadow-sm")}
+                >
+                  {{ active: t("Open|loans"), paid: t("Paid off"), all: t("All") }[f]}
+                </Link>
+              ))}
+            </nav>
+        }
+      >
         {shown.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            {loans.length === 0 ? (isAdmin ? t("No loans yet.") : t("You have no loans.")) : t("Nothing here.")}
-          </p>
+          loans.length === 0 ? (
+            <div className="border-t p-5">
+              <EmptyState icon={HandCoins} title={isAdmin ? t("No loans yet.") : t("You have no loans.")} className="border-none py-10" />
+            </div>
+          ) : (
+            <p className="border-t px-5 py-10 text-center text-sm text-muted-foreground">{t("Nothing here.")}</p>
+          )
         ) : (
-          <div className="relative overflow-x-auto">
+          <div className="relative overflow-x-auto border-t">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="text-start text-xs text-muted-foreground">
-                <tr className="border-b">
-                  {isAdmin && <th scope="col" className="px-4 py-2 text-start font-medium">{t("Borrower")}</th>}
-                  <th scope="col" className="px-4 py-2 text-start font-medium">{t("Given on")}</th>
-                  <th scope="col" className="px-4 py-2 text-end font-medium">{t("Amount")}</th>
-                  <th scope="col" className="px-4 py-2 text-end font-medium">{t("Repaid")}</th>
-                  <th scope="col" className="px-4 py-2 text-end font-medium">{t("Balance")}</th>
-                  <th scope="col" className="w-40 px-4 py-2 text-start font-medium">{t("Progress")}</th>
+                <tr className="border-b bg-muted/40">
+                  {isAdmin && <th scope="col" className="px-5 py-2.5 text-start font-medium">{t("Borrower")}</th>}
+                  <th scope="col" className="px-5 py-2.5 text-start font-medium">{t("Given on")}</th>
+                  <th scope="col" className="px-5 py-2.5 text-end font-medium">{t("Amount")}</th>
+                  <th scope="col" className="px-5 py-2.5 text-end font-medium">{t("Repaid")}</th>
+                  <th scope="col" className="px-5 py-2.5 text-end font-medium">{t("Balance")}</th>
+                  <th scope="col" className="w-40 px-5 py-2.5 text-start font-medium">{t("Progress")}</th>
                   <th scope="col" className="w-8 px-2 py-2"><span className="sr-only">{t("Open")}</span></th>
                 </tr>
               </thead>
               <tbody>
                 {shown.map((l) => (
-                  <tr key={l.id} className="group relative border-b last:border-0 hover:bg-accent/40">
+                  <tr key={l.id} className="group relative border-b last:border-0 transition-colors hover:bg-accent">
                     {isAdmin && (
-                      <td className="px-4 py-2.5">
+                      <td className="px-5 py-3">
                         <Link href={`loans/${l.id}`} className="font-medium after:absolute after:inset-0 hover:underline">
                           {l.borrowerName}
                         </Link>
@@ -171,7 +189,7 @@ export function LoansView(props: Props) {
                         {l.project && <AdvanceTag project={l.project} />}
                       </td>
                     )}
-                    <td className="px-4 py-2.5 whitespace-nowrap">
+                    <td className="px-5 py-3 whitespace-nowrap">
                       {isAdmin ? formatDate(l.issuedOn, t.intl) : (
                         <>
                           <Link href={`loans/${l.id}`} className="after:absolute after:inset-0 hover:underline">{formatDate(l.issuedOn, t.intl)}</Link>
@@ -179,14 +197,14 @@ export function LoansView(props: Props) {
                         </>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-end whitespace-nowrap tabular-nums">{money(l.amount, l.currency)}</td>
-                    <td className="px-4 py-2.5 text-end whitespace-nowrap tabular-nums">{money(l.paid, l.currency)}</td>
-                    <td className={cn("px-4 py-2.5 text-end font-medium whitespace-nowrap tabular-nums", l.paidOff && "text-muted-foreground")}>
+                    <td className="px-5 py-3 text-end whitespace-nowrap tabular-nums">{money(l.amount, l.currency)}</td>
+                    <td className="px-5 py-3 text-end whitespace-nowrap tabular-nums">{money(l.paid, l.currency)}</td>
+                    <td className={cn("px-5 py-3 text-end font-medium whitespace-nowrap tabular-nums", l.paidOff && "text-muted-foreground")}>
                       {l.paidOff ? t("Paid off") : money(l.balance, l.currency)}
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden>
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden>
                           <div className="h-full rounded-full bg-primary" style={{ width: `${l.paidPct}%` }} />
                         </div>
                         <span className="w-9 text-end text-xs text-muted-foreground tabular-nums">{l.paidPct}%</span>
@@ -201,23 +219,20 @@ export function LoansView(props: Props) {
             </table>
           </div>
         )}
-      </section>
+      </Panel>
 
       {!isAdmin && requests.length > 0 && (
-        <section aria-labelledby="my-requests-heading" className="rounded-xl border bg-card">
-          <h2 id="my-requests-heading" className="border-b px-4 py-3 font-semibold">
-            {t("Your requests")}
-          </h2>
-          <ul className="divide-y">
+        <Panel id="my-requests-heading" icon={Hourglass} title={t("Your requests")} count={requests.length}>
+          <ul className="divide-y border-t">
             {requests.map((r) => (
               <MyRequest key={r.id} request={r} />
             ))}
           </ul>
-        </section>
+        </Panel>
       )}
 
       {isAdmin && (
-        <NewLoanDialog open={newOpen} onOpenChange={setNewOpen} slug={props.slug} borrowers={props.borrowers} projects={props.projects} defaultCurrency={props.defaultCurrency} today={props.today} />
+        <NewLoanDialog open={newOpen} onOpenChange={setNewOpen} slug={props.slug} borrowers={props.borrowers} projects={props.projects} defaultCurrency={props.defaultCurrency} today={props.today} moneyAccounts={props.moneyAccounts ?? []} />
       )}
       {!isAdmin && <RequestDialog open={requestOpen} onOpenChange={setRequestOpen} slug={props.slug} defaultCurrency={props.defaultCurrency} />}
     </div>
@@ -246,7 +261,7 @@ function RequestDecision({ request: r }: { request: LoanRequestItem }) {
       toast.success(decision === "approved" ? t("Loan given to {name}", { name: r.requesterName }) : t("Request rejected"));
     });
   return (
-    <li className="grid gap-3 px-4 py-3 text-sm lg:grid-cols-[1fr_auto] lg:items-end">
+    <li className="grid gap-3 px-5 py-4 text-sm lg:grid-cols-[1fr_auto] lg:items-end">
       <div className="min-w-0">
         <p>
           <span className="font-medium">{r.requesterName}</span>{" "}
@@ -299,7 +314,7 @@ function MyRequest({ request: r }: { request: LoanRequestItem }) {
   const [pending, startTransition] = useTransition();
   const label = { pending: t("Waiting for approval"), approved: t("Approved"), rejected: t("Rejected") }[r.status];
   return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+    <li className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
       <div className="min-w-0 flex-1">
         <p>
           <span className="font-medium tabular-nums">{formatMoney(r.amount, r.currency, t.intl)}</span>
@@ -341,13 +356,13 @@ function MyRequest({ request: r }: { request: LoanRequestItem }) {
 
 function CurrencySelect({ id, value, onChange, disabled }: { id: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
-    <select id={id} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} className={cn(nativeSelectClass, "w-28 disabled:opacity-70")}>
+    <SelectBox id={id} value={value} onValueChange={(v) => onChange(v)} disabled={disabled} className={cn(nativeSelectClass, "w-28 disabled:opacity-70")}>
       {CURRENCIES.map((c) => (
         <option key={c} value={c}>
           {c}
         </option>
       ))}
-    </select>
+    </SelectBox>
   );
 }
 
@@ -359,6 +374,7 @@ function NewLoanDialog({
   projects,
   defaultCurrency,
   today,
+  moneyAccounts,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -367,9 +383,10 @@ function NewLoanDialog({
   projects: Props["projects"];
   defaultCurrency: string;
   today: string;
+  moneyAccounts: { id: string; name: string; isDefault: boolean }[];
 }) {
   const t = useT();
-  const empty = { borrower: "", amount: "", currency: defaultCurrency, issuedOn: today, reason: "", projectId: "" };
+  const empty = { borrower: "", amount: "", currency: defaultCurrency, issuedOn: today, reason: "", projectId: "", moneyAccountId: moneyAccounts.find((a) => a.isDefault)?.id ?? "" };
   const [form, setForm] = useState(empty);
   const project = projects.find((p) => p.id === form.projectId);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -401,7 +418,7 @@ function NewLoanDialog({
           </DialogHeader>
           <div className="grid gap-1.5">
             <Label htmlFor="loan-borrower">{t("Borrower")}</Label>
-            <select id="loan-borrower" value={form.borrower} onChange={(e) => set({ borrower: e.target.value })} className={nativeSelectClass} aria-invalid={Boolean(errors.borrower)}>
+            <SelectBox id="loan-borrower" value={form.borrower} onValueChange={(v) => set({ borrower: v })} className={nativeSelectClass} aria-invalid={Boolean(errors.borrower)}>
               <option value="">{t("Choose…")}</option>
               <optgroup label={t("Members")}>
                 {borrowers.people.map((p) => (
@@ -420,18 +437,18 @@ function NewLoanDialog({
                   ))}
                 </optgroup>
               )}
-            </select>
+            </SelectBox>
             <FieldError message={errors.borrower} />
           </div>
           {projects.length > 0 && (
             <div className="grid gap-1.5">
               <Label htmlFor="loan-project">{t("From a project's budget?")}</Label>
-              <select
+              <SelectBox
                 id="loan-project"
                 value={form.projectId}
-                onChange={(e) => {
-                  const p = projects.find((x) => x.id === e.target.value);
-                  set({ projectId: e.target.value, currency: p?.currency ?? form.currency });
+                onValueChange={(v) => {
+                  const p = projects.find((x) => x.id === v);
+                  set({ projectId: v, currency: p?.currency ?? form.currency });
                 }}
                 className={nativeSelectClass}
                 aria-describedby="loan-project-help"
@@ -442,7 +459,7 @@ function NewLoanDialog({
                     {p.name} ({p.key})
                   </option>
                 ))}
-              </select>
+              </SelectBox>
               <p id="loan-project-help" className={cn("text-xs", project ? "text-foreground" : "text-muted-foreground")}>
                 {project
                   ? t("A cash advance to buy things for {project}. It counts as spent from the project's budget right away. Receipts are added as the project's expenses, and cash brought back returns to the budget.", { project: project.name })
@@ -465,6 +482,18 @@ function NewLoanDialog({
               <Input id="loan-date" type="date" value={form.issuedOn} onChange={(e) => set({ issuedOn: e.target.value })} className="w-40" />
             </div>
           </div>
+          {moneyAccounts.length > 0 && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="loan-from">{t("Paid from")}</Label>
+              <SelectBox id="loan-from" value={form.moneyAccountId} onValueChange={(v) => set({ moneyAccountId: v })} className={nativeSelectClass}>
+                {moneyAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </SelectBox>
+            </div>
+          )}
           <FieldError message={errors.amount ?? errors.issuedOn} />
           <div className="grid gap-1.5">
             <Label htmlFor="loan-reason">

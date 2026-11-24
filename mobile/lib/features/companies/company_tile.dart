@@ -4,6 +4,7 @@ import '../../core/models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/brand.dart';
 import '../../widgets/common.dart';
+import '../../theme/icons.dart';
 
 String roleLabel(BuildContext context, Role role) => switch (role) {
   Role.owner => context.l10n.roleOwner,
@@ -53,16 +54,16 @@ class CompanyTile extends StatelessWidget {
               ),
               const SizedBox(width: Space.sm),
               if (!w.allowed)
-                _Pill(icon: Icons.lock_outline_rounded, label: l.locked, fg: p.warning, bg: p.warningSoft)
+                _Pill(icon: AppIcons.lock, label: l.locked, fg: p.warning, bg: p.warningSoft)
               else if (w.unread > 0)
-                _Pill(icon: Icons.notifications_none_rounded, label: '${w.unread}', fg: p.info, bg: p.infoSoft, semantics: l.unreadCount(w.unread)),
+                _Pill(icon: AppIcons.bell, label: '${w.unread}', fg: p.info, bg: p.infoSoft, semantics: l.unreadCount(w.unread)),
               if (selected)
                 Padding(
                   padding: const EdgeInsetsDirectional.only(start: Space.sm),
-                  child: Icon(Icons.check_circle_rounded, color: context.colors.primary),
+                  child: Icon(AppIcons.checkCircleFill, color: context.colors.primary),
                 )
               else
-                Icon(Icons.chevron_right_rounded, color: p.muted),
+                Icon(AppIcons.caretRight, color: p.muted),
             ],
           ),
         ),

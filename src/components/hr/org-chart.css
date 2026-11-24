@@ -1,0 +1,50 @@
+/* Org chart (HR): each team hangs under its manager, joined by lines. Logical insets keep it right in Arabic. */
+.org-chart ul {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding-top: 1.5rem;
+}
+.org-chart > ul {
+  gap: 2rem;
+  padding-top: 0;
+}
+.org-chart li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 0.5rem 0;
+}
+.org-chart li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  border-top: 2px solid var(--border);
+}
+.org-chart li:first-child::before {
+  inset-inline-start: 50%;
+}
+.org-chart li:last-child::before {
+  inset-inline-end: 50%;
+}
+.org-chart li:only-child::before {
+  display: none;
+}
+.org-chart li::after,
+.org-chart ul ul::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(50% - 1px);
+  height: 1.5rem;
+  border-left: 2px solid var(--border);
+}
+.org-chart > ul > li {
+  padding-top: 0;
+}
+.org-chart > ul > li::before,
+.org-chart > ul > li::after {
+  display: none;
+}

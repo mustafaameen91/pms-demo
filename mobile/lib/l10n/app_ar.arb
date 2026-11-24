@@ -1,7 +1,7 @@
 {
   "@@locale": "ar",
-  "appName": "PMS",
-  "tagline": "كل مشروع وكل موقع، في جيبك.",
+  "appName": "تمّ",
+  "tagline": "كل مشروع وكل فريق، في جيبك.",
   "signInTitle": "أهلًا بعودتك",
   "signInSubtitle": "سجّل الدخول بالبريد الإلكتروني وكلمة المرور اللذين تستخدمهما في الموقع.",
   "email": "البريد الإلكتروني",
@@ -447,5 +447,7 @@
   "actions": "الإجراءات",
   "myTasksHint": "المهام المسندة إليك",
   "myHoursHint": "وقتك أنت",
-  "workersLabel": "العمّال"
+  "workersLabel": "العمّال",
+  "inboxNew": "جديدة",
+  "inboxEarlier": "سابقًا"
 }

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/client";
+import { SelectBox } from "@/components/ui/select-box";
 
 /** Inputs for a task's custom field values; each saves on change/blur. */
 export function TaskFields({
@@ -51,14 +52,14 @@ export function TaskFields({
                 {f.type === "checkbox" ? (
                   <input id={id} type="checkbox" defaultChecked={v === true} onChange={(e) => save(f.id, e.target.checked)} className="size-4 accent-[var(--primary)]" />
                 ) : f.type === "select" ? (
-                  <select id={id} defaultValue={typeof v === "string" ? v : ""} onChange={(e) => save(f.id, e.target.value || null)} className={cn(nativeSelectClass, "w-full sm:w-56")}>
+                  <SelectBox id={id} defaultValue={typeof v === "string" ? v : ""} onValueChange={(v) => save(f.id, v || null)} className={cn(nativeSelectClass, "w-full sm:w-56")}>
                     <option value="">—</option>
                     {(f.options ?? []).map((o) => (
                       <option key={o.id} value={o.id}>
                         {o.label}
                       </option>
                     ))}
-                  </select>
+                  </SelectBox>
                 ) : f.type === "date" ? (
                   <Input id={id} type="date" defaultValue={typeof v === "string" ? v : ""} onChange={(e) => save(f.id, e.target.value || null)} className="h-8 w-full sm:w-56" />
                 ) : (

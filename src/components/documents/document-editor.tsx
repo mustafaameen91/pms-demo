@@ -19,6 +19,7 @@ import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { Paper } from "./paper";
 import { DocumentBody } from "./document-body";
 import { StatusBadge } from "./status-badge";
+import { SelectBox } from "@/components/ui/select-box";
 
 const PREVIEW_SCALE = 0.62;
 
@@ -189,20 +190,20 @@ export function DocumentEditor({
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="doc-language">{t("Document language")}</Label>
-                <select id="doc-language" value={language} onChange={(e) => (setLanguage(e.target.value as DocumentLanguage), touch())} className={nativeSelectClass}>
+                <SelectBox id="doc-language" value={language} onValueChange={(v) => (setLanguage(v as DocumentLanguage), touch())} className={nativeSelectClass}>
                   <option value="ar">العربية</option>
                   <option value="en">English</option>
-                </select>
+                </SelectBox>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="doc-style">{t("Paper style")}</Label>
-                <select id="doc-style" value={style} onChange={(e) => (setStyle(e.target.value as PaperStyle), touch())} className={nativeSelectClass}>
+                <SelectBox id="doc-style" value={style} onValueChange={(v) => (setStyle(v as PaperStyle), touch())} className={nativeSelectClass}>
                   {PAPER_STYLES.map((s) => (
                     <option key={s.value} value={s.value}>
                       {t(s.label)}
                     </option>
                   ))}
-                </select>
+                </SelectBox>
               </div>
             </div>
           </section>
@@ -226,13 +227,13 @@ export function DocumentEditor({
                     {f.kind === "textarea" ? (
                       <Textarea id={id} dir="auto" rows={f.key === "body" ? 10 : 3} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={Boolean(err)} />
                     ) : f.kind === "select" ? (
-                      <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={nativeSelectClass}>
+                      <SelectBox id={id} value={value} onValueChange={(v) => onChange(v)} className={nativeSelectClass}>
                         {f.options!.map((o) => (
                           <option key={o.value} value={o.value}>
                             {o.label[ui]}
                           </option>
                         ))}
-                      </select>
+                      </SelectBox>
                     ) : (
                       <Input
                         id={id}

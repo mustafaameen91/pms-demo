@@ -17,6 +17,9 @@ import {
   Receipt,
   ShoppingCart,
   Building2,
+  FilePen,
+  Send,
+  CircleCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { createDocument } from "@/lib/actions/documents";
@@ -29,6 +32,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { nativeSelectClass } from "@/components/resources/resource-fields";
 import { StatusBadge } from "./status-badge";
+import { SelectBox } from "@/components/ui/select-box";
+import { EmptyState, StatTile } from "@/components/page/kit";
 
 export const DOC_ICONS: Record<DocTypeDef["icon"], typeof FileText> = {
   FileSignature,
@@ -53,6 +58,7 @@ export function DocumentsList({
   types,
   defaults,
   companyHref,
+  invoicesHref,
 }: {
   projectId: string;
   basePath: string;
@@ -63,6 +69,8 @@ export function DocumentsList({
   defaults: { language: DocumentLanguage; style: PaperStyle };
   /** Set when the company profile hasn't been filled in yet (admins get the link). */
   companyHref: string | null | false;
+  /** Finance is set up: invoices live there (a link for owners/admins, null for others). Undefined = no Finance. */
+  invoicesHref?: string | null;
 }) {
   const t = useT();
   const lang = t.locale === "ar" ? "ar" : "en";
@@ -78,8 +86,17 @@ export function DocumentsList({
     return first ? d.data[first.key] : "";
   };
 
+  const byStatus = (st: string) => documents.filter((d) => d.status === st).length;
+
   return (
     <div className="grid grid-cols-1 gap-6">
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile label={t("Documents")} value={documents.length} icon={FileText} />
+        <StatTile label={t("Drafts")} value={byStatus("draft")} icon={FilePen} hint={t("Not issued yet")} />
+        <StatTile label={t("Issued")} value={byStatus("issued")} icon={Send} />
+        <StatTile label={t("Signed")} value={byStatus("signed")} icon={CircleCheck} tone={byStatus("signed") ? "good" : "default"} />
+      </dl>
+
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -90,14 +107,16 @@ export function DocumentsList({
             {t("Contracts, purchase orders, vouchers, letters and more on your company's letterhead, filled in from this project. Print them or save as PDF.")}
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus className="size-4" />
-          {t("New document")}
-        </Button>
+        {documents.length > 0 && (
+          <Button onClick={() => setOpen(true)}>
+            <Plus className="size-4" />
+            {t("New document")}
+          </Button>
+        )}
       </header>
 
       {companyHref !== false && (
-        <p role="status" className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+        <p role="status" className="flex flex-wrap items-center gap-2 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
           <Building2 className="size-4 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
           {t("Your company profile isn't set up yet, so documents show only the workspace name.")}
           {companyHref ? (
@@ -110,38 +129,51 @@ export function DocumentsList({
         </p>
       )}
 
-      <section aria-labelledby="docs-heading" className="rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-          <h3 id="docs-heading" className="font-semibold">
-            {t("All documents")} <span className="text-muted-foreground tabular-nums">{shown.length}</span>
+      {documents.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title={t("No documents yet")}
+          action={
+            <Button onClick={() => setOpen(true)}>
+              <Plus className="size-4" />
+              {t("New document")}
+            </Button>
+          }
+        >
+          {t("Create a contract, purchase order or voucher from this project.")}
+        </EmptyState>
+      ) : (
+      <section aria-labelledby="docs-heading" className="overflow-hidden rounded-2xl border bg-card">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3">
+          <h3 id="docs-heading" className="flex items-center gap-2 font-semibold">
+            {t("All documents")}
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">{shown.length}</span>
           </h3>
           <label className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">{t("Type")}</span>
-            <select value={filter} onChange={(e) => setFilter(e.target.value)} className={cn(nativeSelectClass, "h-8 w-48")}>
+            <SelectBox value={filter} onValueChange={(v) => setFilter(v)} className={cn(nativeSelectClass, "h-8 w-48")}>
               <option value="">{t("All types")}</option>
               {types.map((d) => (
                 <option key={d.key} value={d.key}>
                   {d.title[lang]}
                 </option>
               ))}
-            </select>
+            </SelectBox>
           </label>
         </div>
         {shown.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            {documents.length === 0 ? t("No documents yet. Create a contract, purchase order or voucher from this project.") : t("No documents of this type.")}
-          </p>
+          <p className="px-5 py-12 text-center text-sm text-muted-foreground">{t("No documents of this type.")}</p>
         ) : (
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="text-xs text-muted-foreground">
                 <tr className="border-b bg-muted/40">
-                  <th scope="col" className="py-2 pe-3 ps-4 text-start font-medium">{t("Number")}</th>
+                  <th scope="col" className="py-2.5 pe-3 ps-5 text-start font-medium">{t("Number")}</th>
                   <th scope="col" className="px-3 py-2 text-start font-medium">{t("Type")}</th>
                   <th scope="col" className="px-3 py-2 text-start font-medium">{t("For")}</th>
                   <th scope="col" className="px-3 py-2 text-start font-medium">{t("Date")}</th>
                   <th scope="col" className="px-3 py-2 text-start font-medium">{t("Status")}</th>
-                  <th scope="col" className="py-2 pe-4 ps-3"><span className="sr-only">{t("Actions")}</span></th>
+                  <th scope="col" className="py-2.5 pe-5 ps-3"><span className="sr-only">{t("Actions")}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -151,14 +183,16 @@ export function DocumentsList({
                   const Icon = DOC_ICONS[def.icon];
                   return (
                     <tr key={d.id} className="relative border-b last:border-0 hover:bg-accent/40">
-                      <td className="py-2.5 pe-3 ps-4 font-mono text-xs font-medium">
+                      <td className="py-3 pe-3 ps-5 font-mono text-xs font-medium">
                         <Link href={`${basePath}/documents/${d.id}`} className="after:absolute after:inset-0 hover:underline">
                           <bdi dir="ltr">{docNumber(def.prefix, d.number)}</bdi>
                         </Link>
                       </td>
                       <td className="px-3 py-2.5">
-                        <span className="flex items-center gap-1.5">
-                          <Icon className="size-4 text-muted-foreground" aria-hidden />
+                        <span className="flex items-center gap-2.5">
+                          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                            <Icon className="size-4" />
+                          </span>
                           {def.title[lang]}
                         </span>
                       </td>
@@ -167,7 +201,7 @@ export function DocumentsList({
                       <td className="px-3 py-2.5">
                         <StatusBadge status={d.status} />
                       </td>
-                      <td className="relative z-10 py-2 pe-4 ps-3 text-end">
+                      <td className="relative z-10 py-2 pe-5 ps-3 text-end">
                         <Button asChild variant="ghost" size="sm">
                           <a href={`${printBase}/${d.id}`} target="_blank" rel="noreferrer" aria-label={t("Print {number}", { number: docNumber(def.prefix, d.number) })}>
                             <Printer className="size-4" />
@@ -182,8 +216,25 @@ export function DocumentsList({
           </div>
         )}
       </section>
+      )}
 
-      <NewDocumentDialog open={open} onOpenChange={setOpen} projectId={projectId} basePath={basePath} defaults={defaults} types={types.filter((d) => d.enabled)} />
+      {invoicesHref !== undefined && (
+        <p className="flex flex-wrap items-center gap-2 rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">
+          <Receipt className="size-4 shrink-0" aria-hidden />
+          {invoicesHref ? (
+            <>
+              {t("Invoices for this project are made in Finance, so payments and the books follow them.")}
+              <Link href={invoicesHref} className="font-medium text-primary hover:underline">
+                {t("New invoice")}
+              </Link>
+            </>
+          ) : (
+            t("Invoices are made in Finance by owners and admins.")
+          )}
+        </p>
+      )}
+
+      <NewDocumentDialog open={open} onOpenChange={setOpen} projectId={projectId} basePath={basePath} defaults={defaults} types={types.filter((d) => d.enabled && (invoicesHref === undefined || d.key !== "invoice"))} />
     </div>
   );
 }
@@ -267,13 +318,13 @@ function NewDocumentDialog({
             </fieldset>
             <label className="grid gap-1.5 text-sm">
               <span className="font-medium">{t("Paper style")}</span>
-              <select value={style} onChange={(e) => setStyle(e.target.value as PaperStyle)} className={nativeSelectClass}>
+              <SelectBox value={style} onValueChange={(v) => setStyle(v as PaperStyle)} className={nativeSelectClass}>
                 {PAPER_STYLES.map((s) => (
                   <option key={s.value} value={s.value}>
                     {t(s.label)}
                   </option>
                 ))}
-              </select>
+              </SelectBox>
             </label>
           </div>
           {def?.items && (

@@ -16,6 +16,8 @@ import files from "./files";
 import portfolios from "./portfolios";
 import reports from "./reports";
 import mobile from "./mobile";
+import hr from "./hr";
+import finance from "./finance";
 
 /**
  * Arabic dictionary, keyed by the English text. Split by area so several
@@ -40,4 +42,6 @@ export const ar: Dictionary = {
   ...portfolios,
   ...reports,
   ...mobile,
+  ...hr,
+  ...finance,
 };

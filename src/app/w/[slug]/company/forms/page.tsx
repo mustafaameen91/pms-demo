@@ -6,6 +6,7 @@ import { isWorkspaceAdmin } from "@/lib/permissions";
 import { getT } from "@/i18n/server";
 import { CompanyTabs } from "@/components/documents/company-tabs";
 import { DocFormsList } from "@/components/documents/doc-forms-list";
+import { PageHeader, PageShell } from "@/components/page/kit";
 
 export async function generateMetadata() {
   const t = await getT();
@@ -24,18 +25,11 @@ export default async function DocFormsPage({ params }: PageProps<"/w/[slug]/comp
   };
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
-      <CompanyTabs slug={workspace.slug} />
-      <header className="mb-6">
-        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-          <FileText className="size-5 text-primary" aria-hidden />
-          {t("Document forms")}
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          {t("Turn off the documents your company doesn't use, and make each form your own: names, fields, starting text and number prefix.")}
-        </p>
-      </header>
+    <PageShell>
+      <PageHeader icon={FileText} title={t("Document forms")} description={t("Turn off the documents your company doesn't use, and make each form your own: names, fields, starting text and number prefix.")}>
+        <CompanyTabs slug={workspace.slug} className="" />
+      </PageHeader>
       <DocFormsList slug={workspace.slug} types={types.map((d) => ({ ...d, customized: customized(d.key) }))} />
-    </div>
+    </PageShell>
   );
 }

@@ -5,6 +5,12 @@ export default {
   "Files": "الملفات",
   "File": "الملف",
   "Files · {key}": "الملفات · {key}",
+  "Each keeps its older versions": "يحتفظ كل ملف بإصداراته السابقة",
+  "Space used": "المساحة المستخدمة",
+  "Stored on your server": "محفوظة على خادمك",
+  "No files yet": "لا توجد ملفات بعد",
+  "Upload the project's drawings, contracts and permits so everyone works from the latest version.":
+    "ارفع مخططات المشروع وعقوده وتراخيصه ليعمل الجميع على أحدث نسخة.",
   "Files tab": "تبويب الملفات",
   "Drawings, signed contracts, permits and photos for this project, kept on your server. Uploading a new version keeps the old ones.":
     "المخططات والعقود الموقّعة والتراخيص والصور لهذا المشروع، محفوظة على خادمك. رفع نسخة جديدة يحتفظ بالنسخ القديمة.",

@@ -4,8 +4,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pms_mobile/core/api.dart';
-import 'package:pms_mobile/core/models.dart';
+import 'package:tamm/core/api.dart';
+import 'package:tamm/core/models.dart';
 
 const _email = String.fromEnvironment('LIVE_EMAIL');
 const _password = String.fromEnvironment('LIVE_PASSWORD');

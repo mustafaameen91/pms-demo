@@ -10,6 +10,8 @@ import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
 import '../risks/risks_screen.dart';
 import 'projects_screen.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// One project for its manager: progress, money, late and upcoming tasks, top
 /// risks, and the site actions (attendance, risks, site log, photos).
@@ -24,7 +26,7 @@ class ProjectScreen extends ConsumerWidget {
     final value = ref.watch(projectDetailProvider(key));
     final d = value.value;
     return Scaffold(
-      appBar: AppBar(title: Text(d?.project.name ?? '')),
+      appBar: BrandAppBar(title: Text(d?.project.name ?? '')),
       body: d == null
           ? AsyncBody(value: value, onRetry: () => ref.invalidate(projectDetailProvider(key)), builder: (_) => const SizedBox())
           : RefreshIndicator(
@@ -91,8 +93,8 @@ class _Body extends StatelessWidget {
               Row(
                 children: [
                   Expanded(child: Text(l.budget, style: context.text.titleSmall!.copyWith(color: p.muted))),
-                  if (x.overBudget) Pill(icon: Icons.money_off_rounded, label: l.overBudget, tone: Tone.danger),
-                  if (x.headingOver) Pill(icon: Icons.speed_rounded, label: l.headingOver, tone: Tone.warning),
+                  if (x.overBudget) Pill(icon: AppIcons.coins, label: l.overBudget, tone: Tone.danger),
+                  if (x.headingOver) Pill(icon: AppIcons.gauge, label: l.headingOver, tone: Tone.warning),
                 ],
               ),
               const SizedBox(height: Space.sm),
@@ -135,16 +137,16 @@ class _Body extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _Action(icon: Icons.groups_rounded, label: l.attendance, tone: Tone.info, onTap: () => context.push('/w/$slug/project/${x.id}/attendance'))),
-            Expanded(child: _Action(icon: Icons.report_gmailerrorred_rounded, label: l.risks, tone: Tone.warning, onTap: () => context.push('/w/$slug/project/${x.id}/risks'))),
-            Expanded(child: _Action(icon: Icons.assignment_rounded, label: l.siteLog, tone: Tone.success, onTap: () => context.push('/w/$slug/site-log?project=${x.id}'))),
-            Expanded(child: _Action(icon: Icons.photo_library_rounded, label: l.photos, tone: Tone.neutral, onTap: () => context.push('/w/$slug/photos?project=${x.id}'))),
+            Expanded(child: _Action(icon: AppIcons.usersThree, label: l.attendance, tone: Tone.info, onTap: () => context.push('/w/$slug/project/${x.id}/attendance'))),
+            Expanded(child: _Action(icon: AppIcons.warningOctagon, label: l.risks, tone: Tone.warning, onTap: () => context.push('/w/$slug/project/${x.id}/risks'))),
+            Expanded(child: _Action(icon: AppIcons.clipboardText, label: l.siteLog, tone: Tone.success, onTap: () => context.push('/w/$slug/site-log?project=${x.id}'))),
+            Expanded(child: _Action(icon: AppIcons.images, label: l.photos, tone: Tone.neutral, onTap: () => context.push('/w/$slug/photos?project=${x.id}'))),
           ],
         ),
 
         SectionTitle(l.lateTasks, trailing: d.late.isEmpty ? null : Text('${d.late.length}', style: context.text.titleSmall!.copyWith(color: p.danger))),
         if (d.late.isEmpty)
-          AppCard(child: Row(children: [const ToneIcon(Icons.task_alt_rounded, tone: Tone.success), const SizedBox(width: Space.md), Expanded(child: Text(l.noLate))]))
+          AppCard(child: Row(children: [const ToneIcon(AppIcons.checkCircle, tone: Tone.success), const SizedBox(width: Space.md), Expanded(child: Text(l.noLate))]))
         else
           _TaskList(slug: slug, tasks: d.late, late: true),
         if (d.upcoming.isNotEmpty) ...[

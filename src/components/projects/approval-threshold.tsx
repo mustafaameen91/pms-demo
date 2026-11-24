@@ -26,9 +26,11 @@ export function ApprovalThreshold({
   const [pending, startTransition] = useTransition();
 
   return (
-    <section aria-labelledby="approval-heading" className="rounded-xl border bg-card p-5 sm:p-6">
-      <h2 id="approval-heading" className="flex items-center gap-2 font-semibold">
-        <BadgeCheck className="size-4 text-muted-foreground" aria-hidden />
+    <section aria-labelledby="approval-heading" className="rounded-2xl border bg-card p-5 sm:p-6">
+      <h2 id="approval-heading" className="flex items-center gap-2.5 font-semibold">
+        <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+          <BadgeCheck className="size-4" />
+        </span>
         {t("Expense approvals")}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">

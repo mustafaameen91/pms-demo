@@ -47,4 +47,4 @@ export async function sendEmail(email: Email) {
 }
 
 export const appUrl = (path: string) =>
-  new URL(path, process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001").toString();
+  new URL(path, process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3002").toString();

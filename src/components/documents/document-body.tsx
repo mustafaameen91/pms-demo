@@ -26,12 +26,15 @@ export function DocumentBody({
   lang,
   profile,
   projectName,
+  afterTotals,
 }: {
   def: DocTypeDef;
   doc: DocContent;
   lang: DocumentLanguage;
   profile: CompanyProfile;
   projectName: string;
+  /** Extra lines under the totals (Finance invoices: retention, paid, balance). */
+  afterTotals?: React.ReactNode;
 }) {
   const L = DOC_LABELS[lang];
   const intl = intlLocale(lang);
@@ -161,6 +164,7 @@ export function DocumentBody({
         </table>
       )}
 
+      {afterTotals}
       {wordsAmount !== null && wordsAmount > 0 && (
         <p className="mt-[4mm] rounded-[1.5mm] border border-gray-300 bg-gray-50 px-[3mm] py-[2mm] text-[10pt]">
           <span className="text-gray-500">{L.inWords}: </span>

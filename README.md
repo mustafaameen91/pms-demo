@@ -1,6 +1,6 @@
-# PMS
+# tamm (تمّ)
 
-Self-hosted, multi-tenant project management SaaS.
+Self-hosted, multi-tenant project management SaaS. Brand: [brand/README.md](brand/README.md).
 
 **Stack:** Next.js 16 · TypeScript · Tailwind v4 + shadcn/ui · PostgreSQL 17 · Drizzle ORM · Better Auth
 
@@ -16,12 +16,12 @@ cp .env.example .env          # then set BETTER_AUTH_SECRET: openssl rand -base6
 pnpm install
 pnpm db:up                    # Postgres in Docker on port 5433
 pnpm db:migrate               # apply schema
-pnpm dev                      # http://localhost:3001
+pnpm dev                      # http://localhost:3002
 ```
 
 | Command | What it does |
 |---|---|
-| `pnpm dev` | Dev server on port 3001 |
+| `pnpm dev` | Dev server on port 3002 |
 | `pnpm build` / `pnpm start` | Production build / serve |
 | `pnpm lint` | ESLint |
 | `pnpm db:generate` | Create a migration after editing `src/lib/db/schema/*` |

@@ -92,7 +92,14 @@ export function DecisionButtons({ expenseId, label }: { expenseId: string; label
         {pending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
         {t("Approve")}
       </Button>
-      <Button size="sm" variant="outline" disabled={pending} onClick={() => setRejecting(true)} aria-label={t("Reject {label}", { label })}>
+      <Button
+        size="sm"
+        variant="outline"
+        className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        disabled={pending}
+        onClick={() => setRejecting(true)}
+        aria-label={t("Reject {label}", { label })}
+      >
         <X className="size-4" />
         {t("Reject")}
       </Button>

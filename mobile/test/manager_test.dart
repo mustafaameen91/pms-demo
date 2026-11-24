@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pms_mobile/core/api.dart';
-import 'package:pms_mobile/features/approvals/approvals_screen.dart';
-import 'package:pms_mobile/features/attendance/attendance_screen.dart';
-import 'package:pms_mobile/features/projects/project_screen.dart';
-import 'package:pms_mobile/features/projects/projects_screen.dart';
-import 'package:pms_mobile/features/reports/reports_screen.dart';
+import 'package:tamm/core/api.dart';
+import 'package:tamm/features/approvals/approvals_screen.dart';
+import 'package:tamm/features/attendance/attendance_screen.dart';
+import 'package:tamm/features/projects/project_screen.dart';
+import 'package:tamm/features/projects/projects_screen.dart';
+import 'package:tamm/features/reports/reports_screen.dart';
+
+import 'package:tamm/widgets/tab_bar.dart';
 
 import 'support.dart';
 
@@ -18,7 +20,7 @@ Future<FakeApi> openManager(WidgetTester tester, {String? locale}) async {
 }
 
 Future<void> tab(WidgetTester tester, String label) async {
-  await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text(label)));
+  await tester.tap(find.byTooltip(label));
   await settle(tester);
 }
 
@@ -33,10 +35,10 @@ void main() {
 
   testWidgets("managers' tabs: Projects and Approvals (with what's waiting)", (tester) async {
     await openManager(tester);
-    final nav = find.byType(NavigationBar);
-    expect(find.descendant(of: nav, matching: find.text('Projects')), findsOneWidget);
-    expect(find.descendant(of: nav, matching: find.text('Approvals')), findsOneWidget);
-    expect(find.descendant(of: nav, matching: find.text('Tasks')), findsNothing);
+    final nav = find.byType(FloatingTabBar);
+    expect(find.descendant(of: nav, matching: find.byTooltip('Projects')), findsOneWidget);
+    expect(find.descendant(of: nav, matching: find.byTooltip('Approvals')), findsOneWidget);
+    expect(find.descendant(of: nav, matching: find.byTooltip('Tasks')), findsNothing);
     expect(find.descendant(of: nav, matching: find.text('8')), findsOneWidget, reason: 'approvals badge');
   });
 
@@ -185,7 +187,7 @@ void main() {
 
   testWidgets('Arabic: manager tabs right-to-left', (tester) async {
     await openManager(tester, locale: 'ar');
-    expect(find.text('الموافقات'), findsOneWidget);
+    expect(find.byTooltip('الموافقات'), findsOneWidget);
     await tab(tester, 'المشاريع');
     expect(Directionality.of(tester.element(find.byType(ProjectsScreen))), TextDirection.rtl);
     expect(find.text('متأخر'), findsOneWidget);

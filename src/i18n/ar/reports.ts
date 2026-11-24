@@ -47,4 +47,14 @@ export default {
   "Click again: the old link stops working": "انقر مرة أخرى: سيتوقف الرابط القديم",
   "New link made. The old one no longer works; add the new one to your calendar.": "أُنشئ رابط جديد. لم يعد القديم يعمل؛ أضف الجديد إلى تقويمك.",
   "reset their calendar link": "أعاد إنشاء رابط تقويمه",
+
+  // Weekly reports page (redesign)
+  "Weeks reported": "الأسابيع المُبلَّغ عنها",
+  "Latest: {start} – {end}": "الأحدث: {start} – {end}",
+  "In the latest report": "في أحدث تقرير",
+  "Need attention": "تحتاج إلى متابعة",
+  "Tasks finished in the latest week": "المهام المنجزة في أحدث أسبوع",
+  "No reports yet": "لا توجد تقارير بعد",
+  "All weeks": "كل الأسابيع",
+  "No change": "بلا تغيير",
 } satisfies Dictionary;

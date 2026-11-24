@@ -8,6 +8,8 @@ import '../../theme/theme.dart';
 import '../../widgets/brand.dart';
 import '../../widgets/common.dart';
 import '../account/account_sheet.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// Site work and money: site log, photos, expenses and receipts, my loans; then settings.
 class MoreScreen extends ConsumerWidget {
@@ -22,27 +24,29 @@ class MoreScreen extends ConsumerWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.medium(title: Text(l.navMore), pinned: true),
+          BrandSliverHeader(title: l.navMore, icon: AppIcons.squaresFour, slug: slug),
+          // Breathing room between the header and the first card.
+          const SliverToBoxAdapter(child: SizedBox(height: Space.lg)),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xxl),
+            padding: EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xxl + MediaQuery.paddingOf(context).bottom),
             sliver: SliverList.list(
               children: [
                 // Managers' own work lives here (their tabs are Projects and Approvals).
                 if (manager) ...[
-                  _Tile(icon: Icons.task_alt_rounded, tone: Tone.info, title: l.myTasks, subtitle: l.myTasksHint, onTap: () => context.go('/w/$slug/tasks')),
+                  _Tile(icon: AppIcons.checkCircle, tone: Tone.info, title: l.myTasks, subtitle: l.myTasksHint, onTap: () => context.go('/w/$slug/tasks')),
                   const SizedBox(height: Space.md),
-                  _Tile(icon: Icons.schedule_rounded, tone: Tone.info, title: l.myHours, subtitle: l.myHoursHint, onTap: () => context.go('/w/$slug/hours')),
+                  _Tile(icon: AppIcons.clock, tone: Tone.info, title: l.myHours, subtitle: l.myHoursHint, onTap: () => context.go('/w/$slug/hours')),
                   const SizedBox(height: Space.md),
-                  _Tile(icon: Icons.insert_chart_outlined_rounded, tone: Tone.success, title: l.weeklyReports, subtitle: l.weeklyReportsHint, onTap: () => context.push('/w/$slug/reports')),
+                  _Tile(icon: AppIcons.chartBar, tone: Tone.success, title: l.weeklyReports, subtitle: l.weeklyReportsHint, onTap: () => context.push('/w/$slug/reports')),
                   const SizedBox(height: Space.xxl),
                 ],
-                _Tile(icon: Icons.assignment_rounded, tone: Tone.info, title: l.siteLog, subtitle: l.siteLogHint, onTap: () => context.push('/w/$slug/site-log')),
+                _Tile(icon: AppIcons.clipboardText, tone: Tone.info, title: l.siteLog, subtitle: l.siteLogHint, onTap: () => context.push('/w/$slug/site-log')),
                 const SizedBox(height: Space.md),
-                _Tile(icon: Icons.photo_library_rounded, tone: Tone.success, title: l.photos, subtitle: l.photosHint, onTap: () => context.push('/w/$slug/photos')),
+                _Tile(icon: AppIcons.images, tone: Tone.success, title: l.photos, subtitle: l.photosHint, onTap: () => context.push('/w/$slug/photos')),
                 const SizedBox(height: Space.md),
-                _Tile(icon: Icons.receipt_long_rounded, tone: Tone.warning, title: l.expensesReceipts, subtitle: l.expensesHint, onTap: () => context.push('/w/$slug/expenses')),
+                _Tile(icon: AppIcons.receipt, tone: Tone.warning, title: l.expensesReceipts, subtitle: l.expensesHint, onTap: () => context.push('/w/$slug/expenses')),
                 const SizedBox(height: Space.md),
-                _Tile(icon: Icons.payments_rounded, tone: Tone.neutral, title: l.myLoans, subtitle: l.loansHint, onTap: () => context.push('/w/$slug/loans')),
+                _Tile(icon: AppIcons.money, tone: Tone.neutral, title: l.myLoans, subtitle: l.loansHint, onTap: () => context.push('/w/$slug/loans')),
                 const SizedBox(height: Space.xxl),
                 if (me != null)
                   _Tile(
@@ -94,7 +98,7 @@ class _Tile extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: p.muted),
+              Icon(AppIcons.caretRight, color: p.muted),
             ],
           ),
         ),

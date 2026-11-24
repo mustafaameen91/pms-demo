@@ -81,8 +81,11 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center border-b px-4 py-2 sm:px-6">
-        <nav aria-label={t("Task views")} className="ms-auto flex max-w-full min-w-0 overflow-x-auto rounded-lg bg-muted p-0.5">
+      <div className="flex items-center gap-3 border-b bg-card/40 px-4 py-2.5 sm:px-6">
+        <p className="hidden text-sm text-muted-foreground sm:block">
+          {t.plural(board.tasks.length, "{count} task", "{count} tasks")}
+        </p>
+        <nav aria-label={t("Task views")} className="ms-auto flex max-w-full min-w-0 overflow-x-auto rounded-xl bg-muted p-1">
           {(
             [
               { id: "table", label: "Table", icon: Table2 },
@@ -97,8 +100,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps<"/
               href={id === "table" ? basePath : `${basePath}?view=${id}`}
               aria-current={view === id ? "page" : undefined}
               className={cn(
-                "flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-foreground",
-                view === id && "bg-background font-medium text-foreground shadow-sm",
+                "flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 whitespace-nowrap text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
+                view === id && "bg-card text-primary shadow-sm hover:text-primary",
               )}
             >
               <Icon className="size-4" />

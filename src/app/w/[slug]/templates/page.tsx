@@ -23,26 +23,24 @@ export default async function TemplatesPage({ params }: PageProps<"/w/[slug]/tem
   const isAdmin = workspace.role === "owner" || workspace.role === "admin";
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
-      <TemplatesView
-        workspaceSlug={workspace.slug}
-        builtins={BUILTIN_TEMPLATES}
-        custom={rows.flatMap(({ template, createdByName }) => {
-          const parsed = templateDataSchema.safeParse(template.data);
-          return parsed.success
-            ? [
-                {
-                  id: template.id,
-                  name: template.name,
-                  description: template.description,
-                  createdByName,
-                  data: parsed.data,
-                  canDelete: isAdmin || template.createdById === me.id,
-                },
-              ]
-            : [];
-        })}
-      />
-    </div>
+    <TemplatesView
+      workspaceSlug={workspace.slug}
+      builtins={BUILTIN_TEMPLATES}
+      custom={rows.flatMap(({ template, createdByName }) => {
+        const parsed = templateDataSchema.safeParse(template.data);
+        return parsed.success
+          ? [
+              {
+                id: template.id,
+                name: template.name,
+                description: template.description,
+                createdByName,
+                data: parsed.data,
+                canDelete: isAdmin || template.createdById === me.id,
+              },
+            ]
+          : [];
+      })}
+    />
   );
 }

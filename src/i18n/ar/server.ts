@@ -177,7 +177,7 @@ export default {
 
   // ── Notifications and emails ─────────────────────────────────────
   "Hi {name},": "مرحبًا {name}،",
-  "Open in PMS:": "افتح في PMS:",
+  "Open in Tamm:": "افتح في تمّ:",
   "{ref} {title} is late": "{ref} {title} متأخرة",
   "It was due {date}.": "كان موعد انتهائها {date}.",
   "{name} assigned you {ref} {title}": "كلّفك {name} بالمهمة {ref} {title}",
@@ -192,10 +192,10 @@ export default {
   "New request {ref}: {subject}": "طلب جديد {ref}: {subject}",
   "Via “{form}” from {name}": "عبر «{form}» من {name}",
   "Via “{form}”": "عبر «{form}»",
-  "Reset your PMS password": "إعادة تعيين كلمة مرور PMS",
-  "Hi {name},\n\nSomeone asked to reset the password for your PMS account.\nOpen this link to choose a new password (valid for 1 hour):\n\n{url}\n\nIf this wasn't you, you can ignore this email.":
-    "مرحبًا {name}،\n\nطلب أحدهم إعادة تعيين كلمة المرور لحسابك في PMS.\nافتح هذا الرابط لاختيار كلمة مرور جديدة (صالح لمدة ساعة واحدة):\n\n{url}\n\nإذا لم تكن أنت من طلب ذلك، يمكنك تجاهل هذه الرسالة.",
-  "{inviter} invited you to {workspace} on PMS": "دعاك {inviter} إلى {workspace} على PMS",
+  "Reset your Tamm password": "إعادة تعيين كلمة مرور تمّ",
+  "Hi {name},\n\nSomeone asked to reset the password for your Tamm account.\nOpen this link to choose a new password (valid for 1 hour):\n\n{url}\n\nIf this wasn't you, you can ignore this email.":
+    "مرحبًا {name}،\n\nطلب أحدهم إعادة تعيين كلمة المرور لحسابك في تمّ.\nافتح هذا الرابط لاختيار كلمة مرور جديدة (صالح لمدة ساعة واحدة):\n\n{url}\n\nإذا لم تكن أنت من طلب ذلك، يمكنك تجاهل هذه الرسالة.",
+  "{inviter} invited you to {workspace} on Tamm": "دعاك {inviter} إلى {workspace} على تمّ",
   "{inviter} invited you to join \"{workspace}\" as {role}.\n\nAccept the invitation (valid for 7 days):\n{link}\n\nSign up or log in with {email} to accept.":
     "دعاك {inviter} للانضمام إلى «{workspace}» بصفة {role}.\n\nاقبل الدعوة (صالحة لمدة 7 أيام):\n{link}\n\nأنشئ حسابًا أو سجّل الدخول باستخدام {email} لقبولها.",
 
@@ -431,4 +431,16 @@ export default {
   "month": "شهر",
   "contract": "عقد",
   "lump sum": "مبلغ مقطوع",
+
+  // Audit log page
+  "Changes shown": "التغييرات المعروضة",
+  "The newest {count}; older ones are a page away": "أحدث {count}، والأقدم في الصفحة التالية",
+  "Everything for this filter": "كل ما يطابق هذا الفلتر",
+  "People involved": "الأشخاص المشاركون",
+  "Who made these changes": "من أجرى هذه التغييرات",
+  "Task changes": "تغييرات المهام",
+  "Tasks, sub-tasks and comments": "المهام والمهام الفرعية والتعليقات",
+  "Money changes": "تغييرات الأموال",
+  "Expenses, resources and loans": "المصروفات والموارد والسُّلف",
+  "Filter": "تصفية",
 } satisfies Dictionary;

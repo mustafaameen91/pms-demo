@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { AlertTriangle, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Boxes, Calculator, Loader2, PackageOpen, Pencil, Plus, Trash2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import {
   addProjectResource,
@@ -30,6 +30,8 @@ import {
 import { FieldError } from "@/components/projects/project-fields";
 import { RESOURCE_ICONS } from "./resource-library";
 import { ResourceFields, draftToInput, emptyResourceDraft, nativeSelectClass, type ResourceDraft } from "./resource-fields";
+import { SelectBox } from "@/components/ui/select-box";
+import { EmptyState, Panel, StatTile } from "@/components/page/kit";
 
 type LibraryItem = {
   id: string;
@@ -92,60 +94,74 @@ export function ProjectResourcesView({
   const budget = project.budget ? Number(project.budget) : null;
   const money = (v: number) => formatMoney(v, project.currency, t.intl);
 
+  const left = plannedTotal - usedTotal;
+  const summaryOfTypes =
+    RESOURCE_TYPES.map((rt) => {
+      const n = usages.filter((u) => u.type === rt.value).length;
+      return n ? typeCount(t, rt.value, n) : null;
+    })
+      .filter(Boolean)
+      .join(" · ") || t("None yet");
+
   return (
-    <>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <dl className="grid flex-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border bg-card p-4">
-            <dt className="text-sm text-muted-foreground">{t("Planned resource cost")}</dt>
-            <dd className="mt-1 text-2xl font-semibold">{money(plannedTotal)}</dd>
-            {budget !== null && budget > 0 && (
-              <p className={cn("mt-0.5 text-xs", plannedTotal > budget ? "text-destructive" : "text-muted-foreground")}>
-                {t("{pct}% of the {budget} budget", { pct: String(Math.round((plannedTotal / budget) * 100)), budget: money(budget) })}
-              </p>
-            )}
-          </div>
-          <div className="rounded-xl border bg-card p-4">
-            <dt className="text-sm text-muted-foreground">{t("Used so far")}</dt>
-            <dd className="mt-1 text-2xl font-semibold">{money(usedTotal)}</dd>
-            {plannedTotal > 0 && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {t("{pct}% of planned resource cost", { pct: String(Math.round((usedTotal / plannedTotal) * 100)) })}
-              </p>
-            )}
-          </div>
-          <div className="rounded-xl border bg-card p-4">
-            <dt className="text-sm text-muted-foreground">{t("Resources")}</dt>
-            <dd className="mt-1 text-2xl font-semibold">{usages.length}</dd>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {RESOURCE_TYPES.map((rt) => {
-                const n = usages.filter((u) => u.type === rt.value).length;
-                return n ? typeCount(t, rt.value, n) : null;
-              })
-                .filter(Boolean)
-                .join(" · ") || t("None yet")}
-            </p>
-          </div>
-        </dl>
-        {canEdit && (
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus className="size-4" />
-            {t("Add resource")}
-          </Button>
-        )}
-      </div>
+    <div className="grid grid-cols-1 gap-6">
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile label={t("Resources")} icon={Boxes} value={usages.length} hint={summaryOfTypes} />
+        <StatTile
+          label={t("Planned resource cost")}
+          icon={Calculator}
+          tone={budget !== null && budget > 0 && plannedTotal > budget ? "bad" : "default"}
+          value={<span className="text-3xl">{money(plannedTotal)}</span>}
+          hint={
+            budget !== null && budget > 0
+              ? t("{pct}% of the {budget} budget", { pct: String(Math.round((plannedTotal / budget) * 100)), budget: money(budget) })
+              : undefined
+          }
+          share={budget !== null && budget > 0 ? Math.min(1, plannedTotal / budget) : undefined}
+          shareLabel={t("Planned resource cost")}
+        />
+        <StatTile
+          label={t("Used so far")}
+          icon={TrendingUp}
+          value={<span className="text-3xl">{money(usedTotal)}</span>}
+          hint={plannedTotal > 0 ? t("{pct}% of planned resource cost", { pct: String(Math.round((usedTotal / plannedTotal) * 100)) }) : undefined}
+          share={plannedTotal > 0 ? Math.min(1, usedTotal / plannedTotal) : undefined}
+          shareLabel={t("Used so far")}
+        />
+        <StatTile
+          label={t("Left to use")}
+          icon={PackageOpen}
+          tone={left < 0 ? "bad" : "default"}
+          value={<span className="text-3xl">{money(left)}</span>}
+          hint={t("Planned minus used")}
+        />
+      </dl>
 
       {usages.length === 0 ? (
-        <div className="rounded-xl border border-dashed px-6 py-14 text-center">
-          <p className="font-medium">{t("No resources in this project yet")}</p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            {t(
-              "Add the materials, equipment, workers and suppliers this project needs, with planned quantities. Then record what was actually used.",
-            )}
-          </p>
-        </div>
+        <EmptyState
+          icon={Boxes}
+          title={t("No resources in this project yet")}
+          action={
+            canEdit && (
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus className="size-4" />
+                {t("Add resource")}
+              </Button>
+            )
+          }
+        >
+          {t("Add the materials, equipment, workers and suppliers this project needs, with planned quantities. Then record what was actually used.")}
+        </EmptyState>
       ) : (
-        <div className="grid gap-5">
+        <div className="grid grid-cols-1 gap-6">
+          {canEdit && (
+            <div className="flex justify-end">
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus className="size-4" />
+                {t("Add resource")}
+              </Button>
+            </div>
+          )}
           {RESOURCE_TYPES.map((rt) => {
             const rows = usages.filter((u) => u.type === rt.value);
             if (rows.length === 0) return null;
@@ -153,23 +169,18 @@ export function ProjectResourcesView({
             const typePlanned = rows.reduce((s, u) => s + num(u.plannedQty) * num(u.unitCost), 0);
             const typeUsed = rows.reduce((s, u) => s + num(u.usedQty) * num(u.unitCost), 0);
             return (
-              <section key={rt.value} aria-labelledby={`type-${rt.value}`} className="overflow-hidden rounded-xl border bg-card">
-                <h2 id={`type-${rt.value}`} className="flex items-center gap-2 border-b px-4 py-3 font-semibold">
-                  <Icon className="size-4 text-muted-foreground" aria-hidden />
-                  {t(rt.plural)}
-                  <span className="text-xs font-normal text-muted-foreground">{rows.length}</span>
-                </h2>
-                <div className="relative overflow-x-auto">
+              <Panel key={rt.value} id={`type-${rt.value}`} title={t(rt.plural)} icon={Icon} count={rows.length}>
+                <div className="relative overflow-x-auto border-t">
                   <table className="w-full min-w-[880px] table-fixed text-sm">
                     <thead className="text-start text-xs text-muted-foreground">
                       <tr className="border-b bg-muted/40">
-                        <th scope="col" className="w-[22%] py-2 pe-3 ps-4 font-medium">{t("Resource")}</th>
-                        <th scope="col" className="w-[18%] px-3 py-2 font-medium">{t("Task")}</th>
-                        <th scope="col" className="w-[20%] px-3 py-2 font-medium">{t("Used / planned")}</th>
-                        <th scope="col" className="w-[12%] px-3 py-2 text-end font-medium">{t("Price")}</th>
-                        <th scope="col" className="w-[10%] px-3 py-2 text-end font-medium">{t("Planned cost")}</th>
-                        <th scope="col" className="w-[10%] px-3 py-2 text-end font-medium">{t("Used cost")}</th>
-                        <th scope="col" className="w-[8%] py-2 pe-4 ps-3"><span className="sr-only">{t("Actions")}</span></th>
+                        <th scope="col" className="w-[22%] py-2.5 pe-3 ps-5 font-medium">{t("Resource")}</th>
+                        <th scope="col" className="w-[18%] px-3 py-2.5 font-medium">{t("Task")}</th>
+                        <th scope="col" className="w-[20%] px-3 py-2.5 font-medium">{t("Used / planned")}</th>
+                        <th scope="col" className="w-[12%] px-3 py-2.5 text-end font-medium">{t("Price")}</th>
+                        <th scope="col" className="w-[10%] px-3 py-2.5 text-end font-medium">{t("Planned cost")}</th>
+                        <th scope="col" className="w-[10%] px-3 py-2.5 text-end font-medium">{t("Used cost")}</th>
+                        <th scope="col" className="w-[8%] py-2.5 pe-5 ps-3"><span className="sr-only">{t("Actions")}</span></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -179,12 +190,12 @@ export function ProjectResourcesView({
                         const over = planned > 0 && used > planned;
                         const pct = planned > 0 ? Math.min(100, (used / planned) * 100) : used > 0 ? 100 : 0;
                         return (
-                          <tr key={u.id} className="border-b last:border-b-0">
-                            <td className="py-2.5 pe-3 ps-4">
+                          <tr key={u.id} className="border-b transition-colors last:border-b-0 hover:bg-accent">
+                            <td className="py-3 pe-3 ps-5">
                               <div className="font-medium">{u.name}</div>
                               {u.role && <div className="text-xs text-muted-foreground">{u.role}</div>}
                             </td>
-                            <td className="px-3 py-2.5">
+                            <td className="px-3 py-3">
                               {u.taskNumber ? (
                                 <Link
                                   href={`/w/${workspaceSlug}/p/${project.key}?task=${project.key}-${u.taskNumber}`}
@@ -193,31 +204,26 @@ export function ProjectResourcesView({
                                   <span className="font-mono text-xs">{project.key}-{u.taskNumber}</span> {u.taskTitle}
                                 </Link>
                               ) : (
-                                <span className="text-muted-foreground">{t("Whole project")}</span>
+                                <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{t("Whole project")}</span>
                               )}
                             </td>
-                            <td className="px-3 py-2.5">
+                            <td className="px-3 py-3">
                               <div className="flex items-center gap-2">
                                 <div
-                                  className="h-1.5 flex-1 overflow-hidden rounded-full bg-primary/15"
+                                  className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
                                   role="meter"
                                   aria-label={t("{name} used", { name: u.name })}
                                   aria-valuenow={Math.round(pct)}
                                   aria-valuemin={0}
                                   aria-valuemax={100}
                                 >
-                                  <div
-                                    className={cn("h-full rounded-full", over ? "bg-destructive" : "bg-primary")}
-                                    style={{ width: `${pct}%` }}
-                                  />
+                                  <div className={cn("h-full rounded-full", over ? "bg-destructive" : "bg-primary")} style={{ width: `${pct}%` }} />
                                 </div>
                                 <span className={cn("text-xs whitespace-nowrap tabular-nums", over ? "font-medium text-destructive" : "text-muted-foreground")}>
                                   {fmtQty(used)} / {fmtQty(planned)} {u.unit}
                                 </span>
                               </div>
-                              {u.fromTimesheets && (
-                                <p className="mt-0.5 text-xs text-muted-foreground">{t("From timesheets")}</p>
-                              )}
+                              {u.fromTimesheets && <p className="mt-0.5 text-xs text-muted-foreground">{t("From timesheets")}</p>}
                               {over && (
                                 <p className="mt-0.5 flex items-center gap-1 text-xs text-destructive">
                                   <AlertTriangle className="size-3" aria-hidden />
@@ -225,15 +231,15 @@ export function ProjectResourcesView({
                                 </p>
                               )}
                             </td>
-                            <td className="px-3 py-2.5 text-end whitespace-nowrap tabular-nums">
+                            <td className="px-3 py-3 text-end whitespace-nowrap tabular-nums">
                               {money(num(u.unitCost))}
                               <span className="text-muted-foreground"> / {u.unit}</span>
                             </td>
-                            <td className="px-3 py-2.5 text-end whitespace-nowrap tabular-nums">{money(planned * num(u.unitCost))}</td>
-                            <td className={cn("px-3 py-2.5 text-end whitespace-nowrap tabular-nums", over && "text-destructive")}>
+                            <td className="px-3 py-3 text-end whitespace-nowrap tabular-nums">{money(planned * num(u.unitCost))}</td>
+                            <td className={cn("px-3 py-3 text-end font-medium whitespace-nowrap tabular-nums", over && "text-destructive")}>
                               {money(used * num(u.unitCost))}
                             </td>
-                            <td className="py-2 pe-4 ps-3 text-end">
+                            <td className="py-2 pe-5 ps-3 text-end">
                               {canEdit && (
                                 <Button variant="ghost" size="sm" onClick={() => setEditing(u)} aria-label={t("Edit {name}", { name: u.name })}>
                                   <Pencil className="size-4" />
@@ -247,17 +253,17 @@ export function ProjectResourcesView({
                     </tbody>
                     <tfoot>
                       <tr className="border-t bg-muted/40 text-xs">
-                        <th scope="row" colSpan={4} className="py-2 pe-3 ps-4 text-start font-medium">
+                        <th scope="row" colSpan={4} className="py-2.5 pe-3 ps-5 text-start font-medium">
                           {typeTotal(t, rt.value)}
                         </th>
-                        <td className="px-3 py-2 text-end font-medium tabular-nums">{money(typePlanned)}</td>
-                        <td className="px-3 py-2 text-end font-medium tabular-nums">{money(typeUsed)}</td>
+                        <td className="px-3 py-2.5 text-end font-semibold tabular-nums">{money(typePlanned)}</td>
+                        <td className="px-3 py-2.5 text-end font-semibold tabular-nums">{money(typeUsed)}</td>
                         <td />
                       </tr>
                     </tfoot>
                   </table>
                 </div>
-              </section>
+              </Panel>
             );
           })}
         </div>
@@ -271,7 +277,7 @@ export function ProjectResourcesView({
         tasks={tasks}
       />
       <EditUsageDialog usage={editing} onClose={() => setEditing(null)} project={project} tasks={tasks} />
-    </>
+    </div>
   );
 }
 
@@ -305,14 +311,14 @@ function UsageFields({
     <div className="grid gap-4">
       <div className="grid gap-1.5">
         <Label htmlFor="usage-task">{t("For task")}</Label>
-        <select id="usage-task" value={value.taskId} onChange={(e) => set("taskId", e.target.value)} className={nativeSelectClass}>
+        <SelectBox id="usage-task" value={value.taskId} onValueChange={(v) => set("taskId", v)} className={nativeSelectClass}>
           <option value="">{t("Whole project")}</option>
           {tasks.map((task) => (
             <option key={task.id} value={task.id}>
               #{task.number} {task.title}
             </option>
           ))}
-        </select>
+        </SelectBox>
         <FieldError message={errors.taskId} />
       </div>
       <div className="grid items-start gap-4 sm:grid-cols-3">
@@ -507,10 +513,10 @@ function AddResourceForm({
       {mode === "library" ? (
         <div className="grid gap-1.5">
           <Label htmlFor="pick-resource">{t("Resource")}</Label>
-          <select
+          <SelectBox
             id="pick-resource"
             value={resourceId}
-            onChange={(e) => pick(e.target.value)}
+            onValueChange={(v) => pick(v)}
             className={nativeSelectClass}
             aria-invalid={Boolean(errors.resourceId)}
           >
@@ -529,7 +535,7 @@ function AddResourceForm({
                 </optgroup>
               );
             })}
-          </select>
+          </SelectBox>
           <FieldError message={errors.resourceId} />
         </div>
       ) : (

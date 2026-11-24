@@ -451,6 +451,8 @@ export const expenses = pgTable(
     receiptType: text("receipt_type"),
     // Bought with a cash advance (a loan with a project): counts toward settling it.
     loanId: text("loan_id").references((): AnyPgColumn => loans.id, { onDelete: "set null" }),
+    // Finance: the cash box / bank it was paid from (null = the default cash account).
+    moneyAccountId: text("money_account_id"),
     // Only approved expenses count as spent (see lib/budget.ts).
     approvalStatus: approvalStatus("approval_status").notNull().default("approved"),
     decidedById: text("decided_by_id").references(() => user.id, { onDelete: "set null" }),
@@ -760,6 +762,8 @@ export const loans = pgTable(
     // Set when repayments (and, for advances, approved receipts) reach the amount; cleared if that changes.
     paidOffAt: timestamp("paid_off_at", { withTimezone: true }),
     requestId: text("request_id").references(() => loanRequests.id, { onDelete: "set null" }),
+    // Finance: the cash box / bank the money left from (null = the default cash account).
+    moneyAccountId: text("money_account_id"),
     createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
     ...timestamps,
   },
@@ -784,6 +788,8 @@ export const loanRepayments = pgTable(
     // "cash" | "bank_transfer" | "salary_deduction" | "other"
     method: text("method").notNull(),
     note: text("note"),
+    // Finance: where the money went in (null = the default cash account).
+    moneyAccountId: text("money_account_id"),
     recordedById: text("recorded_by_id").references(() => user.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

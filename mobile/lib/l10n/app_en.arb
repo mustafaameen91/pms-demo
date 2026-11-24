@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
-  "appName": "PMS",
-  "tagline": "Every project, every site, in your pocket.",
+  "appName": "tamm",
+  "tagline": "Every project, every team, in your pocket.",
   "signInTitle": "Welcome back",
   "signInSubtitle": "Sign in with the email and password you use on the website.",
   "email": "Email",
@@ -447,5 +447,7 @@
   "actions": "Actions",
   "myTasksHint": "Tasks given to you",
   "myHoursHint": "Your own time",
-  "workersLabel": "Workers"
+  "workersLabel": "Workers",
+  "inboxNew": "New",
+  "inboxEarlier": "Earlier"
 }

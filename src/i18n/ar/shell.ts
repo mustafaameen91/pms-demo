@@ -36,4 +36,31 @@ export default {
   "The subscription ends in {count} days.": { one: "ينتهي الاشتراك بعد يوم واحد.", two: "ينتهي الاشتراك بعد يومين.", few: "ينتهي الاشتراك بعد {count} أيام.", many: "ينتهي الاشتراك بعد {count} يومًا.", other: "ينتهي الاشتراك بعد {count} يوم." },
   "Billing & payment": "الاشتراك والدفع",
   "Renew": "تجديد",
+
+  // Page headers and stat tiles (Projects, My tasks)
+  "Active in {workspace}": "النشطة في {workspace}",
+  "Done across projects with tasks": "المنجز في المشاريع التي لها مهام",
+  "On or ahead of plan": "وفق الخطة أو متقدمة عليها",
+  "Share of projects on track": "نسبة المشاريع التي تسير وفق الخطة",
+  "Open tasks": "المهام المفتوحة",
+  "Assigned to you": "المسندة إليك",
+  "Share of my open tasks that are overdue": "نسبة مهامي المفتوحة المتأخرة",
+  "Coming up this week": "القادمة هذا الأسبوع",
+
+  // Sidebar sections
+  "Work": "العمل",
+  "Resources & money": "الموارد والأموال",
+  "Company": "الشركة",
+
+  // Members and Templates pages
+  "In this workspace": "في مساحة العمل هذه",
+  "Owners": "المالكون",
+  "Admins": "المسؤولون",
+  "Waiting to be accepted": "بانتظار القبول",
+  "Members|role": "الأعضاء",
+  "Saved from your projects": "محفوظة من مشاريعك",
+  "Ready to use": "جاهزة للاستخدام",
+  "Tasks inside": "المهام داخلها",
+  "Across all templates": "في جميع القوالب",
+  "Save a project as a template": "احفظ مشروعًا كقالب",
 } satisfies Dictionary;

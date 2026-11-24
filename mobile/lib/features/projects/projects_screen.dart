@@ -9,6 +9,8 @@ import '../../core/work_models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// The projects I manage, most in need of attention first (the website's dashboard order).
 class ProjectsScreen extends ConsumerWidget {
@@ -26,14 +28,16 @@ class ProjectsScreen extends ConsumerWidget {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverAppBar.medium(title: Text(l.navProjects), pinned: true),
+            BrandSliverHeader(title: l.navProjects, icon: AppIcons.buildings, slug: slug),
+            // Breathing room between the header and the first card.
+            const SliverToBoxAdapter(child: SizedBox(height: Space.lg)),
             if (data == null)
               SliverFillRemaining(
                 hasScrollBody: true,
                 child: AsyncBody(value: value, onRetry: () => ref.invalidate(healthProvider(slug)), builder: (_) => const SizedBox()),
               )
             else if (data.isEmpty)
-              SliverToBoxAdapter(child: EmptyState(icon: Icons.folder_off_outlined, message: l.noManagedProjects))
+              SliverToBoxAdapter(child: EmptyState(icon: AppIcons.folderDashed, message: l.noManagedProjects))
             else
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xxl + MediaQuery.paddingOf(context).bottom),
@@ -65,9 +69,9 @@ class ScheduleChip extends StatelessWidget {
     final s = schedule;
     if (s == null) return const SizedBox.shrink();
     final (tone, icon, label) = switch (s) {
-      Schedule.ahead => (Tone.success, Icons.trending_up_rounded, l.ahead),
-      Schedule.onTrack => (Tone.info, Icons.check_rounded, l.onTrack),
-      Schedule.behind => (Tone.danger, Icons.trending_down_rounded, l.behind),
+      Schedule.ahead => (Tone.success, AppIcons.trendUp, l.ahead),
+      Schedule.onTrack => (Tone.info, AppIcons.check, l.onTrack),
+      Schedule.behind => (Tone.danger, AppIcons.trendDown, l.behind),
     };
     return Pill(icon: icon, label: label, tone: tone);
   }
@@ -157,7 +161,7 @@ class ProjectHealthCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(width: 10, height: 10, decoration: BoxDecoration(color: Color(parseHex(x.color) ?? Brand.teal600.toARGB32()), borderRadius: BorderRadius.circular(3))),
+                  Container(width: 10, height: 10, decoration: BoxDecoration(color: Color(parseHex(x.color) ?? Brand.graphite.toARGB32()), borderRadius: BorderRadius.circular(3))),
                   const SizedBox(width: Space.sm),
                   Expanded(child: Text(x.name, style: context.text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis)),
                   ScheduleChip(x.schedule),
@@ -186,13 +190,13 @@ class ProjectHealthCard extends StatelessWidget {
                 spacing: Space.sm,
                 runSpacing: 4,
                 children: [
-                  if (x.overBudget) Pill(icon: Icons.money_off_rounded, label: l.overBudget, tone: Tone.danger),
-                  if (x.headingOver) Pill(icon: Icons.speed_rounded, label: l.headingOver, tone: Tone.warning),
-                  if (x.late > 0) Pill(icon: Icons.event_busy_rounded, label: l.lateCount(x.late), tone: Tone.danger),
+                  if (x.overBudget) Pill(icon: AppIcons.coins, label: l.overBudget, tone: Tone.danger),
+                  if (x.headingOver) Pill(icon: AppIcons.gauge, label: l.headingOver, tone: Tone.warning),
+                  if (x.late > 0) Pill(icon: AppIcons.calendarX, label: l.lateCount(x.late), tone: Tone.danger),
                   if (x.overdue && x.daysLeft != null)
-                    Pill(icon: Icons.flag_rounded, label: l.daysOverdue(-x.daysLeft!), tone: Tone.danger)
+                    Pill(icon: AppIcons.flagFill, label: l.daysOverdue(-x.daysLeft!), tone: Tone.danger)
                   else if (x.daysLeft != null)
-                    Pill(icon: Icons.flag_outlined, label: l.daysLeft(x.daysLeft!), tone: Tone.neutral),
+                    Pill(icon: AppIcons.flag, label: l.daysLeft(x.daysLeft!), tone: Tone.neutral),
                 ],
               ),
             ],

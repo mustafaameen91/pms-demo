@@ -7,11 +7,15 @@ export function LightTheme({ children, className }: { children: React.ReactNode;
     <div className={`report-light min-h-dvh w-full bg-background text-foreground ${className ?? ""}`}>
       <style>{`
         .report-light {
-          --background: oklch(1 0 0); --foreground: oklch(0.21 0.02 230);
-          --card: oklch(1 0 0); --muted: oklch(0.965 0.006 200);
-          --muted-foreground: oklch(0.45 0.02 230); --border: oklch(0.88 0.008 210);
-          --primary: oklch(0.511 0.086 186.4); --primary-foreground: oklch(0.99 0 0);
-          --destructive: oklch(0.55 0.22 27); color-scheme: light;
+          /* tamm's light palette (same as :root in globals.css), a touch darker for paper. */
+          --background: #ffffff; --foreground: #1f2933;
+          --card: #ffffff; --card-foreground: #1f2933;
+          --muted: #f3f4f6; --muted-foreground: #4a5663;
+          --accent: #eceef1; --accent-foreground: #1f2933;
+          --border: #dde1e6; --input: #d5d9df;
+          --primary: #1f2933; --primary-foreground: #ffffff; --ring: #52606d;
+          --brand: #1f2933; --brand-foreground: #ffffff; --brand-accent: #f2545b; --brand-accent-text: #c93841; --brand-tint: #fde2e3;
+          --destructive: #b42318; color-scheme: light;
         }
         @media print { html, body { background: white !important; } }
       `}</style>

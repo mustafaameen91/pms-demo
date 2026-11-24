@@ -3,6 +3,12 @@ import type { Dictionary } from "../translate";
 /** Company profile, paper styles and documents (Phase 21). */
 export default {
   "Company profile": "ملف الشركة",
+  "Drafts": "المسودات",
+  "Not issued yet": "لم تصدر بعد",
+  "Issued": "صادرة",
+  "Signed": "موقّعة",
+  "No documents yet": "لا توجد مستندات بعد",
+  "Create a contract, purchase order or voucher from this project.": "أنشئ عقدًا أو أمر شراء أو سندًا من هذا المشروع.",
   "Your logo and details print on every document your team creates: contracts, purchase orders, vouchers and letters.":
     "يُطبع شعارك وبياناتك على كل مستند يُنشئه فريقك: العقود، وأوامر الشراء، والسندات، والخطابات.",
   "Name & logo": "الاسم والشعار",

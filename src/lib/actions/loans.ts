@@ -1,11 +1,11 @@
 "use server";
 
 import { refreshPage } from "@/lib/refresh-page";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireWorkspace, requireWorkspaceById } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { activities, expenses, loanRepayments, loanRequests, loans, member, organization, projects, resources, user } from "@/lib/db/schema";
+import { activities, expenses, ledgerAccounts, loanRepayments, loanRequests, loans, member, organization, projects, resources, user } from "@/lib/db/schema";
 import { CURRENCIES } from "@/lib/constants";
 import { REPAYMENT_METHODS, checkRepayment } from "@/lib/loans";
 import { currentBalance, syncPaidOff } from "@/lib/loan-settlement";
@@ -64,8 +64,20 @@ const loanSchema = z.object({
   reason: z.string().trim().max(500).optional().transform((v) => v || null),
   // A cash advance from this project's budget (empty = a personal loan).
   projectId: z.string().optional().transform((v) => v || null),
+  // Finance: the cash box / bank it was paid out of (empty = the default one).
+  moneyAccountId: z.string().optional().nullable().transform((v) => v || null),
 });
 export type LoanInput = z.input<typeof loanSchema>;
+
+/** A Finance cash box / bank of this company, or null (the default one is used). */
+async function ownMoneyAccount(workspaceId: string, id: string | null) {
+  if (!id) return null;
+  const [acc] = await db
+    .select({ id: ledgerAccounts.id })
+    .from(ledgerAccounts)
+    .where(and(eq(ledgerAccounts.id, id), eq(ledgerAccounts.workspaceId, workspaceId), isNotNull(ledgerAccounts.moneyKind)));
+  return acc?.id ?? null;
+}
 
 /** Checks the borrower belongs to this workspace (a member, or an active worker). */
 async function resolveBorrower(workspaceId: string, borrower: string) {
@@ -111,7 +123,7 @@ export async function createLoan(slug: string, input: LoanInput): Promise<Result
 
   const [loan] = await db
     .insert(loans)
-    .values({ workspaceId: workspace.id, ...borrower, amount: d.amount, currency, issuedOn: d.issuedOn, reason: d.reason, projectId: project?.id ?? null, createdById: me.id })
+    .values({ workspaceId: workspace.id, ...borrower, amount: d.amount, currency, issuedOn: d.issuedOn, reason: d.reason, projectId: project?.id ?? null, moneyAccountId: await ownMoneyAccount(workspace.id, d.moneyAccountId), createdById: me.id })
     .returning({ id: loans.id });
   const who = await borrowerOf(borrower);
   await log(workspace.id, me.id, "loan.created", { borrower: who.name, amount: d.amount, currency, project: project?.name ?? null });
@@ -151,6 +163,7 @@ const repaymentSchema = z.object({
   paidOn: isoDate,
   method: z.enum(REPAYMENT_METHODS.map((m) => m.value) as [string, ...string[]]),
   note: z.string().trim().max(300).optional().transform((v) => v || null),
+  moneyAccountId: z.string().optional().nullable().transform((v) => v || null),
 });
 export type RepaymentInput = z.input<typeof repaymentSchema>;
 
@@ -175,7 +188,16 @@ export async function recordRepayment(loanId: string, input: RepaymentInput): Pr
     return { ok: false, error: msg, fieldErrors: { paidOn: msg } };
   }
 
-  await db.insert(loanRepayments).values({ workspaceId: auth.loan.workspaceId, loanId, amount: d.amount, paidOn: d.paidOn, method: d.method, note: d.note, recordedById: auth.me.id });
+  await db.insert(loanRepayments).values({
+    workspaceId: auth.loan.workspaceId,
+    loanId,
+    amount: d.amount,
+    paidOn: d.paidOn,
+    method: d.method,
+    note: d.note,
+    moneyAccountId: d.method === "salary_deduction" ? null : await ownMoneyAccount(auth.loan.workspaceId, d.moneyAccountId),
+    recordedById: auth.me.id,
+  });
   const { balance, justPaidOff } = (await syncPaidOff(loanId))!;
   const who = await borrowerOf(auth.loan);
   await log(auth.loan.workspaceId, auth.me.id, "loan.repayment_recorded", {

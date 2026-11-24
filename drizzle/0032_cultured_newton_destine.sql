@@ -1,0 +1,1 @@
+ALTER TABLE "fx_rates" ALTER COLUMN "rate" SET DATA TYPE numeric(24, 12);

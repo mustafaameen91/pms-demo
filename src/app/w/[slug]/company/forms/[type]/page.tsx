@@ -6,6 +6,7 @@ import { isWorkspaceAdmin } from "@/lib/permissions";
 import { docType } from "@/lib/documents/types";
 import { settingsSchema } from "@/lib/documents/customize";
 import { getT } from "@/i18n/server";
+import { PageShell } from "@/components/page/kit";
 import { CompanyTabs } from "@/components/documents/company-tabs";
 import { DocFormEditor } from "@/components/documents/doc-form-editor";
 
@@ -25,9 +26,14 @@ export default async function DocFormPage({ params }: PageProps<"/w/[slug]/compa
   void _c;
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
-      <CompanyTabs slug={workspace.slug} />
-      <DocFormEditor slug={workspace.slug} def={def} initial={settings.get(type)?.settings ?? settingsSchema.parse({})} profile={profile} />
-    </div>
+    <PageShell>
+      <DocFormEditor
+        slug={workspace.slug}
+        def={def}
+        initial={settings.get(type)?.settings ?? settingsSchema.parse({})}
+        profile={profile}
+        tabs={<CompanyTabs slug={workspace.slug} className="" />}
+      />
+    </PageShell>
   );
 }

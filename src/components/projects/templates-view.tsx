@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { LayoutTemplate, Plus, Trash2 } from "lucide-react";
+import { Factory, LayoutTemplate, ListChecks, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteTemplate } from "@/lib/actions/templates";
 import {
@@ -16,6 +16,7 @@ import { StatusDot } from "@/components/tasks/task-bits";
 import { useT } from "@/i18n/client";
 import { NewProjectDialog } from "./new-project-dialog";
 import { TEMPLATE_ICONS } from "./template-picker";
+import { EmptyState, PageHeader, PageShell, Panel, StatTile } from "@/components/page/kit";
 
 type Custom = {
   id: string;
@@ -40,33 +41,38 @@ export function TemplatesView({
   const [confirm, setConfirm] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  return (
-    <div className="grid grid-cols-1 gap-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{t("Templates")}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t(
-              "Start projects with the right workflow, weighted tasks and timing. Save any project as a template from its Settings tab.",
-            )}
-          </p>
-        </div>
-        <Button onClick={() => setNewOpen(true)}>
-          <Plus className="size-4" />
-          {t("New project from template")}
-        </Button>
-      </div>
+  const localized = builtins.map((source) => localizeBuiltinTemplate(source, t));
+  const taskCount = [...custom, ...localized].reduce((sum, tpl) => sum + tpl.data.tasks.length, 0);
 
-      <section aria-labelledby="custom-heading" className="grid gap-3">
-        <h2 id="custom-heading" className="font-semibold">
-          {t("Your templates")}
-        </h2>
+  return (
+    <PageShell>
+      <PageHeader
+        icon={LayoutTemplate}
+        title={t("Templates")}
+        description={t("Start projects with the right workflow, weighted tasks and timing. Save any project as a template from its Settings tab.")}
+        actions={
+          <Button onClick={() => setNewOpen(true)}>
+            <Plus className="size-4" />
+            {t("New project from template")}
+          </Button>
+        }
+      />
+
+      <dl className="grid gap-4 sm:grid-cols-3">
+        <StatTile icon={LayoutTemplate} label={t("Your templates")} value={custom.length} hint={t("Saved from your projects")} />
+        <StatTile icon={Factory} label={t("Industry templates")} value={localized.length} hint={t("Ready to use")} />
+        <StatTile icon={ListChecks} label={t("Tasks inside")} value={taskCount} hint={t("Across all templates")} />
+      </dl>
+
+      <Panel id="custom-heading" title={t("Your templates")} icon={LayoutTemplate} count={custom.length}>
         {custom.length === 0 ? (
-          <p className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-            {t("No saved templates yet. Open a project → Settings → “Save as template”.")}
-          </p>
+          <div className="px-5 pb-5">
+            <EmptyState icon={LayoutTemplate} title={t("Save a project as a template")} className="py-10">
+              {t("No saved templates yet. Open a project → Settings → “Save as template”.")}
+            </EmptyState>
+          </div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 px-5 pb-5 md:grid-cols-2 xl:grid-cols-3">
             {custom.map((tpl) => (
               <TemplateDetails
                 key={tpl.id}
@@ -101,28 +107,18 @@ export function TemplatesView({
             ))}
           </div>
         )}
-      </section>
+      </Panel>
 
-      <section aria-labelledby="builtin-heading" className="grid gap-3">
-        <h2 id="builtin-heading" className="font-semibold">
-          {t("Industry templates")}
-        </h2>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {builtins.map((source) => localizeBuiltinTemplate(source, t)).map((tpl) => (
-            <TemplateDetails
-              key={tpl.id}
-              icon={TEMPLATE_ICONS[tpl.icon]}
-              name={tpl.name}
-              meta={tpl.field}
-              description={tpl.description}
-              data={tpl.data}
-            />
+      <Panel id="builtin-heading" title={t("Industry templates")} icon={Factory} count={localized.length}>
+        <div className="grid gap-4 px-5 pb-5 md:grid-cols-2 xl:grid-cols-3">
+          {localized.map((tpl) => (
+            <TemplateDetails key={tpl.id} icon={TEMPLATE_ICONS[tpl.icon]} name={tpl.name} meta={tpl.field} description={tpl.description} data={tpl.data} />
           ))}
         </div>
-      </section>
+      </Panel>
 
       <NewProjectDialog workspaceSlug={workspaceSlug} open={newOpen} onOpenChange={setNewOpen} />
-    </div>
+    </PageShell>
   );
 }
 
@@ -143,13 +139,13 @@ function TemplateDetails({
 }) {
   const t = useT();
   return (
-    <article className="flex flex-col rounded-xl border bg-card p-4">
+    <article className="flex flex-col rounded-2xl border bg-background p-5 transition-shadow hover:shadow-md">
       <header className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-primary">
-          <Icon className="size-4" aria-hidden />
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="font-medium">{name}</h3>
+          <h3 className="font-semibold">{name}</h3>
           <p className="text-xs text-muted-foreground">
             {meta} · {t.plural(data.tasks.length, "{count} tasks", "{count} tasks")} ·{" "}
             {describeLength(templateLengthDays(data), t)}
@@ -166,25 +162,27 @@ function TemplateDetails({
           </span>
         ))}
       </div>
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-xs text-primary">{t("Tasks and weights")}</summary>
-        <ol className="mt-2 grid gap-1">
-          {data.tasks.map((task, i) => (
-            <li key={i} className="flex justify-between gap-3">
-              <span className="min-w-0">
-                <span className="block truncate">{task.title}</span>
-                {task.subtasks && task.subtasks.length > 0 && (
-                  <span className="block truncate text-xs text-muted-foreground">{task.subtasks.join(" · ")}</span>
-                )}
-              </span>
-              <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                {task.weight !== undefined ? `${task.weight}%` : ""}
-                {task.duration ? ` · ${t("{days}d", { days: String(task.duration) })}` : ""}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </details>
+      <div className="mt-auto pt-4">
+        <details className="border-t pt-3 text-sm">
+          <summary className="cursor-pointer text-xs font-medium text-primary">{t("Tasks and weights")}</summary>
+          <ol className="mt-2 grid gap-1">
+            {data.tasks.map((task, i) => (
+              <li key={i} className="flex justify-between gap-3">
+                <span className="min-w-0">
+                  <span className="block truncate">{task.title}</span>
+                  {task.subtasks && task.subtasks.length > 0 && (
+                    <span className="block truncate text-xs text-muted-foreground">{task.subtasks.join(" · ")}</span>
+                  )}
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                  {task.weight !== undefined ? `${task.weight}%` : ""}
+                  {task.duration ? ` · ${t("{days}d", { days: String(task.duration) })}` : ""}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </details>
+      </div>
     </article>
   );
 }

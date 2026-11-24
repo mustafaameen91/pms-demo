@@ -9,6 +9,8 @@ import '../../core/work_models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// My loans and cash advances (what's left of each), my requests, and "Ask for a loan".
 class LoansScreen extends ConsumerWidget {
@@ -42,17 +44,18 @@ class LoansScreen extends ConsumerWidget {
     final l = context.l10n;
     final value = ref.watch(loansProvider(slug));
     return Scaffold(
-      appBar: AppBar(title: Text(l.myLoans)),
+      appBar: BrandAppBar(title: Text(l.myLoans)),
       floatingActionButton: value.value == null
           ? null
           : FloatingActionButton.extended(
               onPressed: () => showModalBottomSheet<void>(
+                useRootNavigator: true,
                 context: context,
                 isScrollControlled: true,
                 useSafeArea: true,
                 builder: (_) => _RequestSheet(slug: slug, currencies: value.value!.currencies, defaultCurrency: value.value!.loans.firstOrNull?.currency),
               ),
-              icon: const Icon(Icons.add_rounded),
+              icon: const Icon(AppIcons.plus),
               label: Text(l.askLoan),
             ),
       body: AsyncBody(
@@ -63,7 +66,7 @@ class LoansScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, 96),
             children: [
-              if (page.loans.isEmpty) EmptyState(icon: Icons.payments_outlined, message: l.noLoans),
+              if (page.loans.isEmpty) EmptyState(icon: AppIcons.money, message: l.noLoans),
               for (final loan in page.loans) Padding(padding: const EdgeInsets.only(bottom: Space.md), child: _LoanCard(loan: loan)),
               if (page.requests.isNotEmpty) ...[
                 SectionTitle(l.myRequests),
@@ -118,7 +121,7 @@ class _LoanCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              ToneIcon(x.project != null ? Icons.account_balance_wallet_rounded : Icons.payments_rounded, tone: x.paidOff ? Tone.success : Tone.info),
+              ToneIcon(x.project != null ? AppIcons.wallet : AppIcons.money, tone: x.paidOff ? Tone.success : Tone.info),
               const SizedBox(width: Space.md),
               Expanded(
                 child: Column(
@@ -140,7 +143,7 @@ class _LoanCard extends StatelessWidget {
           ),
           const SizedBox(height: Space.sm),
           if (x.paidOff)
-            Row(children: [Icon(Icons.verified_rounded, size: 16, color: p.success), const SizedBox(width: 4), Text(l.paidOff, style: context.text.labelMedium!.copyWith(color: p.success))])
+            Row(children: [Icon(AppIcons.sealCheck, size: 16, color: p.success), const SizedBox(width: 4), Text(l.paidOff, style: context.text.labelMedium!.copyWith(color: p.success))])
           else
             Wrap(
               spacing: Space.lg,

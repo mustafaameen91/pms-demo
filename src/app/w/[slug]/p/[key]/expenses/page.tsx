@@ -10,6 +10,7 @@ import { listLoans } from "@/lib/data/loans";
 import { computeAccomplishment } from "@/lib/accomplishment";
 import { computeForecast } from "@/lib/forecast";
 import { ExpensesView } from "@/components/expenses/expenses-view";
+import { getFinanceSettings, listAccounts } from "@/lib/finance/ledger";
 import { getT } from "@/i18n/server";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/p/[key]/expenses">) {
@@ -34,6 +35,11 @@ export default async function ExpensesPage({ params, searchParams }: PageProps<"
   const a = computeAccomplishment(accomplishmentTasks, project);
   const forecast = computeForecast({ budget: summary.budget, spent: summary.actual, donePct: a.actual, plannedPct: a.planned });
   const canManage = canManageProject(workspace.role, user.id, project);
+  // Finance set up: which cash box / bank paid each expense.
+  const finance = await getFinanceSettings(workspace.id);
+  const moneyAccounts = finance
+    ? (await listAccounts(workspace.id)).filter((a) => a.moneyKind && !a.archivedAt).map((a) => ({ id: a.id, name: a.name, isDefault: a.id === finance.defaultMoneyAccountId }))
+    : [];
   const isAdmin = isWorkspaceAdmin(workspace.role);
   // Admins can file receipts on any advance (e.g. for a worker); members on their own.
   const advanceOptions = advances.map((a) => ({
@@ -46,7 +52,7 @@ export default async function ExpensesPage({ params, searchParams }: PageProps<"
   const advance = typeof query.advance === "string" ? advanceOptions.find((a) => a.id === query.advance && a.usable)?.id : undefined;
 
   return (
-    <div className="w-full px-4 py-6 sm:px-6">
+    <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
       <ExpensesView
         project={{
           id: project.id,
@@ -59,6 +65,7 @@ export default async function ExpensesPage({ params, searchParams }: PageProps<"
         }}
         advances={advanceOptions}
         startWithAdvance={advance}
+        moneyAccounts={moneyAccounts}
         summary={summary}
         forecast={forecast}
         tasks={board.tasks.map((t) => ({ id: t.id, number: t.number, title: t.title }))}

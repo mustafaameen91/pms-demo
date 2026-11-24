@@ -1,3 +1,4 @@
+import { getFinanceSettings, listAccounts } from "@/lib/finance/ledger";
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { requireWorkspace } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -29,6 +30,8 @@ async function usualCurrency(workspaceId: string) {
 export default async function LoansPage({ params, searchParams }: PageProps<"/w/[slug]/loans">) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const { user, workspace } = await requireWorkspace(slug);
+  const finance = await getFinanceSettings(workspace.id);
+  const moneyAccounts = finance ? (await listAccounts(workspace.id)).filter((a) => a.moneyKind && !a.archivedAt).map((a) => ({ id: a.id, name: a.name, isDefault: a.id === finance.defaultMoneyAccountId })) : [];
   const isAdmin = isWorkspaceAdmin(workspace.role);
   // Admins see every loan; members only their own.
   const [loans, requests, borrowers, currency, projectChoices] = await Promise.all([
@@ -50,6 +53,7 @@ export default async function LoansPage({ params, searchParams }: PageProps<"/w/
   return (
     <div className="w-full px-4 py-6 sm:px-6 lg:py-8">
       <LoansView
+        moneyAccounts={moneyAccounts}
         slug={workspace.slug}
         isAdmin={isAdmin}
         defaultCurrency={currency}

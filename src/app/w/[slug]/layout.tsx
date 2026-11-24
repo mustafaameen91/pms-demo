@@ -11,6 +11,8 @@ import { chosenLocale, syncUserLocale } from "@/lib/locale-sync";
 import { AppShell } from "@/components/shell/app-shell";
 import { visibleProjectIds } from "@/lib/data/project-access";
 import { pendingLoanRequestCount } from "@/lib/data/loans";
+import { hrAlertCount, syncHrExpiryNotifications } from "@/lib/hr-server";
+import { pendingLeaveCount } from "@/lib/data/hr-ops";
 
 export default async function WorkspaceLayout({ children, params }: LayoutProps<"/w/[slug]">) {
   const { slug } = await params;
@@ -27,13 +29,16 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
     after(() => syncUserLocale(user.id, chosen));
   }
   const isAdmin = workspace.role === "owner" || workspace.role === "admin";
-  const [workspaces, projects, unread, approvals, loanRequests] = await Promise.all([
+  // HR papers expiring: an inbox reminder for owners/admins (before the unread count is read).
+  if (access.allowed && isAdmin) await syncHrExpiryNotifications(user.id, workspace.id);
+  const [workspaces, projects, unread, approvals, loanRequests, hrAlerts] = await Promise.all([
     getUserWorkspaces(user.id),
     // A locked workspace shows no project data in the sidebar.
     access.allowed ? listProjects(workspace.id, { only: await visibleProjectIds(workspace.id, user.id, workspace.role) }) : [],
     access.allowed ? unreadCount(user.id, workspace.id) : 0,
     access.allowed ? listPendingApprovals(workspace.id, user.id, isAdmin) : [],
     access.allowed && isAdmin ? pendingLoanRequestCount(workspace.id) : 0,
+    access.allowed && isAdmin ? Promise.all([hrAlertCount(workspace.id), pendingLeaveCount(workspace.id)]).then(([a, b]) => a + b) : 0,
   ]);
 
   return (
@@ -46,6 +51,7 @@ export default async function WorkspaceLayout({ children, params }: LayoutProps<
       approvals={approvals.filter((a) => a.requesterId !== user.id).length}
       loanRequests={loanRequests}
       showReports={isAdmin || projects.some((p) => p.leadId === user.id)}
+      hrAlerts={hrAlerts}
       access={access}
       isPlatformAdmin={isSuperAdmin(user.email)}
     >

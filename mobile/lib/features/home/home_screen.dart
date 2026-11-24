@@ -12,6 +12,7 @@ import '../../widgets/common.dart';
 import '../../widgets/motion.dart';
 import '../account/account_sheet.dart';
 import 'home_sections.dart';
+import '../../theme/icons.dart';
 
 /// One home for everyone; what's on it follows the person's role in this
 /// company: members see their own work, managers see what needs them first.
@@ -56,13 +57,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } else if (data == null && error != null) {
       body = [
         ErrorPanel(
-          icon: Icons.cloud_off_rounded,
+          icon: AppIcons.cloudSlash,
           title: errorText(context, error),
           actions: [
             FilledButton.icon(
               style: FilledButton.styleFrom(minimumSize: const Size(180, 52)),
               onPressed: () => ref.invalidate(homeProvider(slug)),
-              icon: const Icon(Icons.refresh_rounded),
+              icon: const Icon(AppIcons.arrowClockwise),
               label: Text(context.l10n.tryAgain),
             ),
           ],
@@ -75,7 +76,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (error != null)
           Padding(
             padding: const EdgeInsets.only(bottom: Space.md),
-            child: InlineBanner(icon: Icons.cloud_off_rounded, message: context.l10n.showingSaved, tone: Tone.warning),
+            child: InlineBanner(icon: AppIcons.cloudSlash, message: context.l10n.showingSaved, tone: Tone.warning),
           ),
         if (view == HomeView.manager) ...managerHome(context, slug, data) else ...memberHome(context, slug, data),
       ];
@@ -137,7 +138,7 @@ class _Header extends StatelessWidget {
   final HomeView view;
   final bool refreshing;
 
-  /// The card that sits half on the teal header.
+  /// The card that sits half on the brand header.
   final Widget? focus;
 
   static const _overlap = 64.0;
@@ -159,7 +160,7 @@ class _Header extends StatelessWidget {
       children: [
         Positioned.fill(
           bottom: focus == null ? 0 : _overlap,
-          child: const BlueprintBackdrop(borderRadius: BorderRadius.vertical(bottom: Radius.circular(Radii.xl))),
+          child: const HeroBackdrop(borderRadius: BorderRadius.vertical(bottom: Radius.circular(Radii.xl))),
         ),
         if (refreshing)
           Positioned(
@@ -208,9 +209,9 @@ class _Header extends StatelessWidget {
                   children: [
                     if (home != null)
                       Text(l.needsYouToday(home!.myTasks.needsYouToday), style: context.text.bodyLarge!.copyWith(color: onHero)),
-                    if (view == HomeView.manager) _HeroChip(icon: Icons.insights_rounded, label: l.managerView),
+                    if (view == HomeView.manager) _HeroChip(icon: AppIcons.chartLineUp, label: l.managerView),
                     if ((home?.unread ?? workspace.unread) > 0)
-                      _HeroChip(icon: Icons.notifications_rounded, label: l.unreadNotifications(home?.unread ?? workspace.unread)),
+                      _HeroChip(icon: AppIcons.bell, label: l.unreadNotifications(home?.unread ?? workspace.unread)),
                   ],
                 ),
               ),
@@ -242,7 +243,7 @@ class _CompanyButton extends StatelessWidget {
           height: 30,
           alignment: Alignment.center,
           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(9)),
-          child: const Icon(Icons.apartment_rounded, size: 18, color: Colors.white),
+          child: const Icon(AppIcons.buildings, size: 18, color: Colors.white),
         ),
         const SizedBox(width: Space.sm),
         Flexible(
@@ -255,7 +256,7 @@ class _CompanyButton extends StatelessWidget {
         ),
         if (canSwitch) ...[
           const SizedBox(width: 2),
-          const Icon(Icons.unfold_more_rounded, size: 20, color: Colors.white),
+          const Icon(AppIcons.caretUpDown, size: 20, color: Colors.white),
         ],
       ],
     );
@@ -311,7 +312,7 @@ class _Locked extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     return ErrorPanel(
-      icon: Icons.lock_outline_rounded,
+      icon: AppIcons.lock,
       title: l.lockedTitle,
       message: message ?? l.lockedHint,
       actions: [
@@ -319,7 +320,7 @@ class _Locked extends ConsumerWidget {
           FilledButton.icon(
             style: FilledButton.styleFrom(minimumSize: const Size(200, 52)),
             onPressed: onSwitch,
-            icon: const Icon(Icons.swap_horiz_rounded),
+            icon: const Icon(AppIcons.arrowsLeftRight),
             label: Text(l.switchCompany),
           ),
         TextButton(

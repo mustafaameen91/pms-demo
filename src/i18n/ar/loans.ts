@@ -161,4 +161,18 @@ export default {
   "{amount} brought back from your advance": "أُعيد {amount} من سُلفتك",
   "This advance has receipts. Remove them from the project's expenses first.": "لهذه السُلفة إيصالات. احذفها من مصروفات المشروع أولًا.",
   "gave {name} an advance of {amount} {currency} from {project}'s budget": "أعطى {name} سُلفة {amount} {currency} من ميزانية {project}",
+
+  // Loans and Approvals pages (stat tiles)
+  "Share of {currency} loans repaid": "نسبة المسدَّد من سُلف {currency}",
+  "Open loans": "السُّلف المفتوحة",
+  "Not fully repaid yet": "لم تُسدَّد بالكامل بعد",
+  "Repaid in full": "سُدِّدت بالكامل",
+  "Waiting for your decision": "بانتظار قرارك",
+  "Expenses you can approve": "مصروفات يمكنك الموافقة عليها",
+  "Amount waiting": "المبلغ المنتظر",
+  "Across the expenses you decide": "في المصروفات التي تقرّر فيها",
+  "Your own requests": "طلباتك أنت",
+  "Another approver decides these": "يقرّر فيها موافق آخر",
+  "Oldest wait": "أقدم انتظار",
+  "Since {date}": "منذ {date}",
 } satisfies Dictionary;

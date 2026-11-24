@@ -8,6 +8,8 @@ import '../../core/manage_models.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/ui.dart';
+import '../../theme/icons.dart';
+import '../../widgets/page.dart';
 
 /// Everything waiting for my decision: expenses, team members' hours, loan requests.
 class ApprovalsScreen extends ConsumerStatefulWidget {
@@ -58,7 +60,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverAppBar.medium(title: Text(l.approvals), pinned: true),
+            BrandSliverHeader(title: l.approvals, icon: AppIcons.sealCheck, slug: widget.slug),
+            // Breathing room between the header and the first card.
+            const SliverToBoxAdapter(child: SizedBox(height: Space.lg)),
             if (data == null)
               SliverFillRemaining(
                 hasScrollBody: true,
@@ -96,7 +100,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
         for (final e in data.expenses)
           _ApprovalCard(
             key: ValueKey(e.id),
-            icon: Icons.receipt_long_rounded,
+            icon: AppIcons.receipt,
             title: e.description,
             amount: context.money(e.amount, e.currency),
             lines: [
@@ -113,7 +117,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
         for (final h in data.hours)
           _ApprovalCard(
             key: ValueKey(h.id),
-            icon: Icons.schedule_rounded,
+            icon: AppIcons.clock,
             title: h.person ?? '—',
             amount: l.hoursShort(context.hours(h.hours)),
             lines: [
@@ -129,7 +133,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
         for (final r in data.loans)
           _ApprovalCard(
             key: ValueKey(r.id),
-            icon: Icons.payments_rounded,
+            icon: AppIcons.money,
             title: r.person ?? '—',
             amount: context.money(r.amount, r.currency),
             lines: [r.reason, context.ago(r.createdAt)],
@@ -138,7 +142,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
           ),
       ],
     };
-    if (cards.isEmpty) return [SliverToBoxAdapter(child: EmptyState(icon: Icons.verified_rounded, message: l.nothingWaiting))];
+    if (cards.isEmpty) return [SliverToBoxAdapter(child: EmptyState(icon: AppIcons.sealCheck, message: l.nothingWaiting))];
     return [
       SliverPadding(
         padding: EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xxl + MediaQuery.paddingOf(context).bottom),
@@ -205,7 +209,7 @@ class _ApprovalCard extends StatelessWidget {
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(foregroundColor: p.danger, minimumSize: const Size(0, 48)),
                     onPressed: onReject,
-                    icon: const Icon(Icons.close_rounded),
+                    icon: const Icon(AppIcons.x),
                     label: Text(l.reject),
                   ),
                 ),
@@ -214,7 +218,7 @@ class _ApprovalCard extends StatelessWidget {
                   child: FilledButton.icon(
                     style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
                     onPressed: onApprove,
-                    icon: const Icon(Icons.check_rounded),
+                    icon: const Icon(AppIcons.check),
                     label: Text(l.approve),
                   ),
                 ),
@@ -228,6 +232,7 @@ class _ApprovalCard extends StatelessWidget {
 
 /// A reason is required to reject: the person sees it and can fix things.
 Future<String?> _askReason(BuildContext context, String? about) => showModalBottomSheet<String>(
+  useRootNavigator: true,
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
@@ -241,6 +246,7 @@ Future<String?> _askReason(BuildContext context, String? about) => showModalBott
 );
 
 Future<String?> _askLoanAmount(BuildContext context, double asked, String currency) => showModalBottomSheet<String>(
+  useRootNavigator: true,
   context: context,
   isScrollControlled: true,
   useSafeArea: true,

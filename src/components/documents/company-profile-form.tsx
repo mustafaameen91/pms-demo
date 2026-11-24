@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Check, ImageIcon, Loader2, Trash2 } from "lucide-react";
+import { BadgeCheck, Check, Eye, FileText, ImageIcon, Loader2, Palette, Phone, Trash2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { saveCompanyProfile } from "@/lib/actions/company";
 import {
@@ -110,7 +110,7 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
       }}
     >
       <div className="grid content-start gap-6">
-        <Section title={t("Name & logo")}>
+        <Section title={t("Name & logo")} icon={ImageIcon}>
           <div className="grid items-start gap-4 sm:grid-cols-2">
             {text("nameEn", t("Company name (English)"), { dir: "ltr", placeholder: "Al-Noor Construction Co." })}
             {text("nameAr", t("Company name (Arabic)"), { dir: "rtl", placeholder: "شركة النور للمقاولات" })}
@@ -126,7 +126,7 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
           />
         </Section>
 
-        <Section title={t("Brand colour")}>
+        <Section title={t("Brand colour")} icon={Palette}>
           <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={t("Brand colour")}>
             {BRAND_SWATCHES.map((c) => (
               <button
@@ -168,7 +168,7 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
           )}
         </Section>
 
-        <Section title={t("Contact details")}>
+        <Section title={t("Contact details")} icon={Phone}>
           <div className="grid items-start gap-4 sm:grid-cols-2">
             {text("addressEn", t("Address (English)"), { dir: "ltr" })}
             {text("addressAr", t("Address (Arabic)"), { dir: "rtl" })}
@@ -178,14 +178,14 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
           </div>
         </Section>
 
-        <Section title={t("Registration")}>
+        <Section title={t("Registration")} icon={BadgeCheck}>
           <div className="grid items-start gap-4 sm:grid-cols-2">
             {text("registrationNo", t("Registration number"), { dir: "ltr" })}
             {text("taxNo", t("Tax number"), { dir: "ltr" })}
           </div>
         </Section>
 
-        <Section title={t("Documents")}>
+        <Section title={t("Documents")} icon={FileText}>
           <fieldset className="grid gap-2">
             <legend className="mb-1.5 text-sm font-medium">{t("Default paper style")}</legend>
             <div className="grid gap-2 sm:grid-cols-3">
@@ -193,7 +193,7 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
                 <label
                   key={s.value}
                   className={cn(
-                    "flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                    "flex cursor-pointer flex-col gap-1 rounded-xl border p-3.5 text-sm transition-colors hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
                   )}
                 >
                   <span className="flex items-center gap-2 font-medium">
@@ -252,7 +252,7 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
           />
         </Section>
 
-        <div className="sticky bottom-0 -mx-1 flex justify-end border-t bg-background/95 px-1 py-3 backdrop-blur">
+        <div className="sticky bottom-3 z-10 flex justify-end rounded-2xl border bg-card/90 p-3 shadow-lg backdrop-blur">
           <Button type="submit" disabled={pending}>
             {pending && <Loader2 className="size-4 animate-spin" />}
             {t("Save company profile")}
@@ -260,9 +260,12 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
         </div>
       </div>
 
-      <aside aria-label={t("Preview")} className="xl:sticky xl:top-4 xl:self-start">
+      <aside aria-label={t("Preview")} className="rounded-2xl border bg-card p-4 xl:sticky xl:top-4 xl:self-start">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">{t("Preview")}</h2>
+          <h2 className="flex items-center gap-2 font-semibold">
+            <Eye className="size-4 text-muted-foreground" aria-hidden />
+            {t("Preview")}
+          </h2>
           <div className="flex gap-2">
             <div role="group" aria-label={t("Paper style")} className="flex rounded-lg bg-muted p-0.5 text-xs">
               {PAPER_STYLES.map((s) => (
@@ -271,7 +274,7 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
                   type="button"
                   aria-pressed={previewStyle === s.value}
                   onClick={() => setPreviewStyle(s.value)}
-                  className={cn("cursor-pointer rounded-md px-2.5 py-1 text-muted-foreground", previewStyle === s.value && "bg-background font-medium text-foreground shadow-sm")}
+                  className={cn("cursor-pointer rounded-md px-2.5 py-1 text-muted-foreground", previewStyle === s.value && "bg-card font-medium text-primary shadow-sm")}
                 >
                   {t(s.label)}
                 </button>
@@ -284,7 +287,7 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
                   type="button"
                   aria-pressed={previewLang === l}
                   onClick={() => setPreviewLang(l)}
-                  className={cn("cursor-pointer rounded-md px-2.5 py-1 text-muted-foreground", previewLang === l && "bg-background font-medium text-foreground shadow-sm")}
+                  className={cn("cursor-pointer rounded-md px-2.5 py-1 text-muted-foreground", previewLang === l && "bg-card font-medium text-primary shadow-sm")}
                 >
                   {l === "ar" ? "ع" : "EN"}
                 </button>
@@ -295,7 +298,7 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
         {/* A4 scaled down; dir=ltr keeps the scaling anchored on the same side in both languages. */}
         <div
           dir="ltr"
-          className="overflow-hidden rounded-md border shadow-sm"
+          className="overflow-hidden rounded-lg border bg-white shadow-md"
           style={{ width: `calc(210mm * ${PREVIEW_SCALE})`, height: `calc(297mm * ${PREVIEW_SCALE})` }}
         >
           <div style={{ transform: `scale(${PREVIEW_SCALE})`, transformOrigin: "top left" }}>
@@ -339,11 +342,16 @@ export function CompanyProfileForm({ slug, profile }: { slug: string; profile: C
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, icon: Icon, children }: { title: string; icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <section className="grid gap-4 rounded-xl border bg-card p-5">
-      <h2 className="font-semibold">{title}</h2>
-      {children}
+    <section className="overflow-hidden rounded-2xl border bg-card">
+      <h2 className="flex items-center gap-2.5 border-b px-5 py-3.5 font-semibold">
+        <span aria-hidden className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+          <Icon className="size-4" />
+        </span>
+        {title}
+      </h2>
+      <div className="grid gap-4 p-5">{children}</div>
     </section>
   );
 }
@@ -370,7 +378,7 @@ function ImagePicker({
     <div className="grid gap-1.5">
       <Label htmlFor={`co-${id}`}>{label}</Label>
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex h-16 w-32 items-center justify-center rounded-lg border bg-white p-1.5">
+        <div className="flex h-20 w-36 items-center justify-center rounded-xl border border-dashed bg-white p-2">
           {url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={url} alt={t("Current {name}", { name: label })} className="max-h-full max-w-full object-contain" />

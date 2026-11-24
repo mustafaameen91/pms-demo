@@ -21,6 +21,7 @@ export async function getProjectExpenses(projectId: string) {
       taskDeleted: tasks.deletedAt,
       projectResourceId: expenses.projectResourceId,
       loanId: expenses.loanId,
+      moneyAccountId: expenses.moneyAccountId,
       resourceName: linkedResource.name,
       hasReceipt: expenses.receiptPath,
       receiptName: expenses.receiptName,

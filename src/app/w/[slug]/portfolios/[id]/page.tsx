@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { FolderKanban, Layers } from "lucide-react";
 import { requireWorkspace } from "@/lib/auth/session";
 import { getProjectHealth, toHealthRow } from "@/lib/data/project-health";
 import { activeRisksOf, getPortfolio, listPortfolios } from "@/lib/data/portfolios";
@@ -11,6 +10,7 @@ import { getT } from "@/i18n/server";
 import { PortfolioSummaryView } from "@/components/portfolios/portfolio-summary";
 import { ProjectHealthTable } from "@/components/projects/project-health-table";
 import { DeletePortfolioButton, ManageProjectsButton, PortfolioFormButton } from "@/components/portfolios/portfolio-dialogs";
+import { BandIcon, EmptyState, PageHeader, PageShell, Panel } from "@/components/page/kit";
 
 export async function generateMetadata({ params }: PageProps<"/w/[slug]/portfolios/[id]">) {
   const { slug, id } = await params;
@@ -37,48 +37,50 @@ export default async function PortfolioPage({ params }: PageProps<"/w/[slug]/por
   const base = `/w/${workspace.slug}`;
 
   return (
-    <div className="grid w-full grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:py-8">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link href={`${base}/portfolios`} className="mb-1 flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden />
-            {t("Portfolios")}
-          </Link>
-          <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight" dir="auto">
-            <span aria-hidden className="size-3.5 rounded-sm" style={{ backgroundColor: pf.color }} />
-            {pf.name}
-          </h1>
-          {pf.description && <p className="mt-1 max-w-2xl text-sm text-muted-foreground" dir="auto">{pf.description}</p>}
-        </div>
-        {admin && (
-          <div className="flex flex-wrap gap-2">
+    <PageShell>
+      <PageHeader
+        back={{ href: `${base}/portfolios`, label: t("Portfolios") }}
+        mark={
+          <span className="relative">
+            <BandIcon icon={Layers} />
+            <span aria-hidden className="absolute -end-1 -bottom-1 size-4 rounded-full ring-2 ring-white" style={{ backgroundColor: pf.color }} />
+          </span>
+        }
+        title={<span dir="auto">{pf.name}</span>}
+        description={pf.description && <span dir="auto">{pf.description}</span>}
+        actions={
+          admin && (
+            <>
             <ManageProjectsButton
               portfolioId={pf.id}
               projects={allProjects.map((p) => ({ id: p.id, name: p.name, key: p.key, portfolioId: p.portfolioId, portfolioName: p.portfolioId ? (portfolioName.get(p.portfolioId) ?? null) : null }))}
             />
             <PortfolioFormButton slug={workspace.slug} portfolio={{ id: pf.id, name: pf.name, description: pf.description, color: pf.color }} />
             <DeletePortfolioButton slug={workspace.slug} id={pf.id} />
-          </div>
-        )}
-      </header>
+            </>
+          )
+        }
+      />
 
       <PortfolioSummaryView summary={summarizePortfolio(rows.map(toHealthRow))} risks={risks} base={base} />
 
-      <section aria-labelledby="pf-projects" className="overflow-hidden rounded-xl border bg-card">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h2 id="pf-projects" className="font-semibold">
-            {t("Projects")}
-          </h2>
-          <p className="text-xs text-muted-foreground">{t("Projects that need attention are listed first")}</p>
-        </div>
-        {rows.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            {admin ? t("No projects in this portfolio yet. Use “Choose projects” to add some.") : t("No projects in it yet.")}
-          </p>
-        ) : (
-          <ProjectHealthTable rows={rows} base={base} />
-        )}
-      </section>
-    </div>
+      {rows.length === 0 ? (
+        <EmptyState icon={FolderKanban} title={t("No projects in it yet.")}>
+          {admin ? t("No projects in this portfolio yet. Use “Choose projects” to add some.") : null}
+        </EmptyState>
+      ) : (
+        <Panel
+          id="pf-projects"
+          title={t("Projects")}
+          icon={FolderKanban}
+          count={rows.length}
+          action={<p className="hidden text-xs text-muted-foreground sm:block">{t("Projects that need attention are listed first")}</p>}
+        >
+          <div className="border-t">
+            <ProjectHealthTable rows={rows} base={base} />
+          </div>
+        </Panel>
+      )}
+    </PageShell>
   );
 }
